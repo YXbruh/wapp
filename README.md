@@ -18,8 +18,8 @@ CyberShieldAcademy/
 ├── Courses.aspx.cs
 │
 ├── Student/
-│   ├── Dashboard.aspx              # Student dashboard (metrics, courses, activity)
-│   ├── Dashboard.aspx.cs
+│   ├── Student_Dashboard.aspx              # Student dashboard (metrics, courses, activity)
+│   ├── Student_Dashboard.aspx.cs
 │   ├── MyCourses.aspx              # (to build)
 │   ├── Labs.aspx                   # (to build)
 │   ├── Challenges.aspx             # (to build)
@@ -29,8 +29,8 @@ CyberShieldAcademy/
 │   └── Profile.aspx                # (to build)
 │
 ├── Admin/
-│   ├── Dashboard.aspx              # Admin dashboard (users table, metrics)
-│   ├── Dashboard.aspx.cs
+│   ├── Admin_Dashboard.aspx              # Admin dashboard (users table, metrics)
+│   ├── Admin_Dashboard.aspx.cs
 │   ├── Users.aspx                  # (to build)
 │   ├── Courses.aspx                # (to build)
 │   ├── ContentReview.aspx          # (to build)
