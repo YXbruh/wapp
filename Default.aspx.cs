@@ -1,9 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Web;
+using System;
 using System.Web.UI;
-using System.Web.UI.WebControls;
 
 namespace CSA
 {
@@ -11,7 +7,9 @@ namespace CSA
     {
         protected void Page_Load(object sender, EventArgs e)
         {
-
+            // TODO: load live counts from DB
+            // litStudents.Text = CourseService.GetStudentCount().ToString("N0") + "+";
+            // litCourses.Text  = CourseService.GetActiveCourseCount().ToString();
         }
     }
 }

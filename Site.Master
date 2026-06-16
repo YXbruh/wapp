@@ -1,69 +1,83 @@
-﻿<%@ Master Language="C#" AutoEventWireup="true" CodeBehind="Site.master.cs" Inherits="CSA.SiteMaster" %>
-
+<%@ Master Language="C#" AutoEventWireup="true" CodeBehind="Site.Master.cs" Inherits="CSA.Site" %>
 <!DOCTYPE html>
-
 <html lang="en">
 <head runat="server">
-    <meta charset="utf-8" />
+    <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title><%: Page.Title %> - My ASP.NET Application</title>
+    <title><asp:ContentPlaceHolder ID="PageTitle" runat="server">CyberShield Academy</asp:ContentPlaceHolder></title>
 
-    <asp:PlaceHolder runat="server">
-        <%: Scripts.Render("~/bundles/modernizr") %>
-    </asp:PlaceHolder>
+    <!-- Tabler Icons CDN -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css" />
+    <!-- Site stylesheet -->
+    <link rel="stylesheet" href="~/Styles/Site.css" />
+    <!-- Theme: apply before paint to avoid flash -->
+    <script>
+        (function(){var s=localStorage.getItem('csa_theme');if(s==='light')document.documentElement.classList.add('light-preload');})();
+    </script>
 
-    <webopt:bundlereference runat="server" path="~/Content/css" />
-    <link href="~/favicon.ico" rel="shortcut icon" type="image/x-icon" />
-
+    <asp:ContentPlaceHolder ID="HeadContent" runat="server" />
 </head>
-<body>
-    <form runat="server">
-        <asp:ScriptManager runat="server">
-            <Scripts>
-                <%--To learn more about bundling scripts in ScriptManager see https://go.microsoft.com/fwlink/?LinkID=301884 --%>
-                <%--Framework Scripts--%>
-                <asp:ScriptReference Name="MsAjaxBundle" />
-                <asp:ScriptReference Name="jquery" />
-                <asp:ScriptReference Name="WebForms.js" Assembly="System.Web" Path="~/Scripts/WebForms/WebForms.js" />
-                <asp:ScriptReference Name="WebUIValidation.js" Assembly="System.Web" Path="~/Scripts/WebForms/WebUIValidation.js" />
-                <asp:ScriptReference Name="MenuStandards.js" Assembly="System.Web" Path="~/Scripts/WebForms/MenuStandards.js" />
-                <asp:ScriptReference Name="GridView.js" Assembly="System.Web" Path="~/Scripts/WebForms/GridView.js" />
-                <asp:ScriptReference Name="DetailsView.js" Assembly="System.Web" Path="~/Scripts/WebForms/DetailsView.js" />
-                <asp:ScriptReference Name="TreeView.js" Assembly="System.Web" Path="~/Scripts/WebForms/TreeView.js" />
-                <asp:ScriptReference Name="WebParts.js" Assembly="System.Web" Path="~/Scripts/WebForms/WebParts.js" />
-                <asp:ScriptReference Name="Focus.js" Assembly="System.Web" Path="~/Scripts/WebForms/Focus.js" />
-                <asp:ScriptReference Name="WebFormsBundle" />
-                <%--Site Scripts--%>
-            </Scripts>
-        </asp:ScriptManager>
+<body id="pageBody" runat="server">
+    <div class="grid-bg" aria-hidden="true"></div>
+    <form id="mainForm" runat="server">
 
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-dark bg-dark">
-            <div class="container">
-                <a class="navbar-brand" runat="server" href="~/">Application name</a>
-                <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" title="Toggle navigation" aria-controls="navbarSupportedContent"
-                    aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="collapse navbar-collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item"><a class="nav-link" runat="server" href="~/">Home</a></li>
-                        <li class="nav-item"><a class="nav-link" runat="server" href="~/About">About</a></li>
-                        <li class="nav-item"><a class="nav-link" runat="server" href="~/Contact">Contact</a></li>
-                    </ul>
+        <!-- ===== TOP NAVIGATION ===== -->
+        <nav class="site-nav" role="navigation" aria-label="Main navigation">
+
+            <!-- Logo -->
+            <a class="nav-logo" href="~/Default.aspx" runat="server" title="CyberShield Academy Home">
+                <div class="nav-logo-img-wrap">
+                    <img src="~/Images/logo.png" alt="CyberShield Academy logo" class="nav-logo-img"
+                         onerror="this.style.display='none'" runat="server" />
                 </div>
+                <span class="nav-brand">CYBER<span>SHIELD</span></span>
+            </a>
+
+            <!-- Nav links — shown/hidden by code-behind based on role -->
+            <div class="nav-links">
+                <a href="~/Default.aspx"           runat="server" class="nav-link"><i class="ti ti-home" aria-hidden="true"></i>Home</a>
+                <a href="~/Courses.aspx"           runat="server" class="nav-link"><i class="ti ti-books" aria-hidden="true"></i>Courses</a>
+                <asp:Panel ID="pnlStudentNav" runat="server" CssClass="d-flex" Visible="false">
+                    <a href="~/Student/Dashboard.aspx" runat="server" class="nav-link"><i class="ti ti-layout-dashboard" aria-hidden="true"></i>Dashboard</a>
+                </asp:Panel>
+                <asp:Panel ID="pnlAdminNav" runat="server" CssClass="d-flex" Visible="false">
+                    <a href="~/Admin/Dashboard.aspx" runat="server" class="nav-link"><i class="ti ti-settings" aria-hidden="true"></i>Admin</a>
+                </asp:Panel>
             </div>
+
+            <!-- Right side: theme toggle + user avatar -->
+            <div class="nav-right">
+                <!-- Dark / Light toggle -->
+                <button type="button" class="theme-btn" id="themeBtn"
+                        onclick="toggleTheme()" title="Toggle dark/light mode"
+                        aria-label="Toggle colour theme">
+                    <i class="ti ti-sun" aria-hidden="true"></i>
+                </button>
+
+                <!-- Guest: Login link | Authenticated: avatar dropdown -->
+                <asp:Panel ID="pnlGuest" runat="server">
+                    <a href="~/Login.aspx" runat="server" class="btn-sm">
+                        <i class="ti ti-login" aria-hidden="true"></i>Sign In
+                    </a>
+                </asp:Panel>
+                <asp:Panel ID="pnlUser" runat="server" Visible="false">
+                    <asp:LinkButton ID="lbProfile" runat="server" CssClass="nav-avatar"
+                                    PostBackUrl="~/Student/Profile.aspx"
+                                    ToolTip="My profile">CS</asp:LinkButton>
+                </asp:Panel>
+            </div>
+
         </nav>
-        <div class="container body-content">
-            <asp:ContentPlaceHolder ID="MainContent" runat="server">
-            </asp:ContentPlaceHolder>
-            <hr />
-            <footer>
-                <p>&copy; <%: DateTime.Now.Year %> - My ASP.NET Application</p>
-            </footer>
-        </div>
+
+        <!-- ===== PAGE CONTENT ===== -->
+        <main id="mainContent" role="main">
+            <asp:ContentPlaceHolder ID="MainContent" runat="server" />
+        </main>
+
     </form>
-    <asp:PlaceHolder runat="server">
-        <%: Scripts.Render("~/Scripts/bootstrap.js") %>
-    </asp:PlaceHolder>
+
+    <!-- Theme script (reads localStorage, sets correct icon) -->
+    <script src="~/Scripts/theme.js"></script>
+    <asp:ContentPlaceHolder ID="Scripts" runat="server" />
 </body>
 </html>
