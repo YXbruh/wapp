@@ -1,11 +1,11 @@
-using System;
+﻿using System;
 using System.Web.UI;
 using System.Web.Security;
 
 namespace CSA
 {
 
-    public partial class Login : System.Web.UI.Page
+    public partial class Login : Page
     {
         protected void Page_Load(object sender, EventArgs e)
         {

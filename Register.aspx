@@ -1,3 +1,7 @@
+﻿<!--
+<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="Register.aspx.cs" Inherits="CSA.Register" %>
+-->
+
 <%@ Page Title="Register – CyberShield Academy" Language="C#"
     MasterPageFile="~/Site.Master" AutoEventWireup="true"
     CodeBehind="Register.aspx.cs" Inherits="CSA.Register" %>

@@ -1,4 +1,4 @@
-﻿<%@ Page Title="CyberShield Academy" Language="C#" 
+<%@ Page Title="CyberShield Academy" Language="C#" 
     MasterPageFile="~/Site.Master" AutoEventWireup="true" 
     CodeBehind="Default.aspx.cs" Inherits="CSA._Default" %>
 

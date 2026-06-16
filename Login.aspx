@@ -1,4 +1,4 @@
-<%@ Page Title="Sign In – CyberShield Academy" Language="C#"
+﻿<%@ Page Title="Sign In – CyberShield Academy" Language="C#"
     MasterPageFile="~/Site.Master" AutoEventWireup="true"
     CodeBehind="Login.aspx.cs" Inherits="CSA.Login" %>
 
@@ -97,7 +97,7 @@
 </asp:Content>
 
 <asp:Content ID="cScripts" ContentPlaceHolderID="Scripts" runat="server">
-<script>
+    <script>
     // Render button text with icon (avoids HTML in Text attribute)
     document.getElementById('<%= btnLogin.ClientID %>').innerHTML =
         '<i class="ti ti-login" aria-hidden="true"></i> Sign In';

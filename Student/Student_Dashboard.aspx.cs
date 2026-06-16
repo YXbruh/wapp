@@ -1,7 +1,7 @@
-using System;
+﻿using System;
 using System.Web.UI;
 
-namespace CSA
+namespace CSA.Student
 {
     public partial class Student_Dashboard : Page
     {

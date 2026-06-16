@@ -1,6 +1,6 @@
-<%@ Page Title="Student Dashboard – CyberShield Academy" Language="C#"
+﻿<%@ Page Title="Student Dashboard – CyberShield Academy" Language="C#"
     MasterPageFile="~/Site.Master" AutoEventWireup="true"
-    CodeBehind="Dashboard.aspx.cs" Inherits="CSA.Student_Dashboard" %>
+    CodeBehind="Student_Dashboard.aspx.cs" Inherits="CSA.Student.Student_Dashboard" %>
 
 <asp:Content ID="cMain" ContentPlaceHolderID="MainContent" runat="server">
 <div class="dash-layout">
