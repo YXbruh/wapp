@@ -1,8 +1,4 @@
-﻿<!--
-<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="Courses.aspx.cs" Inherits="CSA.Courses" %>
--->
-
-<%@ Page Title="Courses – CyberShield Academy" Language="C#"
+﻿<%@ Page Title="Courses – CyberShield Academy" Language="C#"
     MasterPageFile="~/Site.Master" AutoEventWireup="true"
     CodeBehind="Courses.aspx.cs" Inherits="CSA.Courses" %>
 

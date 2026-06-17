@@ -78,7 +78,7 @@
     </form>
 
     <!-- Theme script (reads localStorage, sets correct icon) -->
-    <script src="~/Scripts/theme.js"></script>
+    <script src="<%= ResolveUrl("~/Scripts/theme.js") %>"></script>
     <asp:ContentPlaceHolder ID="Scripts" runat="server" />
 </body>
 </html>

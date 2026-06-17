@@ -1,8 +1,4 @@
-﻿<!--
-<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="Register.aspx.cs" Inherits="CSA.Register" %>
--->
-
-<%@ Page Title="Register – CyberShield Academy" Language="C#"
+﻿<%@ Page Title="Register – CyberShield Academy" Language="C#"
     MasterPageFile="~/Site.Master" AutoEventWireup="true"
     CodeBehind="Register.aspx.cs" Inherits="CSA.Register" %>
 
@@ -118,11 +114,13 @@
                     I agree to the <a href="Terms.aspx" style="color:var(--accent2)">Terms of Service</a>
                     and <a href="Privacy.aspx" style="color:var(--accent2)">Privacy Policy</a>
                 </label>
-                <asp:CustomValidator ID="cvTerms" runat="server"
-                    ControlToValidate="cbTerms" Display="Dynamic"
-                    OnServerValidate="cvTerms_ServerValidate"
-                    CssClass="val-error" ErrorMessage="You must accept the Terms of Service."
-                    Text="<i class='ti ti-alert-circle'></i> You must accept the Terms of Service." />
+
+                <asp:CustomValidator ID="cvTerms" runat="server" 
+                    ErrorMessage="You must agree to the Terms and Conditions."
+                    OnServerValidate="cvTerms_ServerValidate" 
+                    CssClass="val-error" 
+                    Display="Dynamic" />
+
             </div>
 
             <asp:Button ID="btnRegister" runat="server" Text="" CssClass="form-submit"
