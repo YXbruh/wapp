@@ -98,6 +98,7 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="About.aspx" />
+    <Content Include="Admin\ActivityLogs.aspx" />
     <Content Include="Admin\Admin_Dashboard.aspx" />
     <Content Include="Contact.aspx" />
     <Content Include="Content\bootstrap-grid.css" />
@@ -197,6 +198,13 @@
     <Content Include="Site.Mobile.Master" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Admin\ActivityLogs.aspx.cs">
+      <DependentUpon>ActivityLogs.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Admin\ActivityLogs.aspx.designer.cs">
+      <DependentUpon>ActivityLogs.aspx</DependentUpon>
+    </Compile>
     <Compile Include="Admin\Admin_Dashboard.aspx.cs">
       <DependentUpon>Admin_Dashboard.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
