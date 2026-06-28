@@ -192,6 +192,7 @@
     <Content Include="Styles\Site.css" />
     <Content Include="Site.Master" />
     <Content Include="Scripts\theme.js" />
+    <Content Include="TestDash.aspx" />
     <Content Include="ViewSwitcher.ascx" />
     <Content Include="Web.config" />
     <Content Include="Bundle.config" />
@@ -326,6 +327,13 @@
     </Compile>
     <Compile Include="Student\Student_Dashboard.aspx.designer.cs">
       <DependentUpon>Student_Dashboard.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="TestDash.aspx.cs">
+      <DependentUpon>TestDash.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="TestDash.aspx.designer.cs">
+      <DependentUpon>TestDash.aspx</DependentUpon>
     </Compile>
     <Compile Include="ViewSwitcher.ascx.cs">
       <DependentUpon>ViewSwitcher.ascx</DependentUpon>
