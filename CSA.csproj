@@ -100,6 +100,12 @@
     <Content Include="About.aspx" />
     <Content Include="Admin\ActivityLogs.aspx" />
     <Content Include="Admin\Admin_Dashboard.aspx" />
+    <Content Include="Admin\Announcements.aspx" />
+    <Content Include="Admin\Backup.aspx" />
+    <Content Include="Admin\ContentReview.aspx" />
+    <Content Include="Admin\Courses.aspx" />
+    <Content Include="Admin\SecurityAlerts.aspx" />
+    <Content Include="Admin\Users.aspx" />
     <Content Include="Contact.aspx" />
     <Content Include="Content\bootstrap-grid.css" />
     <Content Include="Content\bootstrap-grid.min.css" />
@@ -212,6 +218,48 @@
     </Compile>
     <Compile Include="Admin\Admin_Dashboard.aspx.designer.cs">
       <DependentUpon>Admin_Dashboard.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Admin\Announcements.aspx.cs">
+      <DependentUpon>Announcements.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Admin\Announcements.aspx.designer.cs">
+      <DependentUpon>Announcements.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Admin\Backup.aspx.cs">
+      <DependentUpon>Backup.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Admin\Backup.aspx.designer.cs">
+      <DependentUpon>Backup.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Admin\ContentReview.aspx.cs">
+      <DependentUpon>ContentReview.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Admin\ContentReview.aspx.designer.cs">
+      <DependentUpon>ContentReview.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Admin\Courses.aspx.cs">
+      <DependentUpon>Courses.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Admin\Courses.aspx.designer.cs">
+      <DependentUpon>Courses.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Admin\SecurityAlerts.aspx.cs">
+      <DependentUpon>SecurityAlerts.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Admin\SecurityAlerts.aspx.designer.cs">
+      <DependentUpon>SecurityAlerts.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Admin\Users.aspx.cs">
+      <DependentUpon>Users.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Admin\Users.aspx.designer.cs">
+      <DependentUpon>Users.aspx</DependentUpon>
     </Compile>
     <Compile Include="App_Start\BundleConfig.cs" />
     <Compile Include="About.aspx.cs">

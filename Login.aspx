@@ -43,14 +43,14 @@
                 <div class="input-icon-wrap">
                     <i class="ti ti-mail" aria-hidden="true"></i>
                     <asp:TextBox ID="tbEmail" runat="server" CssClass="form-input"
-                        TextMode="Email" placeholder="you@example.com" MaxLength="150" />
+                        TextMode="Email" placeholder="you@example.com" MaxLength="150" ValidationGroup="LoginGroup"/>
                 </div>
                 <asp:RequiredFieldValidator ID="rfvEmail" runat="server"
-                    ControlToValidate="tbEmail" Display="Dynamic"
+                    ControlToValidate="tbEmail" ValidationGroup="LoginGroup" Display="Dynamic"
                     CssClass="val-error" ErrorMessage="Email is required."
                     Text="<i class='ti ti-alert-circle'></i> Email is required." />
                 <asp:RegularExpressionValidator ID="revEmail" runat="server"
-                    ControlToValidate="tbEmail" Display="Dynamic"
+                    ControlToValidate="tbEmail" ValidationGroup="LoginGroup" Display="Dynamic"
                     ValidationExpression="^[^@\s]+@[^@\s]+\.[^@\s]+$"
                     CssClass="val-error" ErrorMessage="Enter a valid email address."
                     Text="<i class='ti ti-alert-circle'></i> Enter a valid email address." />
@@ -64,10 +64,10 @@
                 <div class="input-icon-wrap">
                     <i class="ti ti-lock" aria-hidden="true"></i>
                     <asp:TextBox ID="tbPassword" runat="server" CssClass="form-input"
-                        TextMode="Password" placeholder="••••••••" MaxLength="100" />
+                        TextMode="Password" placeholder="••••••••" MaxLength="100" ValidationGroup="LoginGroup"/>
                 </div>
                 <asp:RequiredFieldValidator ID="rfvPassword" runat="server"
-                    ControlToValidate="tbPassword" Display="Dynamic"
+                    ControlToValidate="tbPassword" ValidationGroup="LoginGroup" Display="Dynamic"
                     CssClass="val-error" ErrorMessage="Password is required."
                     Text="<i class='ti ti-alert-circle'></i> Password is required." />
             </div>
@@ -83,7 +83,7 @@
 
             <!-- Submit -->
             <asp:Button ID="btnLogin" runat="server" Text="" CssClass="form-submit"
-                OnClick="btnLogin_Click" UseSubmitBehavior="true">
+                ValidationGroup="LoginGroup" OnClick="btnLogin_Click" UseSubmitBehavior="true">
             </asp:Button>
             <%-- Button label set in code-behind to avoid encoding issues --%>
 
