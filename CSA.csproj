@@ -129,7 +129,13 @@
     <Content Include="favicon.ico" />
     <Content Include="Global.asax" />
     <Content Include="Images\logo.png" />
+    <Content Include="Lecturer\ClassAnalytics.aspx" />
     <Content Include="Lecturer\Lecturer_Dashboard.aspx" />
+    <Content Include="Lecturer\ManageContent.aspx" />
+    <Content Include="Lecturer\Mentorship.aspx" />
+    <Content Include="Lecturer\QuizEditor.aspx" />
+    <Content Include="Lecturer\StudentDetail.aspx" />
+    <Content Include="Lecturer\TerminalSandbox.aspx" />
     <Content Include="Login.aspx" />
     <Content Include="Register.aspx" />
     <Content Include="Scripts\bootstrap.bundle.js" />
@@ -291,12 +297,54 @@
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
+    <Compile Include="Lecturer\ClassAnalytics.aspx.cs">
+      <DependentUpon>ClassAnalytics.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Lecturer\ClassAnalytics.aspx.designer.cs">
+      <DependentUpon>ClassAnalytics.aspx</DependentUpon>
+    </Compile>
     <Compile Include="Lecturer\Lecturer_Dashboard.aspx.cs">
       <DependentUpon>Lecturer_Dashboard.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
     </Compile>
     <Compile Include="Lecturer\Lecturer_Dashboard.aspx.designer.cs">
       <DependentUpon>Lecturer_Dashboard.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Lecturer\ManageContent.aspx.cs">
+      <DependentUpon>ManageContent.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Lecturer\ManageContent.aspx.designer.cs">
+      <DependentUpon>ManageContent.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Lecturer\Mentorship.aspx.cs">
+      <DependentUpon>Mentorship.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Lecturer\Mentorship.aspx.designer.cs">
+      <DependentUpon>Mentorship.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Lecturer\QuizEditor.aspx.cs">
+      <DependentUpon>QuizEditor.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Lecturer\QuizEditor.aspx.designer.cs">
+      <DependentUpon>QuizEditor.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Lecturer\StudentDetail.aspx.cs">
+      <DependentUpon>StudentDetail.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Lecturer\StudentDetail.aspx.designer.cs">
+      <DependentUpon>StudentDetail.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Lecturer\TerminalSandbox.aspx.cs">
+      <DependentUpon>TerminalSandbox.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Lecturer\TerminalSandbox.aspx.designer.cs">
+      <DependentUpon>TerminalSandbox.aspx</DependentUpon>
     </Compile>
     <Compile Include="Login.aspx.cs">
       <DependentUpon>Login.aspx</DependentUpon>
