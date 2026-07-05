@@ -33,6 +33,7 @@ body.light {
     --accent1: #B0E4CC;
     --accent2: #2FA084;
     --accent3: #1F6F5F;
+    --text: #1a3d34;
     --text2: #1F6F5F;
     --text3: #2FA084;
     --border: #6FCF97;
@@ -192,36 +193,12 @@ a:hover { color: var(--accent3); }
 .sidebar { width: 220px; flex-shrink: 0; background: var(--bg2); border-right: 1px solid var(--border); padding: 20px 12px; }
 .sidebar-section { font-size: 10px; color: var(--text3); letter-spacing: 1.2px; text-transform: uppercase; padding: 0 8px; margin: 16px 0 8px; }
 .sidebar-link {
-    display: flex; 
-    align-items: center; 
-    gap: 10px; 
-    padding: 9px 12px; 
-    border-radius: 8px;
-    font-size: 13px; 
-/*    color: var(--text2); */
-    cursor: pointer; 
-    transition: all .2s;
-    border: none; 
-    background: none; 
-    width: 100%; 
-    text-decoration: none;
+    display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 8px;
+    font-size: 13px; color: var(--text2); cursor: pointer; transition: all .2s;
+    border: none; background: none; width: 100%; text-decoration: none;
 }
-.sidebar-link:hover,
-.sidebar-link.active { 
-    background: var(--accent1) !important; 
-/*    color: var(--accent3) !important; */
-}
-
-.sidebar-link:hover i,
-.sidebar-link.active i{
-    color: var(--accent3) !important;
-}
-
-.sidebar-link i {
-    font-size: 17px;
-    width: 20px;
-    color: var(--text2);
-}
+.sidebar-link:hover, .sidebar-link.active { background: var(--accent1); color: var(--accent3); }
+.sidebar-link i { font-size: 17px; width: 20px; }
 .sidebar-badge { margin-left: auto; background: var(--accent2); color: #091413; border-radius: 10px; font-size: 10px; font-weight: 700; padding: 2px 7px; }
 .dash-content { flex: 1; padding: 24px; overflow-y: auto; }
 .dash-header { margin-bottom: 24px; }
