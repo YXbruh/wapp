@@ -393,3 +393,32 @@ CREATE TABLE AuditLog (
     CONSTRAINT FK_Audit_User FOREIGN KEY (PerformedByID) REFERENCES Users(UserID)
 );
 GO
+
+INSERT INTO Roles (RoleName, Description) VALUES
+    ('Student',  'Authenticated learner with access to courses, labs, and quizzes'),
+    ('Lecturer', 'Content creator who can upload chapters and manage quizzes'),
+    ('Admin',    'Super administrator with full system access');
+GO
+
+INSERT INTO SystemConfiguration (ConfigKey, ConfigValue, Description) VALUES
+    ('MinPasswordLength',         '8',    'Minimum number of characters required for a password'),
+    ('MaxFailedLoginAttempts',    '5',    'Account lockout threshold for failed login attempts'),
+    ('SessionTimeoutMinutes',     '30',   'Idle session timeout in minutes'),
+    ('AdminSessionTimeoutMinutes','15',   'Idle session timeout for admin accounts'),
+    ('MaxAdminConcurrentSessions','2',    'Maximum concurrent sessions allowed per admin account'),
+    ('DefaultPassMark',           '50',   'Default quiz pass percentage'),
+    ('MaintenanceMode',           'false','Set to true to show maintenance page to all users');
+GO
+
+INSERT INTO Achievements (BadgeName, Description, PointsGranted, TriggerType) VALUES
+    ('First Login',        'Logged into CyberShield Academy for the first time',   10,  'Login'),
+    ('First Enrollment',   'Enrolled in your first course',                         20,  'Enroll'),
+    ('First Quiz Passed',  'Passed a quiz for the first time',                      50,  'QuizPass'),
+    ('First Lab Completed','Completed a virtual lab for the first time',            50,  'LabComplete'),
+    ('Lab Master',         'Completed 10 or more virtual labs',                    200,  'LabComplete'),
+    ('Quiz Ace',           'Scored 100% on any quiz',                              100,  'QuizPass'),
+    ('Course Graduate',    'Completed an entire course',                           300,  'CourseComplete'),
+    ('7-Day Streak',       'Logged in for 7 consecutive days',                     150,  'Streak'),
+    ('30-Day Streak',      'Logged in for 30 consecutive days',                    500,  'Streak'),
+    ('Network Scanner',    'Unlocked Network Scanning skill tag via a lab',        100,  'LabComplete');
+GO

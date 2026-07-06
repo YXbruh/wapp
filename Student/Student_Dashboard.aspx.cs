@@ -7,12 +7,12 @@ namespace CSA.Student
     {
         protected void Page_Load(object sender, EventArgs e)
         {
-            // Auth guard
-            if (Session["UserID"] == null)
-            {
-                Response.Redirect("~/Login.aspx");
-                return;
-            }
+            // Auth guard                                                       //remove to bypass login for testing
+            //if (Session["UserID"] == null)
+            //{
+            //    Response.Redirect("~/Login.aspx");
+            //    return;
+            //}
 
             if (!IsPostBack)
                 LoadDashboard();
@@ -20,7 +20,7 @@ namespace CSA.Student
 
         private void LoadDashboard()
         {
-            int userId = (int)Session["UserID"];
+            //int userId = (int)Session["UserID"];                              //remove to bypass login for testing
             litName.Text = Session["FullName"] as string ?? "Student";
 
             // TODO: replace with real DB calls

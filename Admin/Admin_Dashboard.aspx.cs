@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Data;
 using System.Web.UI;
 using System.Web.UI.WebControls;
 
@@ -9,11 +10,11 @@ namespace CSA.Admin
         protected void Page_Load(object sender, EventArgs e)
         {
             // Auth + role guard
-            if (Session["UserID"] == null || Session["Role"] as string != "Admin")
-            {
-                Response.Redirect("~/Login.aspx");
-                return;
-            }
+            //if (Session["UserID"] == null || Session["Role"] as string != "Admin")     //Bypass login for testing
+            //{
+            //    Response.Redirect("~/Login.aspx");
+            //    return;
+            //}
 
             if (!IsPostBack)
                 LoadDashboard();
@@ -46,14 +47,14 @@ namespace CSA.Admin
 
         protected void rptUsers_ItemCommand(object source, RepeaterCommandEventArgs e)
         {
-            int userId = Convert.ToInt32(e.CommandArgument);
+            int userId = Convert.ToInt32(e.CommandArgument);                      //Bypass login for testing
             if (e.CommandName == "Edit")
-                Response.Redirect($"~/Admin/EditUser.aspx?id={userId}");
-            else if (e.CommandName == "Delete")
-            {
-                // TODO: AdminService.DeleteUser(userId);
-                LoadDashboard();
-            }
+                Response.Redirect($"~/Admin/EditUser.aspx?id={userId}");          //Bypass login for testing
+            //else if (e.CommandName == "Delete")
+            //{
+            //TODO: AdminService.DeleteUser(userId);
+            //LoadDashboard();
+            //}
         }
 
         protected void lbExport_Click(object sender, EventArgs e)
@@ -62,11 +63,11 @@ namespace CSA.Admin
         }
 
         // Helper methods called from markup
-        public string GetRoleBadge(string role) =>
-            role == "Admin" ? "badge-red" : role == "Instructor" ? "badge-green" : "badge-blue";
+        //public string GetRoleBadge(string role) =>                                                                //Bypass login for testing
+        //role == "Admin" ? "badge-red" : role == "Instructor" ? "badge-green" : "badge-blue";            //Bypass login for testing
 
-        public string GetStatusBadge(string isActive) =>
-            isActive == "True" ? "badge-green" : "badge-amber";
+        //public string GetStatusBadge(string isActive) =>                                      //Bypass login for testing
+        //isActive == "True" ? "badge-green" : "badge-amber";                                       //Bypass login for testing
 
         protected void lbLogout_Click(object sender, EventArgs e)
         {

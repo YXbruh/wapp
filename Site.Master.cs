@@ -7,9 +7,13 @@ namespace CSA
     {
         protected void Page_Load(object sender, EventArgs e)
         {
+            Session["UserID"] = 999;
+            Session["Role"] = "Admin";
+            Session["FullName"] = "Admin Tester";
+
             // Show/hide nav items and avatar based on session role
             bool isLoggedIn = Session["UserID"] != null;
-            string role = Session["Role"] as string ?? "";
+            string role = Session["Role"] as string ??                            
 
             pnlGuest.Visible = !isLoggedIn;
             pnlUser.Visible = isLoggedIn;

@@ -17,8 +17,8 @@ namespace CSA
         {
             if (!Page.IsValid) return;
 
-            string email = tbEmail.Text.Trim();
-            string password = tbPassword.Text;
+            string email = tbEmail.Text.Trim().ToLower();
+            string password = tbPassword.Text.Trim();
 
             // TODO: replace with your DB authentication call
             // Example: bool ok = UserService.Authenticate(email, password, out string role, out int userId, out string fullName);
@@ -26,6 +26,26 @@ namespace CSA
             string role = "";
             int userId = 0;
             string fullName = "";
+
+            // ============================================================
+            // HARDCODED TESTING BYPASS (No Database Required)
+            // ============================================================
+            if (email == "admin@test.com" && password == "admin123")
+            {
+                ok = true;
+                role = "Admin";
+                userId = 999;
+                fullName = "Admin Tester";
+            }
+            // Add additional student profiles here if needed for testing:
+            else if (email == "student@test.com" && password == "student123")
+            {
+                ok = true;
+                role = "Student";
+                userId = 888;
+                fullName = "John Student";
+            }
+            // ============================================================
 
             if (ok)
             {
@@ -42,7 +62,7 @@ namespace CSA
             else
             {
                 pnlError.Visible = true;
-                litError.Text = "Invalid email or password. Please try again.";
+                litError.Text = $"Invalid. Server received: Email='{email}' | Pass='{password}'";
             }
         }
 
@@ -50,9 +70,9 @@ namespace CSA
         {
             string role = Session["Role"] as string ?? "";
             if (role == "Admin")
-                Response.Redirect("~/Admin/Dashboard.aspx");
+                Response.Redirect("~/Admin/Admin_Dashboard.aspx");
             else
-                Response.Redirect("~/Student/Dashboard.aspx");
+                Response.Redirect("~/Student/Student_Dashboard.aspx");
         }
     }
 
