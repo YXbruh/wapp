@@ -82,7 +82,7 @@
             </div>
 
             <!-- Submit -->
-            <asp:Button ID="btnLogin" runat="server" Text="" CssClass="form-submit"
+            <asp:Button ID="btnLogin" runat="server" Text="Sign In" CssClass="form-submit"
                 ValidationGroup="LoginGroup" OnClick="btnLogin_Click" UseSubmitBehavior="true">
             </asp:Button>
             <%-- Button label set in code-behind to avoid encoding issues --%>
