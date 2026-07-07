@@ -168,7 +168,7 @@ a:hover { color: var(--accent3); }
     display: flex; align-items: center; justify-content: center; gap: 8px;
 }
 
-.form-submit:hover { background: var(--accent3); }
+.form-submit:hover { background: var(--accent1); }
 .val-hint { font-size: 11px; color: var(--text3); margin-top: 4px; display: flex; align-items: center; gap: 4px; }
 .val-error { font-size: 11px; color: var(--danger); margin-top: 4px; display: flex; align-items: center; gap: 4px; }
 .validation-summary-errors {

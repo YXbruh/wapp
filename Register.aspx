@@ -123,7 +123,7 @@
 
             </div>
 
-            <asp:Button ID="btnRegister" runat="server" Text="" CssClass="form-submit"
+            <asp:Button ID="btnRegister" runat="server" Text="Sign Up" CssClass="form-submit"
                 OnClick="btnRegister_Click" />
 
             <div class="form-footer">
