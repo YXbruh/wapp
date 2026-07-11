@@ -15,8 +15,8 @@ namespace CSA.Lecturer
 
         protected void Page_Load(object sender, EventArgs e)
         {
-            //if (Session["UserID"] == null || Session["Role"] as string != "Instructor")           //Bypass login for testing
-            //{ Response.Redirect("~/Login.aspx"); return; }
+            if (Session["UserID"] == null || Session["Role"] as string != "Lecturer")
+            { Response.Redirect("~/Login.aspx"); return; }
 
             if (!IsPostBack)
             {
@@ -28,14 +28,14 @@ namespace CSA.Lecturer
 
         private void LoadCourseDropdown()
         {
-            //int userId = (int)Session["UserID"];                                                  //Bypass login for testing
+            //string userId = Session["UserID"].ToString();                                                  //Bypass login for testing
             ddlCourse.Items.Clear();
-            ddlCourse.Items.Add(new ListItem("— Select Course —", ""));
+            ddlCourse.Items.Add(new ListItem("� Select Course �", ""));
             // TODO: foreach (var c in CourseService.GetByInstructor(userId))
             //           ddlCourse.Items.Add(new ListItem(c.CourseName, c.CourseID.ToString()));
         }
 
-        // ── Tab switching ──────────────────────────────────────
+        // -- Tab switching --------------------------------------
         protected void tabChapter_Click(object sender, EventArgs e) { ActivateTab("Chapter"); LoadContentList(); }
         protected void tabArticle_Click(object sender, EventArgs e) { ActivateTab("Article"); LoadContentList(); }
         protected void tabMedia_Click(object sender, EventArgs e) { ActivateTab("Media"); LoadContentList(); }
@@ -65,7 +65,7 @@ namespace CSA.Lecturer
 
         private void LoadContentList()
         {
-            //int userId = (int)Session["UserID"];                                                  //Bypass login for testing
+            //string userId = Session["UserID"].ToString();                                                  //Bypass login for testing
             string tab = hfActiveTab.Value;
             // TODO:
             // var list = ContentService.GetByInstructorAndType(userId, tab, tbSearch.Text.Trim());
@@ -77,12 +77,12 @@ namespace CSA.Lecturer
             pnlEmpty.Visible = true;
         }
 
-        // ── Save ──────────────────────────────────────────────
+        // -- Save ----------------------------------------------
         protected void btnSave_Click(object sender, EventArgs e)
         {
             if (!Page.IsValid) return;
-            //int userId = (int)Session["UserID"];                                                  //Bypass login for testing
-            int editId = Convert.ToInt32(hfEditID.Value);
+            //string userId = Session["UserID"]?.ToString() ?? "";                                                  //Bypass login for testing
+            string editId = hfEditID.Value;
             string tab = hfActiveTab.Value;
 
             switch (tab)
@@ -95,7 +95,7 @@ namespace CSA.Lecturer
 
         private void SaveChapter(int userId, int editId)
         {
-            // Regex: title must be 3–200 printable chars
+            // Regex: title must be 3�200 printable chars
             if (!Regex.IsMatch(tbTitle.Text.Trim(), @"^[\w\s\-\:\.\,]{3,200}$"))
             { ShowError("Title contains invalid characters."); return; }
 
@@ -140,7 +140,7 @@ namespace CSA.Lecturer
             if (fuMedia.PostedFile.ContentLength > MaxBytes)
             { ShowError("File exceeds 10 MB limit."); return; }
 
-            // Sanitise filename — alphanumeric + dash/underscore/dot only
+            // Sanitise filename � alphanumeric + dash/underscore/dot only
             string safeName = Regex.Replace(Path.GetFileNameWithoutExtension(fuMedia.FileName), @"[^\w\-]", "_");
             string fileName = $"{userId}_{DateTime.Now:yyyyMMddHHmmss}_{safeName}{ext}";
             string savePath = Server.MapPath($"~/App_Data/Uploads/{fileName}");
@@ -160,11 +160,11 @@ namespace CSA.Lecturer
 
         protected void rptContent_ItemCommand(object source, RepeaterCommandEventArgs e)
         {
-            int id = Convert.ToInt32(e.CommandArgument);
+            string id = e.CommandArgument.ToString();
             if (e.CommandName == "Edit")
             {
                 // TODO: populate form fields from ContentService.GetById(id)
-                hfEditID.Value = id.ToString();
+                hfEditID.Value = id;
                 litFormTitle.Text = $"Edit {hfActiveTab.Value}";
                 lbCancelEdit.Visible = true;
                 btnSave.Text = $"Update {hfActiveTab.Value}";
@@ -198,7 +198,7 @@ namespace CSA.Lecturer
         { pnlError.Visible = true; litError.Text = Server.HtmlEncode(msg); pnlSuccess.Visible = false; }
 
         protected void lbLogout_Click(object sender, EventArgs e)
-        { Session.Clear(); Session.Abandon(); Response.Redirect("~/Login.aspx"); }
+        { Session.Clear(); Session.Abandon(); Response.Redirect("~/Login.aspx?msg=loggedout"); }
     }
 
 }

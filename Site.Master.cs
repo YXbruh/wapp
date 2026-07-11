@@ -7,20 +7,16 @@ namespace CSA
     {
         protected void Page_Load(object sender, EventArgs e)
         {
-            Session["UserID"] = 999;
-            Session["Role"] = "Admin";
-            Session["FullName"] = "Admin Tester";
-
             // Show/hide nav items and avatar based on session role
             bool isLoggedIn = Session["UserID"] != null;
-            string role = Session["Role"] as string ??                            
+            string role = Session["Role"] as string ?? "";
 
             pnlGuest.Visible = !isLoggedIn;
             pnlUser.Visible = isLoggedIn;
             pnlStudentNav.Visible = isLoggedIn && role != "Admin";
             pnlAdminNav.Visible = isLoggedIn && role == "Admin";
 
-            // Set avatar initials from session
+            // Set avatar initials and profile link from session
             if (isLoggedIn)
             {
                 string name = Session["FullName"] as string ?? "User";
@@ -28,7 +24,10 @@ namespace CSA
                 string initials = parts.Length >= 2
                     ? $"{parts[0][0]}{parts[parts.Length - 1][0]}"
                     : name.Substring(0, Math.Min(2, name.Length));
-                lbProfile.Text = initials.ToUpper();
+                lbProfile.InnerHtml = initials.ToUpper();
+                lbProfile.HRef = role == "Admin"
+                    ? ResolveUrl("~/Admin/Profile.aspx")
+                    : ResolveUrl("~/Student/Profile.aspx");
             }
 
             // Highlight active nav link

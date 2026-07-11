@@ -2,6 +2,7 @@
 using System.Data;
 using System.Web.UI;
 using System.Web.UI.WebControls;
+using CSA.Services;
 
 namespace CSA.Admin
 {
@@ -9,12 +10,8 @@ namespace CSA.Admin
     {
         protected void Page_Load(object sender, EventArgs e)
         {
-            // Auth + role guard
-            //if (Session["UserID"] == null || Session["Role"] as string != "Admin")     //Bypass login for testing
-            //{
-            //    Response.Redirect("~/Login.aspx");
-            //    return;
-            //}
+            if (Session["UserID"] == null || Session["Role"] as string != "Admin")
+            { Response.Redirect("~/Login.aspx"); return; }
 
             if (!IsPostBack)
                 LoadDashboard();
@@ -24,56 +21,92 @@ namespace CSA.Admin
         {
             litLastUpdated.Text = DateTime.Now.ToString("dd MMM yyyy, hh:mm tt");
 
-            // TODO: load real stats from DB
-            // var stats = AdminService.GetPlatformStats();
-            // litTotalUsers.Text   = stats.UserCount.ToString("N0");
-            // litActiveCourses.Text= stats.CourseCount.ToString();
-            // litLabsOnline.Text   = stats.LabCount.ToString();
-            // litAlerts.Text       = stats.AlertCount.ToString();
-            // litAlertCount.Text   = stats.AlertCount.ToString();
+            DataTable stats = AdminService.GetPlatformStats();
+            if (stats.Rows.Count > 0)
+            {
+                DataRow row = stats.Rows[0];
+                litTotalUsers.Text = Convert.ToInt32(row["UserCount"]).ToString("N0");
+                litActiveCourses.Text = row["CourseCount"].ToString();
+                litLabsOnline.Text = row["LabCount"].ToString();
+                int alertCount = Convert.ToInt32(row["AlertCount"]);
+                litAlerts.Text = alertCount.ToString();
+                litAlertCount.Text = alertCount.ToString();
+                litAlertStatus.Text = alertCount > 0 ? "Needs attention" : "All clear";
+            }
 
-            // TODO: bind user table
-            // rptUsers.DataSource = AdminService.GetUsers(tbSearch.Text.Trim());
-            // rptUsers.DataBind();
-            pnlNoUsers.Visible = true;
+            rptUserChart.DataSource = GetChartPercent("Users by Role");
+            rptUserChart.DataBind();
+
+            rptCourseChart.DataSource = GetChartPercent("Courses by Level");
+            rptCourseChart.DataBind();
+
+            rptLabChart.DataSource = GetChartPercent("Labs by Status");
+            rptLabChart.DataBind();
+
+            DataTable users = UserService.Search("", "", "");
+            rptUsers.DataSource = users;
+            rptUsers.DataBind();
+            pnlNoUsers.Visible = users.Rows.Count == 0;
+        }
+
+        private DataTable GetChartPercent(string group)
+        {
+            DataTable all = AdminService.GetChartData();
+            DataTable dt = all.Clone();
+            dt.Columns.Add("Percent", typeof(int));
+            DataRow[] rows = all.Select("ChartGroup = '" + group.Replace("'", "''") + "'");
+            int maxVal = 1;
+            foreach (DataRow r in rows) maxVal = Math.Max(maxVal, Convert.ToInt32(r["Value"]));
+            foreach (DataRow r in rows)
+            {
+                DataRow nr = dt.NewRow();
+                nr["ChartGroup"] = r["ChartGroup"];
+                nr["Label"] = r["Label"];
+                nr["Value"] = r["Value"];
+                nr["Percent"] = (int)Math.Round(Convert.ToDouble(r["Value"]) / maxVal * 100);
+                dt.Rows.Add(nr);
+            }
+            return dt;
         }
 
         protected void tbSearch_TextChanged(object sender, EventArgs e)
         {
-            // TODO: re-bind with search filter
-            // rptUsers.DataSource = AdminService.GetUsers(tbSearch.Text.Trim());
-            // rptUsers.DataBind();
+            DataTable users = UserService.Search(tbSearch.Text.Trim(), "", "");
+            rptUsers.DataSource = users;
+            rptUsers.DataBind();
+            pnlNoUsers.Visible = users.Rows.Count == 0;
         }
 
         protected void rptUsers_ItemCommand(object source, RepeaterCommandEventArgs e)
         {
-            int userId = Convert.ToInt32(e.CommandArgument);                      //Bypass login for testing
+            string userId = e.CommandArgument.ToString();
             if (e.CommandName == "Edit")
-                Response.Redirect($"~/Admin/EditUser.aspx?id={userId}");          //Bypass login for testing
-            //else if (e.CommandName == "Delete")
-            //{
-            //TODO: AdminService.DeleteUser(userId);
-            //LoadDashboard();
-            //}
+                Response.Redirect($"~/Admin/EditUser.aspx?id={userId}");
+            else if (e.CommandName == "Delete")
+            {
+                UserService.Delete(userId);
+                AdminService.LogAudit(Session["UserID"].ToString(),
+                    "DELETE_USER", "Users", userId, "", "");
+                LoadDashboard();
+            }
         }
 
         protected void lbExport_Click(object sender, EventArgs e)
         {
-            // TODO: generate CSV export
+            string csv = UserService.ExportCsv("", "", "");
+            Response.ContentType = "text/csv";
+            Response.AddHeader("Content-Disposition", "attachment;filename=users.csv");
+            Response.Write(csv);
+            Response.End();
         }
 
-        // Helper methods called from markup
-        //public string GetRoleBadge(string role) =>                                                                //Bypass login for testing
-        //role == "Admin" ? "badge-red" : role == "Instructor" ? "badge-green" : "badge-blue";            //Bypass login for testing
+        public string GetRoleBadge(string role) =>
+            role == "Admin" ? "badge-red" : role == "Lecturer" ? "badge-green" : "badge-blue";
 
-        //public string GetStatusBadge(string isActive) =>                                      //Bypass login for testing
-        //isActive == "True" ? "badge-green" : "badge-amber";                                       //Bypass login for testing
+        public string GetStatusBadge(string isActive) =>
+            isActive == "True" ? "badge-green" : "badge-amber";
 
         protected void lbLogout_Click(object sender, EventArgs e)
-        {
-            Session.Clear();
-            Session.Abandon();
-            Response.Redirect("~/Login.aspx");
-        }
+        { Session.Clear(); Session.Abandon(); Response.Redirect("~/Login.aspx?msg=loggedout"); }
     }
 }

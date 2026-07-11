@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Web.UI;
 using System.Web.UI.WebControls;
+using CSA.Services;
 
 namespace CSA
 {
-
     public partial class Register : Page
     {
         protected void Page_Load(object sender, EventArgs e) { }
@@ -22,20 +22,16 @@ namespace CSA
             string email = tbEmail.Text.Trim();
             string password = tbPassword.Text;
 
-            // TODO: Hash password (e.g. BCrypt) and insert into DB
-            // Example:
-            // bool success = UserService.Register(fullName, email, password, out string error);
-            bool success = false;
-            string error = "Registration is not yet connected to the database.";
+            bool success = UserService.Register(fullName, email, password, out string error);
 
             if (success)
             {
-                Response.Redirect("~/Login.aspx?registered=1");
+                Response.Redirect("~/Login.aspx?msg=registered");
             }
             else
             {
                 pnlError.Visible = true;
-                litError.Text = Server.HtmlEncode(error);
+                litError.Text = error;
             }
         }
     }

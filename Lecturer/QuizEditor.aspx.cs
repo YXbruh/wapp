@@ -12,16 +12,16 @@ namespace CSA.Lecturer
     {
         protected void Page_Load(object sender, EventArgs e)
         {
-            //if (Session["UserID"] == null || Session["Role"] as string != "Instructor")           //Bypass login for testing
-            //{ Response.Redirect("~/Login.aspx"); return; }
+            if (Session["UserID"] == null || Session["Role"] as string != "Lecturer")
+            { Response.Redirect("~/Login.aspx"); return; }
             if (!IsPostBack) { LoadQuizDropdown(); LoadQuestions(); }
         }
 
         private void LoadQuizDropdown()
         {
-            //int userId = (int)Session["UserID"];                                                  //Bypass login for testing
+            //string userId = Session["UserID"].ToString();                                                  //Bypass login for testing
             ddlQuiz.Items.Clear();
-            ddlQuiz.Items.Add(new ListItem("— Select Quiz —", ""));
+            ddlQuiz.Items.Add(new ListItem("� Select Quiz �", ""));
             // TODO: foreach (var q in QuizService.GetByInstructor(userId))
             //           ddlQuiz.Items.Add(new ListItem(q.QuizName, q.QuizID.ToString()));
         }
@@ -36,7 +36,7 @@ namespace CSA.Lecturer
 
         private void LoadQuestions()
         {
-            //int userId = (int)Session["UserID"];                                              //Bypass login for testing
+            //string userId = Session["UserID"].ToString();                                              //Bypass login for testing
             // TODO:
             // var list = QuizService.GetQuestions(userId, tbSearch.Text.Trim(), ddlFilterType.SelectedValue);
             // litCount.Text          = list.Count.ToString();
@@ -50,13 +50,13 @@ namespace CSA.Lecturer
         {
             if (!Page.IsValid) return;
 
-            // Validate question text: 10–1000 chars
+            // Validate question text: 10�1000 chars
             if (tbQuestion.Text.Trim().Length < 10)
             { pnlError.Visible = true; litError.Text = "Question must be at least 10 characters."; return; }
 
             string qType = ddlQType.SelectedValue;
-            int qId = Convert.ToInt32(hfQuestionID.Value);
-            //int userId = (int)Session["UserID"];                                              //Bypass login for testing
+            string qId = hfQuestionID.Value;
+            //string userId = Session["UserID"].ToString();                                              //Bypass login for testing
 
             // Determine correct answer key
             string correctKey = "";
@@ -91,7 +91,7 @@ namespace CSA.Lecturer
             //   ddlMatchStrategy.SelectedValue, tbExplanation.Text.Trim(), points);
 
             pnlSuccess.Visible = true;
-            litSuccess.Text = qId == 0 ? "Question saved to bank." : "Question updated.";
+            litSuccess.Text = string.IsNullOrEmpty(qId) ? "Question saved to bank." : "Question updated.";
             pnlError.Visible = false;
             ResetForm();
             LoadQuestions();
@@ -99,11 +99,11 @@ namespace CSA.Lecturer
 
         protected void rptQuestions_ItemCommand(object source, RepeaterCommandEventArgs e)
         {
-            int id = Convert.ToInt32(e.CommandArgument);
+            string id = e.CommandArgument.ToString();
             if (e.CommandName == "Edit")
             {
                 // TODO: var q = QuizService.GetQuestionById(id); populate fields
-                hfQuestionID.Value = id.ToString();
+                hfQuestionID.Value = id;
                 litFormTitle.Text = "Edit Question";
                 lbCancel.Visible = true;
                 btnSaveQuestion.Text = "Update Question";
@@ -136,7 +136,7 @@ namespace CSA.Lecturer
             t == "MCQ" ? "badge-blue" : t == "StringMatch" ? "badge-amber" : "badge-green";
 
         protected void lbLogout_Click(object sender, EventArgs e)
-        { Session.Clear(); Session.Abandon(); Response.Redirect("~/Login.aspx"); }
+        { Session.Clear(); Session.Abandon(); Response.Redirect("~/Login.aspx?msg=loggedout"); }
     }
 
 }

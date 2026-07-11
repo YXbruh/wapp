@@ -39,10 +39,10 @@
                 <a href="~/Default.aspx"           runat="server" class="nav-link"><i class="ti ti-home" aria-hidden="true"></i>Home</a>
                 <a href="~/Courses.aspx"           runat="server" class="nav-link"><i class="ti ti-books" aria-hidden="true"></i>Courses</a>
                 <asp:Panel ID="pnlStudentNav" runat="server" CssClass="d-flex" Visible="false">
-                    <a href="~/Student/Dashboard.aspx" runat="server" class="nav-link"><i class="ti ti-layout-dashboard" aria-hidden="true"></i>Dashboard</a>
+                    <a href="~/Student/Student_Dashboard.aspx" runat="server" class="nav-link"><i class="ti ti-layout-dashboard" aria-hidden="true"></i>Dashboard</a>
                 </asp:Panel>
                 <asp:Panel ID="pnlAdminNav" runat="server" CssClass="d-flex" Visible="false">
-                    <a href="~/Admin/Dashboard.aspx" runat="server" class="nav-link"><i class="ti ti-settings" aria-hidden="true"></i>Admin</a>
+                    <a href="~/Admin/Admin_Dashboard.aspx" runat="server" class="nav-link"><i class="ti ti-settings" aria-hidden="true"></i>Admin</a>
                 </asp:Panel>
             </div>
 
@@ -62,9 +62,9 @@
                     </a>
                 </asp:Panel>
                 <asp:Panel ID="pnlUser" runat="server" Visible="false">
-                    <asp:LinkButton ID="lbProfile" runat="server" CssClass="nav-avatar"
-                                    PostBackUrl="~/Student/Profile.aspx"
-                                    ToolTip="My profile">CS</asp:LinkButton>
+                    <a id="lbProfile" runat="server" class="nav-avatar"
+                       href="~/Student/Profile.aspx"
+                       ToolTip="My profile">CS</a>
                 </asp:Panel>
             </div>
 
@@ -75,10 +75,73 @@
             <asp:ContentPlaceHolder ID="MainContent" runat="server" />
         </main>
 
+        <!-- Login success modal -->
+        <div id="loginSuccessModal" class="modal-overlay" style="display:none">
+            <div class="modal-box">
+                <div class="modal-icon"><i class="ti ti-circle-check"></i></div>
+                <p class="modal-text">You have signed in successfully!</p>
+                <div style="display:flex;justify-content:center"><button type="button" class="form-submit" onclick="closeLoginSuccess()" style="width:auto;min-width:200px">Continue</button></div>
+            </div>
+        </div>
+
+        <!-- Logout confirmation modal -->
+        <div id="logoutModal" class="modal-overlay" style="display:none">
+            <div class="modal-box">
+                <div class="modal-icon" style="color:var(--danger)"><i class="ti ti-logout"></i></div>
+                <p class="modal-text">Are you sure you want to sign out?</p>
+                <div style="display:flex;justify-content:center;gap:12px">
+                    <button type="button" class="form-submit" onclick="cancelLogout()" style="width:auto;min-width:120px;background:var(--bg2);color:var(--text)">Cancel</button>
+                    <button type="button" class="form-submit" onclick="confirmLogout()" style="width:auto;min-width:120px;background:var(--danger);color:#fff">Sign Out</button>
+                </div>
+            </div>
+        </div>
+
     </form>
 
     <!-- Theme script (reads localStorage, sets correct icon) -->
     <script src="<%= ResolveUrl("~/Scripts/theme.js") %>"></script>
+    <script>
+    var _logoutLink = null;
+
+    function closeLoginSuccess() {
+        document.getElementById('loginSuccessModal').style.display = 'none';
+        if (window.history.replaceState) {
+            var url = window.location.href.split('?')[0];
+            window.history.replaceState({}, document.title, url);
+        }
+    }
+    (function() {
+        var p = new URLSearchParams(window.location.search);
+        if (p.get('login') === 'success') {
+            var m = document.getElementById('loginSuccessModal');
+            if (m) m.style.display = 'flex';
+        }
+    })();
+
+    function showLogoutConfirm(btn) {
+        _logoutLink = btn;
+        document.getElementById('logoutModal').style.display = 'flex';
+        return false;
+    }
+    function cancelLogout() {
+        document.getElementById('logoutModal').style.display = 'none';
+        _logoutLink = null;
+    }
+    function confirmLogout() {
+        document.getElementById('logoutModal').style.display = 'none';
+        if (_logoutLink) {
+            var href = _logoutLink.getAttribute('href');
+            if (href && href.indexOf('__doPostBack') >= 0) {
+                var m = href.match(/__doPostBack\(([^)]+)\)/);
+                if (m) {
+                    var args = m[1].split(',').map(function(s) { return s.trim().replace(/'/g, ''); });
+                    __doPostBack(args[0], args[1]);
+                }
+            }
+        }
+        _logoutLink = null;
+    }
+    </script>
     <asp:ContentPlaceHolder ID="Scripts" runat="server" />
 </body>
 </html>

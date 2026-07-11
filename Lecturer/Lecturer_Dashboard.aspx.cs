@@ -11,14 +11,14 @@ namespace CSA.Lecturer
     {
         protected void Page_Load(object sender, EventArgs e)
         {
-            //if (Session["UserID"] == null || Session["Role"] as string != "Instructor")           //Bypass login for testing
-            //{ Response.Redirect("~/Login.aspx"); return; }
+            if (Session["UserID"] == null || Session["Role"] as string != "Lecturer")
+            { Response.Redirect("~/Login.aspx"); return; }
             if (!IsPostBack) LoadDashboard();
         }
 
         private void LoadDashboard()
         {
-            //int userId = (int)Session["UserID"];                                              //Bypass login for testing
+            //string userId = Session["UserID"].ToString();                                              //Bypass login for testing
             litName.Text = Session["FullName"] as string ?? "Lecturer";
             litDate.Text = DateTime.Now.ToString("dddd, dd MMMM yyyy");
 
@@ -44,7 +44,7 @@ namespace CSA.Lecturer
             t == "Chapter" ? "badge-blue" : t == "Lab" ? "badge-green" : t == "Quiz" ? "badge-amber" : "badge-blue";
 
         protected void lbLogout_Click(object sender, EventArgs e)
-        { Session.Clear(); Session.Abandon(); Response.Redirect("~/Login.aspx"); }
+        { Session.Clear(); Session.Abandon(); Response.Redirect("~/Login.aspx?msg=loggedout"); }
     }
 
 }

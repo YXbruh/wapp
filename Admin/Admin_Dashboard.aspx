@@ -1,6 +1,6 @@
 ﻿<%@ Page Title="Admin Dashboard – CyberShield Academy" Language="C#"
     MasterPageFile="~/Site.Master" AutoEventWireup="true"
-    CodeBehind="Admin_Dashboard.aspx.cs" Inherits="CSA.Admin.Admin_Dashboard" %>
+    CodeFile="Admin_Dashboard.aspx.cs" Inherits="CSA.Admin.Admin_Dashboard" %>
 
 <asp:Content ID="cMain" ContentPlaceHolderID="MainContent" runat="server">
 <div class="dash-layout">
@@ -8,15 +8,17 @@
     <!-- ===== SIDEBAR ===== -->
     <aside class="sidebar" role="navigation" aria-label="Admin menu">
         <div class="sidebar-section">Admin Panel</div>
-        <a href="Dashboard.aspx"      class="sidebar-link active"><i class="ti ti-layout-dashboard"></i>Overview</a>
+        <a href="Admin_Dashboard.aspx" class="sidebar-link active"><i class="ti ti-layout-dashboard"></i>Overview</a>
         <a href="Users.aspx"          class="sidebar-link"><i class="ti ti-users"></i>Users
             <span class="sidebar-badge"><asp:Literal ID="litPendingUsers" runat="server" Text="0" /></span>
         </a>
         <a href="Courses.aspx"        class="sidebar-link"><i class="ti ti-books"></i>Courses</a>
+        <a href="Categories.aspx"     class="sidebar-link"><i class="ti ti-category"></i>Categories</a>
         <a href="ContentReview.aspx"  class="sidebar-link"><i class="ti ti-file-check"></i>Content Review</a>
 
         <div class="sidebar-section">System</div>
         <a href="ActivityLogs.aspx"   class="sidebar-link"><i class="ti ti-activity"></i>Activity Logs</a>
+        <a href="ErrorLogs.aspx"      class="sidebar-link"><i class="ti ti-bug"></i>Error Logs</a>
         <a href="Announcements.aspx"  class="sidebar-link"><i class="ti ti-bell"></i>Announcements</a>
         <a href="Backup.aspx"         class="sidebar-link"><i class="ti ti-database"></i>DB Backup</a>
         <a href="SecurityAlerts.aspx" class="sidebar-link"><i class="ti ti-alert-triangle"></i>Security Alerts
@@ -24,8 +26,8 @@
         </a>
 
         <div class="sidebar-section">Account</div>
-        <asp:LinkButton ID="lbLogout" runat="server" CssClass="sidebar-link"
-                        OnClick="lbLogout_Click">
+        <a href="Profile.aspx" class="sidebar-link"><i class="ti ti-user-circle"></i>My Profile</a>
+        <asp:LinkButton ID="lbLogout" OnClientClick="return showLogoutConfirm(this);" runat="server" CssClass="sidebar-link" OnClick="lbLogout_Click">
             <i class="ti ti-logout"></i>Sign Out
         </asp:LinkButton>
     </aside>
@@ -63,6 +65,58 @@
                 <div class="metric-sub" style="color:var(--danger)">
                     <asp:Literal ID="litAlertStatus" runat="server" Text="All clear" />
                 </div>
+            </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="cards-row" style="gap:16px;margin-bottom:20px">
+            <div class="card" style="flex:1">
+                <div class="card-header">Users by Role</div>
+                <asp:Repeater ID="rptUserChart" runat="server">
+                    <ItemTemplate>
+                        <div style="margin-bottom:8px">
+                            <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text2);margin-bottom:2px">
+                                <span><%# Eval("Label") %></span>
+                                <span><%# Eval("Value") %></span>
+                            </div>
+                            <div class="chart-bar-bg">
+                                <div class="chart-bar-fill" style="width:<%# Eval("Percent") %>%"></div>
+                            </div>
+                        </div>
+                    </ItemTemplate>
+                </asp:Repeater>
+            </div>
+            <div class="card" style="flex:1">
+                <div class="card-header">Courses by Level</div>
+                <asp:Repeater ID="rptCourseChart" runat="server">
+                    <ItemTemplate>
+                        <div style="margin-bottom:8px">
+                            <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text2);margin-bottom:2px">
+                                <span><%# Eval("Label") %></span>
+                                <span><%# Eval("Value") %></span>
+                            </div>
+                            <div class="chart-bar-bg">
+                                <div class="chart-bar-fill" style="width:<%# Eval("Percent") %>%"></div>
+                            </div>
+                        </div>
+                    </ItemTemplate>
+                </asp:Repeater>
+            </div>
+            <div class="card" style="flex:1">
+                <div class="card-header">Labs</div>
+                <asp:Repeater ID="rptLabChart" runat="server">
+                    <ItemTemplate>
+                        <div style="margin-bottom:8px">
+                            <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text2);margin-bottom:2px">
+                                <span><%# Eval("Label") %></span>
+                                <span><%# Eval("Value") %></span>
+                            </div>
+                            <div class="chart-bar-bg">
+                                <div class="chart-bar-fill" style="width:<%# Eval("Percent") %>%"></div>
+                            </div>
+                        </div>
+                    </ItemTemplate>
+                </asp:Repeater>
             </div>
         </div>
 
@@ -120,7 +174,7 @@
                                         </span>
                                     </td>
                                     <td class="text-muted"><%# Eval("EnrolledCount") %> courses</td>
-                                    <td class="text-muted"><%# Eval("JoinedDisplay") %></td>
+                                    <td class="text-muted"><%# Eval("CreatedAt", "{0:dd MMM yyyy}") %></td>
                                     <td>
                                         <div class="action-btns">
                                             <asp:LinkButton runat="server" CssClass="btn-sm secondary"
@@ -131,7 +185,7 @@
                                             <asp:LinkButton runat="server" CssClass="btn-danger"
                                                 CommandName="Delete"
                                                 CommandArgument='<%# Eval("UserID") %>'
-                                                OnClientClick="return confirm('Delete this user?');">
+                                                OnClientClick="return showLogoutConfirm(this);">
                                                 <i class="ti ti-trash"></i> Del
                                             </asp:LinkButton>
                                         </div>
@@ -150,4 +204,12 @@
 
     </main>
 </div>
+</asp:Content>
+<asp:Content ID="cScripts" ContentPlaceHolderID="Scripts" runat="server">
+<style>
+.chart-bar-bg{background:var(--bg2);border-radius:4px;height:8px;overflow:hidden}
+.chart-bar-fill{background:var(--primary);height:100%;border-radius:4px;transition:width .3s ease;min-width:2px}
+.cards-row{display:flex;gap:16px}
+@media(max-width:768px){.cards-row{flex-direction:column}}
+</style>
 </asp:Content>

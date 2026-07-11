@@ -10,14 +10,17 @@
         <a href="Admin_Dashboard.aspx"      class="sidebar-link"><i class="ti ti-layout-dashboard"></i>Overview</a>
         <a href="Users.aspx"          class="sidebar-link"><i class="ti ti-users"></i>Users</a>
         <a href="Courses.aspx"        class="sidebar-link"><i class="ti ti-books"></i>Courses</a>
+        <a href="Categories.aspx"     class="sidebar-link"><i class="ti ti-category"></i>Categories</a>
         <a href="ContentReview.aspx"  class="sidebar-link"><i class="ti ti-file-check"></i>Content Review</a>
         <div class="sidebar-section">System</div>
         <a href="ActivityLogs.aspx"   class="sidebar-link active"><i class="ti ti-activity"></i>Activity Logs</a>
+        <a href="ErrorLogs.aspx"      class="sidebar-link"><i class="ti ti-bug"></i>Error Logs</a>
         <a href="Announcements.aspx"  class="sidebar-link"><i class="ti ti-bell"></i>Announcements</a>
         <a href="Backup.aspx"         class="sidebar-link"><i class="ti ti-database"></i>DB Backup</a>
         <a href="SecurityAlerts.aspx" class="sidebar-link"><i class="ti ti-alert-triangle"></i>Security Alerts</a>
         <div class="sidebar-section">Account</div>
-        <asp:LinkButton ID="lbLogout" runat="server" CssClass="sidebar-link" OnClick="lbLogout_Click">
+        <a href="Profile.aspx" class="sidebar-link"><i class="ti ti-user-circle"></i>My Profile</a>
+        <asp:LinkButton ID="lbLogout" OnClientClick="return showLogoutConfirm(this);" runat="server" CssClass="sidebar-link" OnClick="lbLogout_Click">
             <i class="ti ti-logout"></i>Sign Out
         </asp:LinkButton>
     </aside>
@@ -109,7 +112,7 @@
                                     <td class="fw-bold" style="color:var(--text)"><%# Eval("Action") %></td>
                                     <td class="text-muted" style="max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><%# Eval("Details") %></td>
                                     <td class="text-muted" style="font-family:monospace;font-size:12px"><%# Eval("IPAddress") %></td>
-                                    <td class="text-muted text-small"><%# Eval("TimestampDisplay") %></td>
+                                    <td class="text-muted text-small"><%# Eval("OccurredAt", "{0:dd MMM yyyy HH:mm}") %></td>
                                 </tr>
                             </ItemTemplate>
                         </asp:Repeater>

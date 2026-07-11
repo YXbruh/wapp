@@ -1,41 +1,43 @@
 ﻿using System;
-using System.Data.SqlClient;
-using System.Reflection.Emit;
+using System.Data;
 using System.Web.UI;
 using System.Web.UI.WebControls;
-using WebGrease.Activities;
+using CSA.DataAccess;
+using CSA.Services;
 
 namespace CSA.Admin
 {
-    
     public partial class Backup : Page
     {
         protected void Page_Load(object sender, EventArgs e)
         {
-            //if (Session["UserID"] == null || Session["Role"] as string != "Admin")        //bypass login for testing
-            //{ Response.Redirect("~/Login.aspx"); return; }
+            if (Session["UserID"] == null || Session["Role"] as string != "Admin")
+            { Response.Redirect("~/Login.aspx"); return; }
             if (!IsPostBack) LoadBackups();
         }
 
         private void LoadBackups()
         {
-            // TODO:
-            // var backups = BackupService.GetAll();
-            // litLastBackup.Text  = backups.Count > 0 ? backups[0].CreatedAt.ToString("dd MMM yyyy HH:mm") : "Never";
-            // litBackupCount.Text = backups.Count.ToString();
-            // rptBackups.DataSource = backups; rptBackups.DataBind();
-            // pnlEmpty.Visible = backups.Count == 0;
-            // litDbStatus.Text = BackupService.TestConnection() ? "Online" : "Offline";
-            pnlEmpty.Visible = true;
+            DataTable backups = AdminService.GetBackups();
+
+            if (backups.Rows.Count > 0)
+                litLastBackup.Text = backups.Rows[0]["CreatedDisplay"].ToString();
+            else
+                litLastBackup.Text = "Never";
+
+            litBackupCount.Text = backups.Rows.Count.ToString();
+            rptBackups.DataSource = backups;
+            rptBackups.DataBind();
+            pnlEmpty.Visible = backups.Rows.Count == 0;
+            litDbStatus.Text = AdminService.TestConnection() ? "Online" : "Offline";
         }
 
         protected void btnBackup_Click(object sender, EventArgs e)
         {
-            int adminId = (int)Session["UserID"];
-            // TODO:
-            // bool ok = BackupService.Execute(tbLabel.Text.Trim(), ddlType.SelectedValue, adminId, out string err);
-            bool ok = false;
-            string err = "Backup service not yet connected.";
+            string adminId = Session["UserID"].ToString();
+
+            bool ok = AdminService.ExecuteBackup(
+                tbLabel.Text.Trim(), ddlType.SelectedValue, adminId, out string err);
 
             if (ok)
             {
@@ -48,7 +50,7 @@ namespace CSA.Admin
             else
             {
                 pnlError.Visible = true;
-                litError.Text = $"Backup failed: {Server.HtmlEncode(err)}";
+                litError.Text = $"Backup failed: {err}";
                 pnlSuccess.Visible = false;
             }
         }
@@ -58,18 +60,43 @@ namespace CSA.Admin
             int id = Convert.ToInt32(e.CommandArgument);
             if (e.CommandName == "Download")
             {
-                // TODO: BackupService.StreamDownload(id, Response);
+                DataTable dt = DBHelper.ExecuteQuery(
+                    "SELECT FilePath FROM DatabaseBackups WHERE BackupID = @ID",
+                    new System.Data.SqlClient.SqlParameter("@ID", id));
+                if (dt.Rows.Count > 0)
+                {
+                    string path = dt.Rows[0]["FilePath"].ToString();
+                    if (System.IO.File.Exists(path))
+                    {
+                        Response.ContentType = "application/octet-stream";
+                        Response.AddHeader("Content-Disposition",
+                            $"attachment;filename={System.IO.Path.GetFileName(path)}");
+                        Response.WriteFile(path);
+                        Response.End();
+                    }
+                }
             }
             else if (e.CommandName == "Delete")
             {
-                // TODO: BackupService.Delete(id);
-                pnlSuccess.Visible = true; litSuccess.Text = "Backup deleted.";
+                DataTable dt = DBHelper.ExecuteQuery(
+                    "SELECT FilePath FROM DatabaseBackups WHERE BackupID = @ID",
+                    new System.Data.SqlClient.SqlParameter("@ID", id));
+                if (dt.Rows.Count > 0)
+                {
+                    string path = dt.Rows[0]["FilePath"].ToString();
+                    if (System.IO.File.Exists(path))
+                        System.IO.File.Delete(path);
+                }
+                DBHelper.ExecuteNonQuery(
+                    "DELETE FROM DatabaseBackups WHERE BackupID = @ID",
+                    new System.Data.SqlClient.SqlParameter("@ID", id));
+                pnlSuccess.Visible = true;
+                litSuccess.Text = "Backup deleted.";
                 LoadBackups();
             }
         }
 
         protected void lbLogout_Click(object sender, EventArgs e)
-        { Session.Clear(); Session.Abandon(); Response.Redirect("~/Login.aspx"); }
+        { Session.Clear(); Session.Abandon(); Response.Redirect("~/Login.aspx?msg=loggedout"); }
     }
-
 }

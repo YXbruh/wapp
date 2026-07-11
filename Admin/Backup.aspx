@@ -10,14 +10,17 @@
         <a href="Admin_Dashboard.aspx"      class="sidebar-link"><i class="ti ti-layout-dashboard"></i>Overview</a>
         <a href="Users.aspx"          class="sidebar-link"><i class="ti ti-users"></i>Users</a>
         <a href="Courses.aspx"        class="sidebar-link"><i class="ti ti-books"></i>Courses</a>
+        <a href="Categories.aspx"     class="sidebar-link"><i class="ti ti-category"></i>Categories</a>
         <a href="ContentReview.aspx"  class="sidebar-link"><i class="ti ti-file-check"></i>Content Review</a>
         <div class="sidebar-section">System</div>
         <a href="ActivityLogs.aspx"   class="sidebar-link"><i class="ti ti-activity"></i>Activity Logs</a>
+        <a href="ErrorLogs.aspx"      class="sidebar-link"><i class="ti ti-bug"></i>Error Logs</a>
         <a href="Announcements.aspx"  class="sidebar-link"><i class="ti ti-bell"></i>Announcements</a>
         <a href="Backup.aspx"         class="sidebar-link active"><i class="ti ti-database"></i>DB Backup</a>
         <a href="SecurityAlerts.aspx" class="sidebar-link"><i class="ti ti-alert-triangle"></i>Security Alerts</a>
         <div class="sidebar-section">Account</div>
-        <asp:LinkButton ID="lbLogout" runat="server" CssClass="sidebar-link" OnClick="lbLogout_Click">
+        <a href="Profile.aspx" class="sidebar-link"><i class="ti ti-user-circle"></i>My Profile</a>
+        <asp:LinkButton ID="lbLogout" OnClientClick="return showLogoutConfirm(this);" runat="server" CssClass="sidebar-link" OnClick="lbLogout_Click">
             <i class="ti ti-logout"></i>Sign Out
         </asp:LinkButton>
     </aside>
@@ -98,7 +101,7 @@
 
                 <asp:Button ID="btnBackup" runat="server" CssClass="btn-primary"
                     OnClick="btnBackup_Click"
-                    OnClientClick="return confirm('Start a new database backup now?');"
+                    OnClientClick="return showLogoutConfirm(this);"
                     Text="Start Backup" />
             </div>
 
@@ -135,7 +138,7 @@
                                                 </asp:LinkButton>
                                                 <asp:LinkButton runat="server" CssClass="btn-danger"
                                                     CommandName="Delete" CommandArgument='<%# Eval("BackupID") %>'
-                                                    OnClientClick="return confirm('Delete this backup file?');">
+                                                    OnClientClick="return showLogoutConfirm(this);">
                                                     <i class="ti ti-trash"></i>
                                                 </asp:LinkButton>
                                             </div>

@@ -11,16 +11,17 @@ namespace CSA.Lecturer
     {
         protected void Page_Load(object sender, EventArgs e)
         {
-            //if (Session["UserID"] == null || Session["Role"] as string != "Instructor")               //Bypass login for testing
-            //{ Response.Redirect("~/Login.aspx"); return; }
+            if (Session["UserID"] == null || Session["Role"] as string != "Lecturer")
+            { Response.Redirect("~/Login.aspx"); return; }
 
-            if (!int.TryParse(Request.QueryString["id"], out int studentId))
+            string studentId = Request.QueryString["id"];
+            if (string.IsNullOrEmpty(studentId))
             { Response.Redirect("~/Lecturer/ClassAnalytics.aspx"); return; }
 
             if (!IsPostBack) LoadStudentData(studentId);
         }
 
-        private void LoadStudentData(int studentId)
+        private void LoadStudentData(string studentId)
         {
             // TODO:
             // var student = UserService.GetById(studentId);
@@ -33,12 +34,12 @@ namespace CSA.Lecturer
             // litInitials.Text = parts.Length >= 2
             //     ? $"{parts[0][0]}{parts[parts.Length-1][0]}" : student.FullName.Substring(0,2);
 
-            // var stats = AnalyticsService.GetStudentDetail(studentId, (int)Session["UserID"]);
+            // var stats = AnalyticsService.GetStudentDetail(studentId, Session["UserID"].ToString());
             // litQuizAvg.Text    = stats.QuizAvg + "%";
             // litLabsDone.Text   = stats.LabsDone.ToString();
             // litLabsTotal.Text  = stats.LabsTotal.ToString();
             // litChallenges.Text = stats.ChallengesDone.ToString();
-            // litSandbox.Text    = stats.SandboxCleared ? "Cleared ✓" : "Pending";
+            // litSandbox.Text    = stats.SandboxCleared ? "Cleared ?" : "Pending";
             // rptQuizAttempts.DataSource = stats.QuizAttempts; rptQuizAttempts.DataBind();
             // rptLabs.DataSource         = stats.Labs;         rptLabs.DataBind();
             // pnlNoQuiz.Visible = stats.QuizAttempts.Count == 0;
@@ -59,7 +60,7 @@ namespace CSA.Lecturer
             s == "Done" ? "ti-circle-check" : s == "In Progress" ? "ti-player-play" : "ti-clock";
 
         protected void lbLogout_Click(object sender, EventArgs e)
-        { Session.Clear(); Session.Abandon(); Response.Redirect("~/Login.aspx"); }
+        { Session.Clear(); Session.Abandon(); Response.Redirect("~/Login.aspx?msg=loggedout"); }
     }
 
 }

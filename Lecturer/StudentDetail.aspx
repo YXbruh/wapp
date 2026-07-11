@@ -15,7 +15,7 @@
         <a href="ClassAnalytics.aspx"  class="sidebar-link active"><i class="ti ti-chart-bar"></i>Class Analytics</a>
         <a href="Mentorship.aspx"      class="sidebar-link"><i class="ti ti-messages"></i>Mentorship</a>
         <div class="sidebar-section">Account</div>
-        <asp:LinkButton ID="lbLogout" runat="server" CssClass="sidebar-link" OnClick="lbLogout_Click">
+        <asp:LinkButton ID="lbLogout" OnClientClick="return showLogoutConfirm(this);" runat="server" CssClass="sidebar-link" OnClick="lbLogout_Click">
             <i class="ti ti-logout"></i>Sign Out
         </asp:LinkButton>
     </aside>

@@ -1,62 +1,126 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Web;
+using System.Data;
 using System.Web.UI;
 using System.Web.UI.WebControls;
+using CSA.Services;
 
 namespace CSA.Admin
 {
-
     public partial class SecurityAlerts : Page
     {
+        private Pager _pager;
+
         protected void Page_Load(object sender, EventArgs e)
         {
-            //if (Session["UserID"] == null || Session["Role"] as string != "Admin")            //Bypass login for testing
-            //{ Response.Redirect("~/Login.aspx"); return; }
+            if (Session["UserID"] == null || Session["Role"] as string != "Admin")
+            { Response.Redirect("~/Login.aspx"); return; }
             if (!IsPostBack) LoadAlerts();
+        }
+
+        private Pager PagerState
+        {
+            get
+            {
+                if (_pager == null)
+                {
+                    if (ViewState["Pager"] is Pager p)
+                        _pager = p;
+                    else
+                    {
+                        _pager = new Pager { PageSize = 20 };
+                        ViewState["Pager"] = _pager;
+                    }
+                }
+                return _pager;
+            }
+        }
+
+        private void UpdatePagerUI()
+        {
+            var p = PagerState;
+            litPageInfo.Text = "Page " + p.Page + " of " + Math.Max(1, p.TotalPages) + " (" + p.Total + " total)";
+            btnPrev.Visible = p.HasPrevious;
+            btnNext.Visible = p.HasNext;
         }
 
         private void LoadAlerts()
         {
-            // TODO:
-            // var alerts = SecurityService.Search(tbSearch.Text.Trim(),
-            //                                     ddlSeverity.SelectedValue,
-            //                                     ddlAlertStatus.SelectedValue);
-            // litOpen.Text         = alerts.Count(a => a.AlertStatus == "Open").ToString();
-            // litHigh.Text         = alerts.Count(a => a.Severity == "High").ToString();
-            // litInvestigating.Text= alerts.Count(a => a.AlertStatus == "Investigating").ToString();
-            // litResolved.Text     = SecurityService.GetResolvedTodayCount().ToString();
-            // rptAlerts.DataSource = alerts; rptAlerts.DataBind();
-            // pnlEmpty.Visible = alerts.Count == 0;
-            pnlEmpty.Visible = true;
+            var p = PagerState;
+            DataTable alerts = AdminService.GetAlerts(tbSearch.Text.Trim(),
+                ddlSeverity.SelectedValue, ddlAlertStatus.SelectedValue,
+                p.Page, p.PageSize, out int total);
+            p.Total = total;
+            ViewState["Pager"] = _pager;
+
+            int open = 0, high = 0, investigating = 0;
+            foreach (DataRow row in alerts.Rows)
+            {
+                string status = row["AlertStatus"].ToString();
+                string severity = row["Severity"].ToString();
+                if (status == "Open") open++;
+                if (severity == "High") high++;
+                if (status == "Investigating") investigating++;
+            }
+
+            litOpen.Text = open.ToString();
+            litHigh.Text = high.ToString();
+            litInvestigating.Text = investigating.ToString();
+            litResolved.Text = AdminService.GetResolvedTodayCount().ToString();
+
+            rptAlerts.DataSource = alerts;
+            rptAlerts.DataBind();
+            pnlEmpty.Visible = alerts.Rows.Count == 0;
+            UpdatePagerUI();
         }
 
-        protected void Filter_Changed(object sender, EventArgs e) => LoadAlerts();
+        protected void Filter_Changed(object sender, EventArgs e)
+        {
+            PagerState.Page = 1;
+            LoadAlerts();
+        }
+
+        protected void btnPrev_Click(object sender, EventArgs e)
+        {
+            PagerState.Page--;
+            LoadAlerts();
+        }
+
+        protected void btnNext_Click(object sender, EventArgs e)
+        {
+            PagerState.Page++;
+            LoadAlerts();
+        }
 
         protected void rptAlerts_ItemCommand(object source, RepeaterCommandEventArgs e)
         {
             int id = Convert.ToInt32(e.CommandArgument);
-            int adminId = (int)Session["UserID"];
+            string adminId = Session["UserID"].ToString();
             switch (e.CommandName)
             {
                 case "Investigate":
-                    // TODO: SecurityService.SetStatus(id, "Investigating", adminId);
+                    AdminService.SetAlertStatus(id, "Investigating", adminId);
                     pnlSuccess.Visible = true;
                     litSuccess.Text = "Alert marked as under investigation.";
-                    LoadAlerts(); break;
+                    LoadAlerts();
+                    break;
                 case "Resolve":
-                    // TODO: SecurityService.SetStatus(id, "Resolved", adminId);
+                    AdminService.SetAlertStatus(id, "Resolved", adminId);
                     pnlSuccess.Visible = true;
                     litSuccess.Text = "Alert resolved successfully.";
-                    LoadAlerts(); break;
+                    LoadAlerts();
+                    break;
                 case "BlockUser":
-                    // TODO: var alert = SecurityService.GetById(id);
-                    //       UserService.ToggleActive(alert.AffectedUserID);
-                    //       SecurityService.SetStatus(id, "Resolved", adminId);
-                    pnlSuccess.Visible = true;
-                    litSuccess.Text = "User blocked and alert resolved.";
-                    LoadAlerts(); break;
+                    DataTable alert = AdminService.GetAlertById(id);
+                    if (alert.Rows.Count > 0)
+                    {
+                        string affectedUserId = alert.Rows[0]["AffectedUserID"].ToString();
+                        UserService.ToggleActive(affectedUserId);
+                        AdminService.SetAlertStatus(id, "Resolved", adminId);
+                        pnlSuccess.Visible = true;
+                        litSuccess.Text = "User blocked and alert resolved.";
+                    }
+                    LoadAlerts();
+                    break;
             }
         }
 
@@ -66,8 +130,17 @@ namespace CSA.Admin
         public string GetAlertStatusBadge(string s) =>
             s == "Resolved" ? "badge-green" : s == "Investigating" ? "badge-amber" : "badge-red";
 
-        protected void lbLogout_Click(object sender, EventArgs e)
-        { Session.Clear(); Session.Abandon(); Response.Redirect("~/Login.aspx"); }
-    }
+        protected void lbExport_Click(object sender, EventArgs e)
+        {
+            string csv = AdminService.ExportAlertsCsv(tbSearch.Text.Trim(),
+                ddlSeverity.SelectedValue, ddlAlertStatus.SelectedValue);
+            Response.ContentType = "text/csv";
+            Response.AddHeader("Content-Disposition", "attachment;filename=security-alerts.csv");
+            Response.Write(csv);
+            Response.End();
+        }
 
+        protected void lbLogout_Click(object sender, EventArgs e)
+        { Session.Clear(); Session.Abandon(); Response.Redirect("~/Login.aspx?msg=loggedout"); }
+    }
 }

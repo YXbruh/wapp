@@ -10,21 +10,12 @@ namespace CSA.Lecturer
 {
     public partial class TerminalSandbox : Page
     {
-        // ---- Temporary test instructor while login is bypassed ----
-        // Replace with (int)Session["UserID"] once authentication is wired up.
-        private int CurrentInstructorId
-        {
-            get
-            {
-                if (Session["UserID"] != null) return (int)Session["UserID"];
-                return 1; // <-- test lecturer UserID (see seed script)
-            }
-        }
+        private string CurrentInstructorId => Session["UserID"]?.ToString() ?? "";
 
         protected void Page_Load(object sender, EventArgs e)
         {
-            //if (Session["UserID"] == null || Session["Role"] as string != "Lecturer")   // Bypass login for testing
-            //{ Response.Redirect("~/Login.aspx"); return; }
+            if (Session["UserID"] == null || Session["Role"] as string != "Lecturer")
+            { Response.Redirect("~/Login.aspx"); return; }
 
             if (!IsPostBack) { LoadCourseDropdown(); LoadLabs(); }
         }
@@ -32,7 +23,7 @@ namespace CSA.Lecturer
         private void LoadCourseDropdown()
         {
             ddlCourse.Items.Clear();
-            ddlCourse.Items.Add(new ListItem("— Select Course —", ""));
+            ddlCourse.Items.Add(new ListItem("� Select Course �", ""));
 
             DataTable courses = LabService.GetCoursesForInstructor(CurrentInstructorId);
             foreach (DataRow row in courses.Rows)
@@ -55,7 +46,7 @@ namespace CSA.Lecturer
         {
             if (!Page.IsValid) return;
 
-            int labId = Convert.ToInt32(hfLabID.Value);
+            string labId = hfLabID.Value;
 
             // ---- Server-side validation ----
             if (string.IsNullOrEmpty(ddlCourse.SelectedValue))
@@ -76,10 +67,10 @@ namespace CSA.Lecturer
 
             try
             {
-                int savedId = LabService.Save(
+                string savedId = LabService.Save(
                     labId,
                     CurrentInstructorId,
-                    Convert.ToInt32(ddlCourse.SelectedValue),
+                    ddlCourse.SelectedValue,
                     tbLabTitle.Text.Trim(),
                     tbInstructions.Text.Trim(),
                     tbHint.Text.Trim(),
@@ -91,7 +82,7 @@ namespace CSA.Lecturer
 
                 pnlError.Visible = false;
                 pnlSuccess.Visible = true;
-                litSuccess.Text = labId == 0
+                litSuccess.Text = string.IsNullOrEmpty(labId)
                     ? "Lab scenario saved."
                     : "Lab scenario updated.";
 
@@ -109,7 +100,7 @@ namespace CSA.Lecturer
 
         protected void rptLabs_ItemCommand(object source, RepeaterCommandEventArgs e)
         {
-            int id = Convert.ToInt32(e.CommandArgument);
+            string id = e.CommandArgument.ToString();
 
             switch (e.CommandName)
             {
@@ -131,12 +122,12 @@ namespace CSA.Lecturer
         }
 
         /// <summary>Loads a lab into the editor form for editing.</summary>
-        private void PopulateForm(int labId)
+        private void PopulateForm(string labId)
         {
             DataRow lab = LabService.GetById(labId);
             if (lab == null) { ShowError("Lab not found."); return; }
 
-            hfLabID.Value = labId.ToString();
+            hfLabID.Value = labId;
             ddlCourse.SelectedValue = lab["CourseID"].ToString();
             tbLabTitle.Text = lab["LabTitle"].ToString();
             tbInstructions.Text = lab["Scenario"].ToString();
@@ -178,6 +169,6 @@ namespace CSA.Lecturer
             d == "Beginner" ? "badge-blue" : d == "Intermediate" ? "badge-amber" : "badge-red";
 
         protected void lbLogout_Click(object sender, EventArgs e)
-        { Session.Clear(); Session.Abandon(); Response.Redirect("~/Login.aspx"); }
+        { Session.Clear(); Session.Abandon(); Response.Redirect("~/Login.aspx?msg=loggedout"); }
     }
 }

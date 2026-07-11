@@ -11,14 +11,14 @@ namespace CSA.Lecturer
     {
         protected void Page_Load(object sender, EventArgs e)
         {
-            //if (Session["UserID"] == null || Session["Role"] as string != "Instructor")       //Bypass login for testing
-            //{ Response.Redirect("~/Login.aspx"); return; }
+            if (Session["UserID"] == null || Session["Role"] as string != "Lecturer")
+            { Response.Redirect("~/Login.aspx"); return; }
             if (!IsPostBack) { LoadCourseDropdown(); LoadData(); }
         }
 
         private void LoadCourseDropdown()
         {
-            //int userId = (int)Session["UserID"];                                              //Bypass login for testing
+            //string userId = Session["UserID"].ToString();                                              //Bypass login for testing
             ddlCourse.Items.Clear();
             ddlCourse.Items.Add(new System.Web.UI.WebControls.ListItem("All Courses", ""));
             // TODO: foreach (var c in CourseService.GetByInstructor(userId))
@@ -27,7 +27,7 @@ namespace CSA.Lecturer
 
         private void LoadData()
         {
-            //int userId = (int)Session["UserID"];                                              //Bypass login for testing
+            //string userId = Session["UserID"].ToString();                                              //Bypass login for testing
             int? courseId = string.IsNullOrEmpty(ddlCourse.SelectedValue)
                             ? (int?)null
                             : Convert.ToInt32(ddlCourse.SelectedValue);
@@ -56,7 +56,7 @@ namespace CSA.Lecturer
             score >= 80 ? "var(--success)" : score >= 60 ? "var(--warning)" : "var(--danger)";
 
         protected void lbLogout_Click(object sender, EventArgs e)
-        { Session.Clear(); Session.Abandon(); Response.Redirect("~/Login.aspx"); }
+        { Session.Clear(); Session.Abandon(); Response.Redirect("~/Login.aspx?msg=loggedout"); }
     }
 
 }

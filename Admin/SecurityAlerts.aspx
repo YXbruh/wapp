@@ -10,14 +10,17 @@
         <a href="Admin_Dashboard.aspx"      class="sidebar-link"><i class="ti ti-layout-dashboard"></i>Overview</a>
         <a href="Users.aspx"          class="sidebar-link"><i class="ti ti-users"></i>Users</a>
         <a href="Courses.aspx"        class="sidebar-link"><i class="ti ti-books"></i>Courses</a>
+        <a href="Categories.aspx"     class="sidebar-link"><i class="ti ti-category"></i>Categories</a>
         <a href="ContentReview.aspx"  class="sidebar-link"><i class="ti ti-file-check"></i>Content Review</a>
         <div class="sidebar-section">System</div>
         <a href="ActivityLogs.aspx"   class="sidebar-link"><i class="ti ti-activity"></i>Activity Logs</a>
+        <a href="ErrorLogs.aspx"      class="sidebar-link"><i class="ti ti-bug"></i>Error Logs</a>
         <a href="Announcements.aspx"  class="sidebar-link"><i class="ti ti-bell"></i>Announcements</a>
         <a href="Backup.aspx"         class="sidebar-link"><i class="ti ti-database"></i>DB Backup</a>
         <a href="SecurityAlerts.aspx" class="sidebar-link active"><i class="ti ti-alert-triangle"></i>Security Alerts</a>
         <div class="sidebar-section">Account</div>
-        <asp:LinkButton ID="lbLogout" runat="server" CssClass="sidebar-link" OnClick="lbLogout_Click">
+        <a href="Profile.aspx" class="sidebar-link"><i class="ti ti-user-circle"></i>My Profile</a>
+        <asp:LinkButton ID="lbLogout" OnClientClick="return showLogoutConfirm(this);" runat="server" CssClass="sidebar-link" OnClick="lbLogout_Click">
             <i class="ti ti-logout"></i>Sign Out
         </asp:LinkButton>
     </aside>
@@ -90,6 +93,10 @@
                     <asp:ListItem Value="Investigating">Investigating</asp:ListItem>
                     <asp:ListItem Value="Resolved">Resolved</asp:ListItem>
                 </asp:DropDownList>
+                <asp:LinkButton ID="lbExport" runat="server" CssClass="btn-sm secondary"
+                    OnClick="lbExport_Click">
+                    <i class="ti ti-download" aria-hidden="true"></i>Export CSV
+                </asp:LinkButton>
             </div>
 
             <!-- Alerts table -->
@@ -133,12 +140,12 @@
                                             <asp:LinkButton runat="server" CssClass="btn-sm"
                                                 CommandName="Resolve" CommandArgument='<%# Eval("AlertID") %>'
                                                 Visible='<%# Eval("AlertStatus").ToString() != "Resolved" %>'
-                                                OnClientClick="return confirm('Mark this alert as resolved?');">
+                                                OnClientClick="return showLogoutConfirm(this);">
                                                 <i class="ti ti-circle-check"></i> Resolve
                                             </asp:LinkButton>
                                             <asp:LinkButton runat="server" CssClass="btn-sm secondary"
                                                 CommandName="BlockUser" CommandArgument='<%# Eval("AlertID") %>'
-                                                OnClientClick="return confirm('Block the affected user account?');">
+                                                OnClientClick="return showLogoutConfirm(this);">
                                                 <i class="ti ti-user-off"></i> Block
                                             </asp:LinkButton>
                                         </div>
@@ -148,6 +155,16 @@
                         </asp:Repeater>
                     </tbody>
                 </table>
+            </div>
+
+            <div class="pager-bar">
+                <asp:LinkButton ID="btnPrev" runat="server" CssClass="btn-sm secondary" OnClick="btnPrev_Click">
+                    <i class="ti ti-chevron-left"></i> Previous
+                </asp:LinkButton>
+                <span class="pager-info"><asp:Literal ID="litPageInfo" runat="server" /></span>
+                <asp:LinkButton ID="btnNext" runat="server" CssClass="btn-sm secondary" OnClick="btnNext_Click">
+                    Next <i class="ti ti-chevron-right"></i>
+                </asp:LinkButton>
             </div>
 
             <asp:Panel ID="pnlEmpty" runat="server" Visible="false">
@@ -167,5 +184,7 @@
 .alert-row-high   td{border-left:3px solid var(--danger)}
 .alert-row-medium td{border-left:3px solid var(--warning)}
 .alert-row-low    td{border-left:3px solid var(--info)}
+.pager-bar{display:flex;align-items:center;gap:8px;padding:10px 0}
+.pager-info{flex:1;text-align:center;font-size:12px;color:var(--text3)}
 </style>
 </asp:Content>

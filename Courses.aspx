@@ -38,12 +38,13 @@
 
         <!-- Courses grid -->
         <div class="courses-grid" role="list">
-            <asp:Repeater ID="rptCourses" runat="server">
+            <asp:Repeater ID="rptCourses" runat="server"
+                          OnItemCommand="rptCourses_ItemCommand">
                 <ItemTemplate>
                     <div class="course-card" role="listitem">
                         <div class="course-thumb">
-                            <i class="ti <%# Eval("IconClass") %>" aria-hidden="true"></i>
-                            <span class="course-level badge <%# Eval("LevelBadgeClass") %>">
+                            <i class="ti <%# GetIconClass(Eval("CategoryName").ToString()) %>" aria-hidden="true"></i>
+                            <span class="course-level badge <%# GetLevelBadgeClass(Eval("Level").ToString()) %>">
                                 <%# Eval("Level") %>
                             </span>
                         </div>
@@ -59,11 +60,10 @@
                         <div class="course-footer">
                             <span class="text-muted text-small"><%# Eval("InstructorName") %></span>
                             <asp:LinkButton runat="server"
-                                CssClass='<%# (bool)Eval("IsEnrolled") ? "enroll-btn enrolled" : "enroll-btn" %>'
-                                CommandName="Enroll"
+                                CssClass='<%# GetActionCss((bool)Eval("IsEnrolled")) %>'
                                 CommandArgument='<%# Eval("CourseID") %>'
-                                Enabled='<%# !(bool)Eval("IsEnrolled") %>'>
-                                <%# (bool)Eval("IsEnrolled") ? "Enrolled" : "Enroll Now" %>
+                                Enabled='<%# GetActionEnabled((bool)Eval("IsEnrolled")) %>'>
+                                <%# GetActionText((bool)Eval("IsEnrolled")) %>
                             </asp:LinkButton>
                         </div>
                     </div>

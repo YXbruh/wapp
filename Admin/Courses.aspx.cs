@@ -1,51 +1,118 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Web;
+using System.Data;
 using System.Web.UI;
 using System.Web.UI.WebControls;
+using CSA.Services;
 
 namespace CSA.Admin
 {
-
     public partial class Courses : Page
     {
+        private Pager _pager;
+
         protected void Page_Load(object sender, EventArgs e)
         {
-            //if (Session["UserID"] == null || Session["Role"] as string != "Admin")            //Bypass login for testing
-            //{ Response.Redirect("~/Login.aspx"); return; }
+            if (Session["UserID"] == null || Session["Role"] as string != "Admin")
+            { Response.Redirect("~/Login.aspx"); return; }
             if (!IsPostBack) LoadCourses();
+        }
+
+        private Pager PagerState
+        {
+            get
+            {
+                if (_pager == null)
+                {
+                    if (ViewState["Pager"] is Pager p)
+                        _pager = p;
+                    else
+                    {
+                        _pager = new Pager { PageSize = 20 };
+                        ViewState["Pager"] = _pager;
+                    }
+                }
+                return _pager;
+            }
+        }
+
+        private void UpdatePagerUI()
+        {
+            var p = PagerState;
+            litPageInfo.Text = "Page " + p.Page + " of " + Math.Max(1, p.TotalPages) + " (" + p.Total + " total)";
+            btnPrev.Visible = p.HasPrevious;
+            btnNext.Visible = p.HasNext;
         }
 
         private void LoadCourses()
         {
-            // TODO:
-            // var list = CourseService.AdminSearch(tbSearch.Text.Trim(), ddlStatus.SelectedValue, ddlLevel.SelectedValue);
-            // litTotal.Text     = list.Count.ToString();
-            // litPublished.Text = list.Count(c => c.Status == "Published").ToString();
-            // litDraft.Text     = list.Count(c => c.Status == "Draft").ToString();
-            // litPending.Text   = list.Count(c => c.Status == "Pending").ToString();
-            // rptCourses.DataSource = list; rptCourses.DataBind();
-            // pnlEmpty.Visible = list.Count == 0;
-            pnlEmpty.Visible = true;
+            var p = PagerState;
+            DataTable list = CourseService.AdminSearch(tbSearch.Text.Trim(),
+                ddlStatus.SelectedValue, ddlLevel.SelectedValue,
+                p.Page, p.PageSize, out int total);
+            p.Total = total;
+            ViewState["Pager"] = _pager;
+
+            int published = 0, draft = 0, pending = 0;
+            foreach (DataRow row in list.Rows)
+            {
+                string status = row["Status"].ToString();
+                if (status == "Published") published++;
+                else if (status == "Draft") draft++;
+                else pending++;
+            }
+
+            litTotal.Text = total.ToString();
+            litPublished.Text = published.ToString();
+            litDraft.Text = draft.ToString();
+            litPending.Text = pending.ToString();
+
+            rptCourses.DataSource = list;
+            rptCourses.DataBind();
+            pnlEmpty.Visible = list.Rows.Count == 0;
+            UpdatePagerUI();
         }
 
-        protected void Search_Changed(object sender, EventArgs e) => LoadCourses();
+        protected void Search_Changed(object sender, EventArgs e)
+        {
+            PagerState.Page = 1;
+            LoadCourses();
+        }
+
+        protected void btnPrev_Click(object sender, EventArgs e)
+        {
+            PagerState.Page--;
+            LoadCourses();
+        }
+
+        protected void btnNext_Click(object sender, EventArgs e)
+        {
+            PagerState.Page++;
+            LoadCourses();
+        }
 
         protected void rptCourses_ItemCommand(object source, RepeaterCommandEventArgs e)
         {
-            int id = Convert.ToInt32(e.CommandArgument);
+            string id = e.CommandArgument.ToString();
+            string adminId = Session["UserID"].ToString();
             switch (e.CommandName)
             {
-                case "Edit": Response.Redirect($"~/Admin/EditCourse.aspx?id={id}"); break;
+                case "Edit":
+                    Response.Redirect($"~/Admin/EditCourse.aspx?id={id}");
+                    break;
                 case "TogglePublish":
-                    // TODO: CourseService.TogglePublish(id);
-                    pnlSuccess.Visible = true; litSuccess.Text = "Course status updated.";
-                    LoadCourses(); break;
+                    CourseService.TogglePublish(id);
+                    AdminService.LogAudit(adminId, "TOGGLE_COURSE_PUBLISH", "Courses", id, "", "");
+                    pnlSuccess.Visible = true;
+                    litSuccess.Text = "Course status updated.";
+                    LoadCourses();
+                    break;
                 case "Delete":
-                    // TODO: CourseService.Delete(id);
-                    pnlSuccess.Visible = true; litSuccess.Text = "Course deleted.";
-                    LoadCourses(); break;
+                    CourseService.Delete(id);
+                    AdminService.LogAudit(adminId, "DELETE_COURSE", "Courses", id, "", "");
+                    pnlSuccess.Visible = true;
+                    litSuccess.Text = "Course deleted.";
+                    LoadCourses();
+                    break;
             }
         }
 
@@ -55,8 +122,17 @@ namespace CSA.Admin
         public string GetStatusBadge(string s) =>
             s == "Published" ? "badge-green" : s == "Pending" ? "badge-blue" : "badge-amber";
 
-        protected void lbLogout_Click(object sender, EventArgs e)
-        { Session.Clear(); Session.Abandon(); Response.Redirect("~/Login.aspx"); }
-    }
+        protected void lbExport_Click(object sender, EventArgs e)
+        {
+            string csv = CourseService.ExportCsv(tbSearch.Text.Trim(),
+                ddlStatus.SelectedValue, ddlLevel.SelectedValue);
+            Response.ContentType = "text/csv";
+            Response.AddHeader("Content-Disposition", "attachment;filename=courses.csv");
+            Response.Write(csv);
+            Response.End();
+        }
 
+        protected void lbLogout_Click(object sender, EventArgs e)
+        { Session.Clear(); Session.Abandon(); Response.Redirect("~/Login.aspx?msg=loggedout"); }
+    }
 }

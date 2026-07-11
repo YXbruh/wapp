@@ -1,3 +1,6 @@
 <Solution>
+  <Folder Name="/Solution Items/">
+    <File Path="Database_Supplement.sql" />
+  </Folder>
   <Project Path="CSA.csproj" Id="463c4051-4277-44da-bf14-eb512a18d969" />
 </Solution>

@@ -1,9 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Web;
+using System.Data;
 using System.Web.UI;
 using System.Web.UI.WebControls;
+using CSA.Services;
 
 namespace CSA.Admin
 {
@@ -14,11 +13,10 @@ namespace CSA.Admin
 
         protected void Page_Load(object sender, EventArgs e)
         {
-            //if (Session["UserID"] == null || Session["Role"] as string != "Admin")
-            //{ Response.Redirect("~/Login.aspx"); return; }                                     //remove to bypass login for testing
+            if (Session["UserID"] == null || Session["Role"] as string != "Admin")
+            { Response.Redirect("~/Login.aspx"); return; }
             if (!IsPostBack)
             {
-                // Default date range: last 7 days
                 tbDateTo.Text = DateTime.Today.ToString("yyyy-MM-dd");
                 tbDateFrom.Text = DateTime.Today.AddDays(-7).ToString("yyyy-MM-dd");
                 LoadLogs();
@@ -27,20 +25,21 @@ namespace CSA.Admin
 
         private void LoadLogs()
         {
-            // TODO:
-            // var logs = LogService.Search(tbSearch.Text.Trim(), ddlSeverity.SelectedValue,
-            //                              tbDateFrom.Text, tbDateTo.Text, _page, PageSize,
-            //                              out int total);
-            // litInfo.Text     = LogService.CountBySeverity("Info").ToString();
-            // litWarning.Text  = LogService.CountBySeverity("Warning").ToString();
-            // litCritical.Text = LogService.CountBySeverity("Critical").ToString();
-            // litShowing.Text  = $"{logs.Count} of {total}";
-            // lbPrev.Enabled   = _page > 1;
-            // lbNext.Enabled   = (_page * PageSize) < total;
-            // rptLogs.DataSource = logs; rptLogs.DataBind();
-            // pnlEmpty.Visible = logs.Count == 0;
-            pnlEmpty.Visible = true;
-            litShowing.Text = "0";
+            DataTable logs = AdminService.GetLogs(tbSearch.Text.Trim(),
+                ddlSeverity.SelectedValue, tbDateFrom.Text, tbDateTo.Text,
+                _page, PageSize, out int total);
+
+            litInfo.Text = AdminService.CountBySeverity("Info").ToString();
+            litWarning.Text = AdminService.CountBySeverity("Warning").ToString();
+            litCritical.Text = AdminService.CountBySeverity("Critical").ToString();
+
+            litShowing.Text = $"{logs.Rows.Count} of {total}";
+            lbPrev.Enabled = _page > 1;
+            lbNext.Enabled = (_page * PageSize) < total;
+
+            rptLogs.DataSource = logs;
+            rptLogs.DataBind();
+            pnlEmpty.Visible = logs.Rows.Count == 0;
         }
 
         protected void Filter_Changed(object sender, EventArgs e) { _page = 1; LoadLogs(); }
@@ -53,7 +52,17 @@ namespace CSA.Admin
 
         protected void lbExport_Click(object sender, EventArgs e)
         {
-            // TODO: CSV export
+            DataTable logs = AdminService.GetLogs(tbSearch.Text.Trim(),
+                ddlSeverity.SelectedValue, tbDateFrom.Text, tbDateTo.Text,
+                1, 99999, out _);
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine("Severity,User,Action,Details,IP,Timestamp");
+            foreach (DataRow row in logs.Rows)
+                sb.AppendLine($"\"{row["Severity"]}\",\"{row["UserName"]}\",\"{row["Action"]}\",\"{row["Details"]}\",\"{row["IPAddress"]}\",\"{row["OccurredAt"]}\"");
+            Response.ContentType = "text/csv";
+            Response.AddHeader("Content-Disposition", "attachment;filename=audit_log.csv");
+            Response.Write(sb.ToString());
+            Response.End();
         }
 
         public string GetSeverityBadge(string s) =>
@@ -63,7 +72,6 @@ namespace CSA.Admin
             s == "Critical" ? "ti-alert-octagon" : s == "Warning" ? "ti-alert-triangle" : "ti-info-circle";
 
         protected void lbLogout_Click(object sender, EventArgs e)
-        { Session.Clear(); Session.Abandon(); Response.Redirect("~/Login.aspx"); }
+        { Session.Clear(); Session.Abandon(); Response.Redirect("~/Login.aspx?msg=loggedout"); }
     }
-
 }

@@ -11,8 +11,8 @@ namespace CSA.Lecturer
     {
         protected void Page_Load(object sender, EventArgs e)
         {
-            //if (Session["UserID"] == null || Session["Role"] as string != "Instructor")               //Bypass login for testing
-            //{ Response.Redirect("~/Login.aspx"); return; }
+            if (Session["UserID"] == null || Session["Role"] as string != "Lecturer")
+            { Response.Redirect("~/Login.aspx"); return; }
 
             if (!IsPostBack)
             {
@@ -27,7 +27,7 @@ namespace CSA.Lecturer
 
         private void LoadCourseDropdown()
         {
-            //int userId = (int)Session["UserID"];                                                      //Bypass login for testing
+            //string userId = Session["UserID"].ToString();                                                      //Bypass login for testing
             ddlCourse.Items.Clear();
             ddlCourse.Items.Add(new ListItem("All Courses", ""));
             // TODO: foreach (var c in CourseService.GetByInstructor(userId))
@@ -36,7 +36,7 @@ namespace CSA.Lecturer
 
         private void LoadFeedbackList()
         {
-            //int userId = (int)Session["UserID"];                                                      //Bypass login for testing
+            //string userId = Session["UserID"].ToString();                                                      //Bypass login for testing
             // TODO:
             // var list = FeedbackService.GetForInstructor(userId,
             //                tbSearch.Text.Trim(),
@@ -45,7 +45,7 @@ namespace CSA.Lecturer
             // litUnread.Text    = list.Count(f => !f.IsRead).ToString();
             // litReplied.Text   = FeedbackService.GetRepliedThisMonthCount(userId).ToString();
             // litAvgRating.Text = list.Count > 0
-            //     ? list.Average(f => f.StarRating).ToString("F1") : "—";
+            //     ? list.Average(f => f.StarRating).ToString("F1") : "�";
             // rptFeedback.DataSource = list;
             // rptFeedback.DataBind();
             // pnlEmpty.Visible = list.Count == 0;
@@ -57,7 +57,7 @@ namespace CSA.Lecturer
         private void PreSelectStudent(int studentId)
         {
             // TODO: auto-open the first unread feedback for this student
-            // var fb = FeedbackService.GetFirstUnreadByStudent(studentId, (int)Session["UserID"]);
+            // var fb = FeedbackService.GetFirstUnreadByStudent(studentId, Session["UserID"].ToString());
             // if (fb != null) OpenFeedback(fb.FeedbackID);
         }
 
@@ -69,7 +69,7 @@ namespace CSA.Lecturer
 
         private void OpenFeedback(int feedbackId)
         {
-            //int userId = (int)Session["UserID"];                                          //Bypass login for testing
+            //string userId = Session["UserID"].ToString();                                          //Bypass login for testing
             hfFeedbackID.Value = feedbackId.ToString();
 
             // TODO:
@@ -121,7 +121,7 @@ namespace CSA.Lecturer
         {
             if (!Page.IsValid) return;
             int feedbackId = Convert.ToInt32(hfFeedbackID.Value);
-            //int userId = (int)Session["UserID"];                                          //Bypass login for testing
+            //string userId = Session["UserID"].ToString();                                          //Bypass login for testing
 
             string replyText = tbReply.Text.Trim();
             if (replyText.Length < 10)
@@ -151,7 +151,7 @@ namespace CSA.Lecturer
         protected void tbSearch_Changed(object sender, EventArgs e) => LoadFeedbackList();
         protected void ddlFilter_Changed(object sender, EventArgs e) => LoadFeedbackList();
 
-        // ── Helpers called from markup ───────────────────────
+        // -- Helpers called from markup -----------------------
         public string GetInitials(string name)
         {
             if (string.IsNullOrWhiteSpace(name)) return "?";
@@ -170,7 +170,7 @@ namespace CSA.Lecturer
         }
 
         protected void lbLogout_Click(object sender, EventArgs e)
-        { Session.Clear(); Session.Abandon(); Response.Redirect("~/Login.aspx"); }
+        { Session.Clear(); Session.Abandon(); Response.Redirect("~/Login.aspx?msg=loggedout"); }
     }
 
 }

@@ -28,6 +28,15 @@
                 CssClass="validation-summary-errors" HeaderText="Please fix the following:"
                 DisplayMode="BulletList" />
 
+            <!-- Success message (registration / logout / login) -->
+            <asp:Panel ID="pnlSuccess" runat="server" Visible="false">
+                <div class="alert-success">
+                    <i class="ti ti-circle-check" aria-hidden="true"></i>
+                    <asp:Literal ID="litSuccess" runat="server" />
+                </div>
+            </asp:Panel>
+
+
             <!-- Error message from code-behind -->
             <asp:Panel ID="pnlError" runat="server" Visible="false">
                 <div class="validation-summary-errors">
@@ -35,6 +44,7 @@
                 </div>
             </asp:Panel>
 
+            <asp:Panel ID="pnlForm" runat="server">
             <!-- Email -->
             <div class="form-group">
                 <label class="form-label" for="<%= tbEmail.ClientID %>">
@@ -91,6 +101,7 @@
                 Don't have an account? <a href="Register.aspx">Register here</a>
             </div>
 
+            </asp:Panel>
         </div>
     </div>
 
