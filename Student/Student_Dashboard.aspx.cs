@@ -1,7 +1,7 @@
 ﻿using System;
+using System.Configuration;
 using System.Data;
 using System.Data.SqlClient;
-using System.Configuration;
 using System.Web.UI;
 
 namespace CSA.Student
@@ -10,12 +10,11 @@ namespace CSA.Student
     {
         protected void Page_Load(object sender, EventArgs e)
         {
-            // Auth guard                                                       //remove to bypass login for testing
-            //if (Session["UserID"] == null)
-            //{
-            //    Response.Redirect("~/Login.aspx");
-            //    return;
-            //}
+            if (Session["UserID"] == null)
+            {
+                Response.Redirect("~/Login.aspx");
+                return;
+            }
 
             if (!IsPostBack)
             {
@@ -23,82 +22,209 @@ namespace CSA.Student
             }
         }
 
-        private void LoadDashboard()
+        private string CurrentUserId
         {
-            int userId = 1; // TODO: replace with Convert.ToInt32(Session["UserID"]) once Login.aspx is wired up
-            litName.Text = Session["FullName"] as string ?? "Student";
-
-            SqlConnection con = new SqlConnection(ConfigurationManager.ConnectionStrings["CSAConnection"].ConnectionString);
-            con.Open();
-
-            SqlCommand cmd1 = new SqlCommand("select count(*) from Enrollments where StudentID = " + userId, con);
-            int courseCount = Convert.ToInt32(cmd1.ExecuteScalar());
-
-            SqlCommand cmd2 = new SqlCommand("select count(distinct LabID) from LabSubmissions where StudentID = " + userId + " and Result = 'Passed'", con);
-            int labsDone = Convert.ToInt32(cmd2.ExecuteScalar());
-
-            SqlCommand cmd3 = new SqlCommand("select count(*) from UserAchievements where UserID = " + userId, con);
-            int badgeCount = Convert.ToInt32(cmd3.ExecuteScalar());
-
-            SqlCommand cmd4 = new SqlCommand("select avg(Score) from QuizAttempts where StudentID = " + userId, con);
-            object avgObj = cmd4.ExecuteScalar();
-            string avgQuizText = (avgObj == DBNull.Value) ? "—" : Math.Round(Convert.ToDouble(avgObj)) + "%";
-
-            // "Challenges" reuses VirtualLabs (see Challenges.aspx.cs) — count of published
-            // labs in enrolled courses the student has not passed yet.
-            SqlCommand cmd5 = new SqlCommand("select count(*) from VirtualLabs vl join Enrollments e on vl.CourseID = e.CourseID "
-                                            + "where e.StudentID = " + userId + " and vl.IsPublished = 1 "
-                                            + "and vl.LabID not in (select LabID from LabSubmissions where StudentID = " + userId + " and Result = 'Passed')", con);
-            int openChallenges = Convert.ToInt32(cmd5.ExecuteScalar());
-
-            litMetricCourses.Text = courseCount.ToString();
-            litMetricLabs.Text = labsDone.ToString();
-            litMetricQuiz.Text = avgQuizText;
-            litMetricBadges.Text = badgeCount.ToString();
-            litCourseCount.Text = courseCount.ToString();
-            litChallengeCount.Text = openChallenges.ToString();
-            litSubtitle.Text = "Check your courses and activity below.";
-
-            // ---- Active courses (top 3, not completed) ----
-            string courseQuery = "select top 3 c.CourseName, e.Progress from Enrollments e "
-                                + "join Courses c on e.CourseID = c.CourseID "
-                                + "where e.StudentID = " + userId + " and e.Status <> 'Completed' "
-                                + "order by e.EnrolledAt desc";
-
-            SqlDataAdapter daCourses = new SqlDataAdapter(courseQuery, con);
-            DataTable dtCourses = new DataTable();
-            daCourses.Fill(dtCourses);
-
-            rptCourses.DataSource = dtCourses;
-            rptCourses.DataBind();
-            pnlNoCourses.Visible = (dtCourses.Rows.Count == 0);
-
-            // ---- Recent activity (last 5) ----
-            string activityQuery = "select top 5 Description, CreatedAt from ActivityLog "
-                                  + "where UserID = " + userId + " order by CreatedAt desc";
-
-            SqlDataAdapter daActivity = new SqlDataAdapter(activityQuery, con);
-            DataTable dtActivity = new DataTable();
-            daActivity.Fill(dtActivity);
-
-            dtActivity.Columns.Add("TimeAgo", typeof(string));
-            foreach (DataRow row in dtActivity.Rows)
-            {
-                DateTime createdAt = Convert.ToDateTime(row["CreatedAt"]);
-                row["TimeAgo"] = createdAt.ToString("dd MMM yyyy, hh:mm tt");
-            }
-
-            rptActivity.DataSource = dtActivity;
-            rptActivity.DataBind();
-            pnlNoActivity.Visible = (dtActivity.Rows.Count == 0);
-
-            con.Close();
+            get { return Convert.ToString(Session["UserID"]); }
         }
 
-        protected void lbLogout_Click(object sender, EventArgs e)
+        private void LoadDashboard()
+        {
+            string userId = CurrentUserId;
+
+            litName.Text =
+                Convert.ToString(Session["FullName"]) ?? "Student";
+
+            string connectionString =
+                ConfigurationManager
+                    .ConnectionStrings["CSAConnection"]
+                    .ConnectionString;
+
+            using (SqlConnection con =
+                   new SqlConnection(connectionString))
+            {
+                con.Open();
+
+                int courseCount = ExecuteCount(
+                    con,
+                    @"SELECT COUNT(*)
+                      FROM Enrollments
+                      WHERE StudentID = @UserID",
+                    userId
+                );
+
+                int labsDone = ExecuteCount(
+                    con,
+                    @"SELECT COUNT(DISTINCT LabID)
+                      FROM LabSubmissions
+                      WHERE StudentID = @UserID
+                        AND Result = 'Passed'",
+                    userId
+                );
+
+                int badgeCount = ExecuteCount(
+                    con,
+                    @"SELECT COUNT(*)
+                      FROM UserAchievements
+                      WHERE UserID = @UserID",
+                    userId
+                );
+
+                string avgQuizText;
+
+                using (SqlCommand cmd = new SqlCommand(
+                    @"SELECT AVG(Score)
+                      FROM QuizAttempts
+                      WHERE StudentID = @UserID", con))
+                {
+                    AddUserId(cmd, userId);
+
+                    object result = cmd.ExecuteScalar();
+
+                    if (result == null || result == DBNull.Value)
+                    {
+                        avgQuizText = "—";
+                    }
+                    else
+                    {
+                        avgQuizText =
+                            Math.Round(Convert.ToDecimal(result)) + "%";
+                    }
+                }
+
+                int openChallenges = ExecuteCount(
+                    con,
+                    @"SELECT COUNT(*)
+                      FROM VirtualLabs vl
+                      INNER JOIN Enrollments e
+                          ON e.CourseID = vl.CourseID
+                      WHERE e.StudentID = @UserID
+                        AND vl.IsPublished = 1
+                        AND NOT EXISTS
+                        (
+                            SELECT 1
+                            FROM LabSubmissions ls
+                            WHERE ls.LabID = vl.LabID
+                              AND ls.StudentID = @UserID
+                              AND ls.Result = 'Passed'
+                        )",
+                    userId
+                );
+
+                litMetricCourses.Text = courseCount.ToString();
+                litMetricLabs.Text = labsDone.ToString();
+                litMetricQuiz.Text = avgQuizText;
+                litMetricBadges.Text = badgeCount.ToString();
+                litCourseCount.Text = courseCount.ToString();
+                litChallengeCount.Text = openChallenges.ToString();
+
+                litSubtitle.Text =
+                    "Check your courses and activity below.";
+
+                DataTable dtCourses = new DataTable();
+
+                using (SqlCommand cmd = new SqlCommand(
+                    @"SELECT TOP 3
+                          c.CourseName,
+                          e.Progress
+                      FROM Enrollments e
+                      INNER JOIN Courses c
+                          ON c.CourseID = e.CourseID
+                      WHERE e.StudentID = @UserID
+                        AND e.Status <> 'Completed'
+                      ORDER BY e.EnrolledAt DESC", con))
+                {
+                    AddUserId(cmd, userId);
+
+                    using (SqlDataAdapter da =
+                           new SqlDataAdapter(cmd))
+                    {
+                        da.Fill(dtCourses);
+                    }
+                }
+
+                rptCourses.DataSource = dtCourses;
+                rptCourses.DataBind();
+
+                pnlNoCourses.Visible =
+                    dtCourses.Rows.Count == 0;
+
+                DataTable dtActivity = new DataTable();
+
+                using (SqlCommand cmd = new SqlCommand(
+                    @"SELECT TOP 5
+                          Description,
+                          CreatedAt
+                      FROM ActivityLog
+                      WHERE UserID = @UserID
+                      ORDER BY CreatedAt DESC", con))
+                {
+                    AddUserId(cmd, userId);
+
+                    using (SqlDataAdapter da =
+                           new SqlDataAdapter(cmd))
+                    {
+                        da.Fill(dtActivity);
+                    }
+                }
+
+                dtActivity.Columns.Add(
+                    "TimeAgo",
+                    typeof(string)
+                );
+
+                foreach (DataRow row in dtActivity.Rows)
+                {
+                    DateTime createdAt =
+                        Convert.ToDateTime(row["CreatedAt"]);
+
+                    row["TimeAgo"] =
+                        createdAt.ToString(
+                            "dd MMM yyyy, hh:mm tt"
+                        );
+                }
+
+                rptActivity.DataSource = dtActivity;
+                rptActivity.DataBind();
+
+                pnlNoActivity.Visible =
+                    dtActivity.Rows.Count == 0;
+            }
+        }
+
+        private static int ExecuteCount(
+            SqlConnection con,
+            string sql,
+            string userId)
+        {
+            using (SqlCommand cmd =
+                   new SqlCommand(sql, con))
+            {
+                AddUserId(cmd, userId);
+
+                return Convert.ToInt32(
+                    cmd.ExecuteScalar()
+                );
+            }
+        }
+
+        private static void AddUserId(
+            SqlCommand cmd,
+            string userId)
+        {
+            cmd.Parameters.Add(
+                "@UserID",
+                SqlDbType.NVarChar,
+                10
+            ).Value = userId;
+        }
+
+        protected void lbLogout_Click(
+            object sender,
+            EventArgs e)
         {
             Session.Clear();
             Session.Abandon();
+
             Response.Redirect("~/Login.aspx");
         }
     }

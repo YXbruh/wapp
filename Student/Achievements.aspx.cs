@@ -1,7 +1,7 @@
 ﻿using System;
+using System.Configuration;
 using System.Data;
 using System.Data.SqlClient;
-using System.Configuration;
 using System.Web.UI;
 
 namespace CSA.Student
@@ -10,7 +10,12 @@ namespace CSA.Student
     {
         protected void Page_Load(object sender, EventArgs e)
         {
-            //if (Session["UserID"] == null) { Response.Redirect("~/Login.aspx"); return; }         //remove to bypass login for testing
+            if (Session["UserID"] == null)
+            {
+                Response.Redirect("~/Login.aspx");
+                return;
+            }
+
             if (!IsPostBack)
             {
                 LoadAchievements();
@@ -19,71 +24,140 @@ namespace CSA.Student
 
         private void LoadAchievements()
         {
-            int userId = 1; // TODO: replace with Convert.ToInt32(Session["UserID"]) once Login.aspx is wired up
+            string userId =
+                Convert.ToString(Session["UserID"]);
 
-            SqlConnection con = new SqlConnection(ConfigurationManager.ConnectionStrings["CSAConnection"].ConnectionString);
-            con.Open();
+            string connectionString =
+                ConfigurationManager
+                    .ConnectionStrings["CSAConnection"]
+                    .ConnectionString;
 
-            string query = "select a.AchievementID, a.BadgeName, a.Description, a.IconPath, a.PointsGranted, ua.EarnedAt "
-                         + "from Achievements a left join UserAchievements ua "
-                         + "on ua.AchievementID = a.AchievementID and ua.UserID = " + userId + " "
-                         + "order by a.BadgeName";
-
-            SqlDataAdapter da = new SqlDataAdapter(query, con);
-            DataTable dt = new DataTable();
-            da.Fill(dt);
-
-            dt.Columns.Add("IsEarned", typeof(bool));
-            dt.Columns.Add("IconClass", typeof(string));
-            dt.Columns.Add("EarnedDate", typeof(string));
-
-            int earned = 0;
-            int totalXP = 0;
-            string latestBadge = "—";
-            DateTime latestDate = DateTime.MinValue;
-
-            foreach (DataRow row in dt.Rows)
+            using (SqlConnection con =
+                   new SqlConnection(connectionString))
+            using (SqlCommand cmd = new SqlCommand(
+                @"SELECT
+                      a.AchievementID,
+                      a.BadgeName,
+                      a.Description,
+                      a.IconPath,
+                      a.PointsGranted,
+                      ua.EarnedAt
+                  FROM Achievements a
+                  LEFT JOIN UserAchievements ua
+                      ON ua.AchievementID =
+                         a.AchievementID
+                     AND ua.UserID = @UserID
+                  ORDER BY a.BadgeName", con))
             {
-                bool isEarned = row["EarnedAt"] != DBNull.Value;
-                row["IsEarned"] = isEarned;
-                row["IconClass"] = (row["IconPath"] == DBNull.Value) ? "ti-award" : row["IconPath"].ToString();
+                cmd.Parameters.Add(
+                    "@UserID",
+                    SqlDbType.NVarChar,
+                    10
+                ).Value = userId;
 
-                if (isEarned)
+                DataTable dt = new DataTable();
+
+                using (SqlDataAdapter da =
+                       new SqlDataAdapter(cmd))
                 {
-                    DateTime earnedAt = Convert.ToDateTime(row["EarnedAt"]);
-                    row["EarnedDate"] = earnedAt.ToString("dd MMM yyyy");
+                    da.Fill(dt);
+                }
 
-                    earned++;
-                    totalXP += Convert.ToInt32(row["PointsGranted"]);
+                dt.Columns.Add(
+                    "IsEarned",
+                    typeof(bool)
+                );
 
-                    if (earnedAt > latestDate)
+                dt.Columns.Add(
+                    "IconClass",
+                    typeof(string)
+                );
+
+                dt.Columns.Add(
+                    "EarnedDate",
+                    typeof(string)
+                );
+
+                int earned = 0;
+                int totalXP = 0;
+
+                string latestBadge = "—";
+                DateTime latestDate = DateTime.MinValue;
+
+                foreach (DataRow row in dt.Rows)
+                {
+                    bool isEarned =
+                        row["EarnedAt"] != DBNull.Value;
+
+                    row["IsEarned"] = isEarned;
+
+                    if (row["IconPath"] == DBNull.Value ||
+                        string.IsNullOrWhiteSpace(
+                            Convert.ToString(
+                                row["IconPath"])))
                     {
-                        latestDate = earnedAt;
-                        latestBadge = row["BadgeName"].ToString();
+                        row["IconClass"] = "ti-award";
+                    }
+                    else
+                    {
+                        row["IconClass"] =
+                            Convert.ToString(
+                                row["IconPath"]);
+                    }
+
+                    if (isEarned)
+                    {
+                        DateTime earnedAt =
+                            Convert.ToDateTime(
+                                row["EarnedAt"]);
+
+                        row["EarnedDate"] =
+                            earnedAt.ToString(
+                                "dd MMM yyyy"
+                            );
+
+                        earned++;
+
+                        totalXP +=
+                            Convert.ToInt32(
+                                row["PointsGranted"]
+                            );
+
+                        if (earnedAt > latestDate)
+                        {
+                            latestDate = earnedAt;
+
+                            latestBadge =
+                                Convert.ToString(
+                                    row["BadgeName"]);
+                        }
+                    }
+                    else
+                    {
+                        row["EarnedDate"] = "";
                     }
                 }
-                else
-                {
-                    row["EarnedDate"] = "";
-                }
+
+                litEarned.Text = earned.ToString();
+                litTotal.Text = dt.Rows.Count.ToString();
+                litXP.Text = totalXP.ToString();
+                litLatest.Text = latestBadge;
+
+                rptAchievements.DataSource = dt;
+                rptAchievements.DataBind();
+
+                pnlEmpty.Visible =
+                    dt.Rows.Count == 0;
             }
-
-            litEarned.Text = earned.ToString();
-            litTotal.Text = dt.Rows.Count.ToString();
-            litXP.Text = totalXP.ToString();
-            litLatest.Text = latestBadge;
-
-            rptAchievements.DataSource = dt;
-            rptAchievements.DataBind();
-            pnlEmpty.Visible = (dt.Rows.Count == 0);
-
-            con.Close();
         }
 
-        protected void lbLogout_Click(object sender, EventArgs e)
+        protected void lbLogout_Click(
+            object sender,
+            EventArgs e)
         {
             Session.Clear();
             Session.Abandon();
+
             Response.Redirect("~/Login.aspx");
         }
     }

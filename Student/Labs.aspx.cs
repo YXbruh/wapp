@@ -1,7 +1,7 @@
 ﻿using System;
+using System.Configuration;
 using System.Data;
 using System.Data.SqlClient;
-using System.Configuration;
 using System.Web.UI;
 
 namespace CSA.Student
@@ -10,7 +10,12 @@ namespace CSA.Student
     {
         protected void Page_Load(object sender, EventArgs e)
         {
-            //if (Session["UserID"] == null) { Response.Redirect("~/Login.aspx"); return; }         //remove to bypass login for testing
+            if (Session["UserID"] == null)
+            {
+                Response.Redirect("~/Login.aspx");
+                return;
+            }
+
             if (!IsPostBack)
             {
                 LoadLabs();
@@ -19,77 +24,185 @@ namespace CSA.Student
 
         private void LoadLabs()
         {
-            int userId = 1; // TODO: replace with Convert.ToInt32(Session["UserID"]) once Login.aspx is wired up
+            string userId =
+                Convert.ToString(Session["UserID"]);
 
-            SqlConnection con = new SqlConnection(ConfigurationManager.ConnectionStrings["CSAConnection"].ConnectionString);
-            con.Open();
+            string connectionString =
+                ConfigurationManager
+                    .ConnectionStrings["CSAConnection"]
+                    .ConnectionString;
 
-            string query = "select vl.LabID, vl.LabTitle as LabName, c.CourseName, vl.TimeLimitMinutes, vl.Difficulty "
-                         + "from VirtualLabs vl "
-                         + "join Courses c on vl.CourseID = c.CourseID "
-                         + "join Enrollments e on e.CourseID = c.CourseID and e.StudentID = " + userId + " "
-                         + "where vl.IsPublished = 1 order by c.CourseName, vl.LabTitle";
+            using (SqlConnection con =
+                   new SqlConnection(connectionString))
+            using (SqlCommand cmd = new SqlCommand(
+                @"SELECT
+                      vl.LabID,
+                      vl.LabTitle AS LabName,
+                      c.CourseName,
+                      vl.TimeLimitMinutes,
+                      vl.Difficulty,
 
-            SqlDataAdapter da = new SqlDataAdapter(query, con);
-            DataTable dt = new DataTable();
-            da.Fill(dt);
+                      (
+                          SELECT TOP 1
+                              ls.Result
+                          FROM LabSubmissions ls
+                          WHERE ls.LabID = vl.LabID
+                            AND ls.StudentID = @UserID
+                          ORDER BY ls.SubmittedAt DESC
+                      ) AS LastResult,
 
-            dt.Columns.Add("EstimatedMinutes", typeof(int));
-            dt.Columns.Add("StatusKey", typeof(string));
-            dt.Columns.Add("StatusBadgeClass", typeof(string));
-            dt.Columns.Add("StatusLabel", typeof(string));
+                      (
+                          SELECT COUNT(*)
+                          FROM LabSubmissions ls
+                          WHERE ls.LabID = vl.LabID
+                            AND ls.StudentID = @UserID
+                      ) AS AttemptCount
 
-            int done = 0;
+                  FROM VirtualLabs vl
 
-            foreach (DataRow row in dt.Rows)
+                  INNER JOIN Courses c
+                      ON c.CourseID = vl.CourseID
+
+                  INNER JOIN Enrollments e
+                      ON e.CourseID = c.CourseID
+                     AND e.StudentID = @UserID
+
+                  WHERE vl.IsPublished = 1
+
+                  ORDER BY
+                      c.CourseName,
+                      vl.LabTitle", con))
             {
-                row["EstimatedMinutes"] = (row["TimeLimitMinutes"] == DBNull.Value) ? 15 : Convert.ToInt32(row["TimeLimitMinutes"]);
+                cmd.Parameters.Add(
+                    "@UserID",
+                    SqlDbType.NVarChar,
+                    10
+                ).Value = userId;
 
-                int labId = Convert.ToInt32(row["LabID"]);
+                DataTable dt = new DataTable();
 
-                SqlCommand cmdLast = new SqlCommand("select top 1 Result from LabSubmissions where LabID = " + labId
-                                                   + " and StudentID = " + userId + " order by SubmittedAt desc", con);
-                object lastResultObj = cmdLast.ExecuteScalar();
-
-                SqlCommand cmdCount = new SqlCommand("select count(*) from LabSubmissions where LabID = " + labId
-                                                    + " and StudentID = " + userId, con);
-                int attempts = Convert.ToInt32(cmdCount.ExecuteScalar());
-
-                string statusKey;
-                if (lastResultObj != null && lastResultObj.ToString() == "Passed")
+                using (SqlDataAdapter da =
+                       new SqlDataAdapter(cmd))
                 {
-                    statusKey = "done";
-                    done++;
-                }
-                else if (attempts > 0)
-                {
-                    statusKey = "in-progress";
-                }
-                else
-                {
-                    statusKey = "not-started";
+                    da.Fill(dt);
                 }
 
-                row["StatusKey"] = statusKey;
-                row["StatusBadgeClass"] = (statusKey == "done") ? "badge-green" : (statusKey == "in-progress") ? "badge-blue" : "badge-amber";
-                row["StatusLabel"] = (statusKey == "done") ? "Completed" : (statusKey == "in-progress") ? "In Progress" : "Not Started";
+                dt.Columns.Add(
+                    "EstimatedMinutes",
+                    typeof(int)
+                );
+
+                dt.Columns.Add(
+                    "StatusKey",
+                    typeof(string)
+                );
+
+                dt.Columns.Add(
+                    "StatusBadgeClass",
+                    typeof(string)
+                );
+
+                dt.Columns.Add(
+                    "StatusLabel",
+                    typeof(string)
+                );
+
+                int done = 0;
+
+                foreach (DataRow row in dt.Rows)
+                {
+                    if (row["TimeLimitMinutes"] ==
+                        DBNull.Value)
+                    {
+                        row["EstimatedMinutes"] = 15;
+                    }
+                    else
+                    {
+                        row["EstimatedMinutes"] =
+                            Convert.ToInt32(
+                                row["TimeLimitMinutes"]
+                            );
+                    }
+
+                    string lastResult =
+                        row["LastResult"] == DBNull.Value
+                            ? ""
+                            : Convert.ToString(
+                                row["LastResult"]);
+
+                    int attempts =
+                        Convert.ToInt32(
+                            row["AttemptCount"]);
+
+                    string statusKey;
+
+                    if (lastResult == "Passed")
+                    {
+                        statusKey = "done";
+                        done++;
+                    }
+                    else if (attempts > 0)
+                    {
+                        statusKey = "in-progress";
+                    }
+                    else
+                    {
+                        statusKey = "not-started";
+                    }
+
+                    row["StatusKey"] = statusKey;
+
+                    if (statusKey == "done")
+                    {
+                        row["StatusBadgeClass"] =
+                            "badge-green";
+
+                        row["StatusLabel"] =
+                            "Completed";
+                    }
+                    else if (statusKey ==
+                             "in-progress")
+                    {
+                        row["StatusBadgeClass"] =
+                            "badge-blue";
+
+                        row["StatusLabel"] =
+                            "In Progress";
+                    }
+                    else
+                    {
+                        row["StatusBadgeClass"] =
+                            "badge-amber";
+
+                        row["StatusLabel"] =
+                            "Not Started";
+                    }
+                }
+
+                litTotal.Text =
+                    dt.Rows.Count.ToString();
+
+                litDone.Text =
+                    done.ToString();
+
+                litRemaining.Text =
+                    (dt.Rows.Count - done).ToString();
+
+                rptLabs.DataSource = dt;
+                rptLabs.DataBind();
+
+                pnlEmpty.Visible =
+                    dt.Rows.Count == 0;
             }
-
-            litTotal.Text = dt.Rows.Count.ToString();
-            litDone.Text = done.ToString();
-            litRemaining.Text = (dt.Rows.Count - done).ToString();
-
-            rptLabs.DataSource = dt;
-            rptLabs.DataBind();
-            pnlEmpty.Visible = (dt.Rows.Count == 0);
-
-            con.Close();
         }
 
-        protected void lbLogout_Click(object sender, EventArgs e)
+        protected void lbLogout_Click(
+            object sender,
+            EventArgs e)
         {
             Session.Clear();
             Session.Abandon();
+
             Response.Redirect("~/Login.aspx");
         }
     }

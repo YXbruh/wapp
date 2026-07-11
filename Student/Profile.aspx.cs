@@ -2,10 +2,9 @@
 using System.Configuration;
 using System.Data;
 using System.Data.SqlClient;
-using System.Web.UI;
-using WebGrease.Activities;
 using System.Security.Cryptography;
 using System.Text;
+using System.Web.UI;
 
 namespace CSA.Student
 {
@@ -13,146 +12,302 @@ namespace CSA.Student
     {
         protected void Page_Load(object sender, EventArgs e)
         {
-            //if (Session["UserID"] == null) { Response.Redirect("~/Login.aspx"); return; }             //remove to bypass login for testing
+            if (Session["UserID"] == null)
+            {
+                Response.Redirect("~/Login.aspx");
+                return;
+            }
+
             if (!IsPostBack)
             {
                 LoadProfile();
             }
         }
 
-        private void LoadProfile()
+        private string CurrentUserId
         {
-            int userId = 1; // TODO: replace with Convert.ToInt32(Session["UserID"]) once Login.aspx is wired up
-
-            SqlConnection con = new SqlConnection(ConfigurationManager.ConnectionStrings["CSAConnection"].ConnectionString);
-            con.Open();
-
-            SqlCommand cmd = new SqlCommand("select FullName, Email, CreatedAt from Users where UserID = " + userId, con);
-            SqlDataReader dr = cmd.ExecuteReader();
-
-            string name = "";
-            string email = "";
-            string joined = "—";
-
-            if (dr.Read())
+            get
             {
-                name = dr["FullName"].ToString();
-                email = dr["Email"].ToString();
-                joined = Convert.ToDateTime(dr["CreatedAt"]).ToString("MMMM yyyy");
-            }
-            dr.Close();
-            con.Close();
-
-            Session["FullName"] = name;
-            Session["Email"] = email;
-
-            tbFullName.Text = name;
-            tbEmail.Text = email;
-            // NOTE: the Users table has no Bio column yet, so Bio is kept in Session only.
-            // Add a "Bio NVARCHAR(300) NULL" column to Users if this needs to be saved for real.
-            tbBio.Text = Session["Bio"] as string ?? "";
-
-            litDisplayName.Text = name;
-            litJoined.Text = joined;
-
-            string[] parts = name.Split(' ');
-            if (parts.Length >= 2)
-            {
-                litAvatarInitials.Text = parts[0].Substring(0, 1) + parts[parts.Length - 1].Substring(0, 1);
-            }
-            else if (name.Length > 0)
-            {
-                litAvatarInitials.Text = name.Substring(0, Math.Min(2, name.Length));
-            }
-            else
-            {
-                litAvatarInitials.Text = "CS";
+                return Convert.ToString(
+                    Session["UserID"]);
             }
         }
 
-        protected void btnSaveInfo_Click(object sender, EventArgs e)
+        private void LoadProfile()
         {
-            if (!Page.IsValid) return;
+            string connectionString =
+                ConfigurationManager
+                    .ConnectionStrings["CSAConnection"]
+                    .ConnectionString;
 
-            int userId = 1; // TODO: replace with Convert.ToInt32(Session["UserID"]) once Login.aspx is wired up
-            string newName = tbFullName.Text.Trim();
-            string newEmail = tbEmail.Text.Trim();
-
-            SqlConnection con = new SqlConnection(ConfigurationManager.ConnectionStrings["CSAConnection"].ConnectionString);
-            con.Open();
-
-            SqlCommand checkCmd = new SqlCommand("select count(*) from Users where Email = '" + newEmail + "' and UserID <> " + userId, con);
-            int emailTaken = Convert.ToInt32(checkCmd.ExecuteScalar());
-
-            if (emailTaken > 0)
+            using (SqlConnection con =
+                   new SqlConnection(connectionString))
+            using (SqlCommand cmd = new SqlCommand(
+                @"SELECT
+                      FullName,
+                      Email,
+                      CreatedAt
+                  FROM Users
+                  WHERE UserID = @UserID", con))
             {
-                con.Close();
-                pnlError.Visible = true;
-                pnlSuccess.Visible = false;
-                litError.Text = "That email address is already in use by another account.";
+                cmd.Parameters.Add(
+                    "@UserID",
+                    SqlDbType.NVarChar,
+                    10
+                ).Value = CurrentUserId;
+
+                con.Open();
+
+                using (SqlDataReader dr =
+                       cmd.ExecuteReader())
+                {
+                    string name = "";
+                    string email = "";
+                    string joined = "—";
+
+                    if (dr.Read())
+                    {
+                        name =
+                            Convert.ToString(
+                                dr["FullName"]);
+
+                        email =
+                            Convert.ToString(
+                                dr["Email"]);
+
+                        if (dr["CreatedAt"] !=
+                            DBNull.Value)
+                        {
+                            joined =
+                                Convert.ToDateTime(
+                                    dr["CreatedAt"]
+                                ).ToString(
+                                    "MMMM yyyy"
+                                );
+                        }
+                    }
+
+                    Session["FullName"] = name;
+                    Session["Email"] = email;
+
+                    tbFullName.Text = name;
+                    tbEmail.Text = email;
+
+                    tbBio.Text =
+                        Convert.ToString(
+                            Session["Bio"]);
+
+                    litDisplayName.Text = name;
+                    litJoined.Text = joined;
+
+                    litAvatarInitials.Text =
+                        MakeInitials(name);
+                }
+            }
+        }
+
+        protected void btnSaveInfo_Click(
+            object sender,
+            EventArgs e)
+        {
+            if (!Page.IsValid)
+            {
                 return;
             }
 
-            string updateQuery = "update Users set FullName = '" + newName + "', Email = '" + newEmail + "' where UserID = " + userId;
-            SqlCommand cmd = new SqlCommand(updateQuery, con);
-            cmd.ExecuteNonQuery();
-            con.Close();
+            string newName =
+                tbFullName.Text.Trim();
 
-            // Bio is session-only for now (see note in LoadProfile).
-            Session["Bio"] = tbBio.Text.Trim();
+            string newEmail =
+                tbEmail.Text.Trim();
+
+            string connectionString =
+                ConfigurationManager
+                    .ConnectionStrings["CSAConnection"]
+                    .ConnectionString;
+
+            using (SqlConnection con =
+                   new SqlConnection(connectionString))
+            {
+                con.Open();
+
+                using (SqlCommand checkCmd =
+                       new SqlCommand(
+                    @"SELECT COUNT(*)
+                      FROM Users
+                      WHERE Email = @Email
+                        AND UserID <> @UserID",
+                    con))
+                {
+                    checkCmd.Parameters.Add(
+                        "@Email",
+                        SqlDbType.NVarChar,
+                        255
+                    ).Value = newEmail;
+
+                    checkCmd.Parameters.Add(
+                        "@UserID",
+                        SqlDbType.NVarChar,
+                        10
+                    ).Value = CurrentUserId;
+
+                    int emailCount =
+                        Convert.ToInt32(
+                            checkCmd.ExecuteScalar()
+                        );
+
+                    if (emailCount > 0)
+                    {
+                        pnlError.Visible = true;
+                        pnlSuccess.Visible = false;
+
+                        litError.Text =
+                            "That email address is already in use by another account.";
+
+                        return;
+                    }
+                }
+
+                using (SqlCommand updateCmd =
+                       new SqlCommand(
+                    @"UPDATE Users
+                      SET FullName = @FullName,
+                          Email = @Email
+                      WHERE UserID = @UserID",
+                    con))
+                {
+                    updateCmd.Parameters.Add(
+                        "@FullName",
+                        SqlDbType.NVarChar,
+                        150
+                    ).Value = newName;
+
+                    updateCmd.Parameters.Add(
+                        "@Email",
+                        SqlDbType.NVarChar,
+                        255
+                    ).Value = newEmail;
+
+                    updateCmd.Parameters.Add(
+                        "@UserID",
+                        SqlDbType.NVarChar,
+                        10
+                    ).Value = CurrentUserId;
+
+                    updateCmd.ExecuteNonQuery();
+                }
+            }
+
+            Session["Bio"] =
+                tbBio.Text.Trim();
+
             Session["FullName"] = newName;
             Session["Email"] = newEmail;
 
             pnlSuccess.Visible = true;
-            litSuccess.Text = "Profile updated successfully.";
             pnlError.Visible = false;
+
+            litSuccess.Text =
+                "Profile updated successfully.";
 
             LoadProfile();
         }
 
-        protected void btnChangePwd_Click(object sender, EventArgs e)
+        protected void btnChangePwd_Click(
+            object sender,
+            EventArgs e)
         {
-            if (!Page.IsValid) return;
-
-            int userId = 1; // TODO: replace with Convert.ToInt32(Session["UserID"]) once Login.aspx is wired up
-
-            SqlConnection con = new SqlConnection(ConfigurationManager.ConnectionStrings["CSAConnection"].ConnectionString);
-            con.Open();
-
-            SqlCommand cmd = new SqlCommand("select PasswordHash from Users where UserID = " + userId, con);
-            object result = cmd.ExecuteScalar();
-
-            // TODO: swap this block back to PasswordManager/BCrypt.Net-Next once merged with
-            // teammate's Login/Register code (App_Code/PasswordManager.cs).
-            // Using a plain SHA256 hash here temporarily so Student module compiles standalone.
-
-            bool ok = false;
-            string err = "";
-
-            if (result == null)
+            if (!Page.IsValid)
             {
-                err = "Could not find your account. Please log in again.";
-            }
-            else if (HashPasswordTemp(tbCurrentPwd.Text) != result.ToString())
-            {
-                err = "Current password is incorrect.";
-            }
-            else
-            {
-                string hashedPassword = HashPasswordTemp(tbNewPwd.Text);
-                string updateQuery = "update Users set PasswordHash = '" + hashedPassword + "' where UserID = " + userId;
-                SqlCommand updateCmd = new SqlCommand(updateQuery, con);
-                updateCmd.ExecuteNonQuery();
-                ok = true;
+                return;
             }
 
-            con.Close();
+            bool success = false;
+            string errorMessage = "";
 
-            if (ok)
+            string connectionString =
+                ConfigurationManager
+                    .ConnectionStrings["CSAConnection"]
+                    .ConnectionString;
+
+            using (SqlConnection con =
+                   new SqlConnection(connectionString))
+            {
+                con.Open();
+
+                object storedHash;
+
+                using (SqlCommand cmd =
+                       new SqlCommand(
+                    @"SELECT PasswordHash
+                      FROM Users
+                      WHERE UserID = @UserID",
+                    con))
+                {
+                    cmd.Parameters.Add(
+                        "@UserID",
+                        SqlDbType.NVarChar,
+                        10
+                    ).Value = CurrentUserId;
+
+                    storedHash =
+                        cmd.ExecuteScalar();
+                }
+
+                if (storedHash == null ||
+                    storedHash == DBNull.Value)
+                {
+                    errorMessage =
+                        "Could not find your account. Please log in again.";
+                }
+                else if (
+                    HashPasswordTemp(
+                        tbCurrentPwd.Text
+                    ) != storedHash.ToString())
+                {
+                    errorMessage =
+                        "Current password is incorrect.";
+                }
+                else
+                {
+                    using (SqlCommand updateCmd =
+                           new SqlCommand(
+                        @"UPDATE Users
+                          SET PasswordHash =
+                              @PasswordHash
+                          WHERE UserID = @UserID",
+                        con))
+                    {
+                        updateCmd.Parameters.Add(
+                            "@PasswordHash",
+                            SqlDbType.NVarChar,
+                            512
+                        ).Value =
+                            HashPasswordTemp(
+                                tbNewPwd.Text
+                            );
+
+                        updateCmd.Parameters.Add(
+                            "@UserID",
+                            SqlDbType.NVarChar,
+                            10
+                        ).Value = CurrentUserId;
+
+                        updateCmd.ExecuteNonQuery();
+                    }
+
+                    success = true;
+                }
+            }
+
+            if (success)
             {
                 pnlSuccess.Visible = true;
-                litSuccess.Text = "Password changed successfully.";
                 pnlError.Visible = false;
+
+                litSuccess.Text =
+                    "Password changed successfully.";
+
                 tbCurrentPwd.Text = "";
                 tbNewPwd.Text = "";
                 tbConfirmPwd.Text = "";
@@ -161,27 +316,78 @@ namespace CSA.Student
             {
                 pnlError.Visible = true;
                 pnlSuccess.Visible = false;
-                litError.Text = err;
+
+                litError.Text = errorMessage;
             }
         }
 
-        // TODO: remove once PasswordManager class is merged in from teammate's code.
-        private string HashPasswordTemp(string plainPassword)
+        private static string MakeInitials(
+            string name)
         {
-            using (SHA256 sha256 = SHA256.Create())
+            string[] parts =
+                (name ?? "").Split(
+                    new[] { ' ' },
+                    StringSplitOptions
+                        .RemoveEmptyEntries
+                );
+
+            if (parts.Length >= 2)
             {
-                byte[] bytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(plainPassword));
-                StringBuilder sb = new StringBuilder();
-                foreach (byte b in bytes) sb.Append(b.ToString("x2"));
-                return sb.ToString();
+                return
+                    parts[0].Substring(0, 1) +
+                    parts[parts.Length - 1]
+                        .Substring(0, 1);
+            }
+
+            if (parts.Length == 1)
+            {
+                return parts[0].Substring(
+                    0,
+                    Math.Min(
+                        2,
+                        parts[0].Length
+                    )
+                );
+            }
+
+            return "CS";
+        }
+
+        private static string HashPasswordTemp(
+            string plainPassword)
+        {
+            using (SHA256 sha256 =
+                   SHA256.Create())
+            {
+                byte[] bytes =
+                    sha256.ComputeHash(
+                        Encoding.UTF8.GetBytes(
+                            plainPassword ?? ""
+                        )
+                    );
+
+                StringBuilder result =
+                    new StringBuilder();
+
+                foreach (byte b in bytes)
+                {
+                    result.Append(
+                        b.ToString("x2")
+                    );
+                }
+
+                return result.ToString();
             }
         }
 
-        protected void lbLogout_Click(object sender, EventArgs e)
+        protected void lbLogout_Click(
+            object sender,
+            EventArgs e)
         {
             Session.Clear();
             Session.Abandon();
+
             Response.Redirect("~/Login.aspx");
         }
     }
-    }
+}
