@@ -25,7 +25,7 @@
         <div class="sidebar-section">Account</div>
         <a href="Profile.aspx"     class="sidebar-link"><i class="ti ti-user"></i>Profile</a>
         <a href="Settings.aspx"    class="sidebar-link"><i class="ti ti-settings"></i>Settings</a>
-        <asp:LinkButton ID="lbLogout" OnClientClick="return showLogoutConfirm(this);" runat="server" CssClass="sidebar-link"
+        <asp:LinkButton ID="lbLogout" runat="server" CssClass="sidebar-link"
                         OnClick="lbLogout_Click">
             <i class="ti ti-logout"></i>Sign Out
         </asp:LinkButton>
