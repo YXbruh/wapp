@@ -4,6 +4,9 @@ using System.Linq;
 using System.Web;
 using System.Web.UI;
 using System.Web.UI.WebControls;
+using System.Configuration;
+using System.Data.SqlClient;
+
 
 namespace CSA.Lecturer
 {
@@ -13,18 +16,52 @@ namespace CSA.Lecturer
         {
             if (Session["UserID"] == null || Session["Role"] as string != "Lecturer")
             { Response.Redirect("~/Login.aspx"); return; }
-            if (!IsPostBack) LoadDashboard();
+            
+            if (!IsPostBack)
+            {
+                string instructorId = Session["UserID"] != null ? Session["UserID"].ToString().Trim() : "";
+                if (!string.IsNullOrEmpty(instructorId))
+                {
+                    LoadDashboard(instructorId);
+                }
+                else
+                {
+                    litModules.Text = "0"; // Handle empty session fallback safely
+                }
+            }
+
+            
         }
 
-        private void LoadDashboard()
+        private void LoadDashboard(string instructorId)
         {
-            //string userId = Session["UserID"].ToString();                                              //Bypass login for testing
+            string userId = Session["UserID"].ToString(); //bypass Login
             litName.Text = Session["FullName"] as string ?? "Lecturer";
             litDate.Text = DateTime.Now.ToString("dddd, dd MMMM yyyy");
 
+
+            string connString = ConfigurationManager.ConnectionStrings["CSAConnection"].ConnectionString;
+
+            string query = "SELECT COUNT(*) FROM Courses WHERE InstructorID = @InstructorID AND IsPublished = 1";
+
+            using (SqlConnection conn = new SqlConnection(connString))
+            {
+                using (SqlCommand cmd = new SqlCommand(query, conn))
+                {
+                    cmd.Parameters.AddWithValue("@InstructorID", instructorId);
+                    try
+                    {
+                        conn.Open();
+                        int activeModulesCount = (int)cmd.ExecuteScalar();
+                        litModules.Text = activeModulesCount.ToString();
+                    }
+                    catch (Exception ex) { litModules.Text = "0"; }
+                }
+            }
+
             // TODO:
             // var stats = LecturerService.GetDashboardStats(userId);
-            // litModules.Text  = stats.ActiveModules.ToString();
+            //litModules.Text  = stats.ActiveModules.ToString();
             // litStudents.Text = stats.TotalStudents.ToString();
             // litLabRate.Text  = stats.AvgLabCompletion + "%";
             // litQuizAvg.Text  = stats.AvgQuizScore + "%";
