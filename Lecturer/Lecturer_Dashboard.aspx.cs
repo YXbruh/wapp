@@ -27,6 +27,7 @@ namespace CSA.Lecturer
                 else
                 {
                     litModules.Text = "0"; // Handle empty session fallback safely
+                    litStudents.Text = "0";
                 }
             }
 
@@ -42,22 +43,44 @@ namespace CSA.Lecturer
 
             string connString = ConfigurationManager.ConnectionStrings["CSAConnection"].ConnectionString;
 
-            string query = "SELECT COUNT(*) FROM Courses WHERE InstructorID = @InstructorID AND IsPublished = 1";
+            string modulesQuery = "SELECT COUNT(*) FROM Courses WHERE InstructorID = @InstructorID AND IsPublished = 1";
+
+            string studentsQuery = @"
+                SELECT COUNT(DISTINCT e.StudentID) 
+                FROM Enrollments e
+                INNER JOIN Courses c ON e.CourseID = c.CourseID
+                WHERE c.InstructorID = @InstructorID 
+                  AND c.IsPublished = 1
+                  AND e.Status != 'Not Started'";
 
             using (SqlConnection conn = new SqlConnection(connString))
             {
-                using (SqlCommand cmd = new SqlCommand(query, conn))
+                conn.Open();
+                using (SqlCommand cmd = new SqlCommand(modulesQuery, conn))
                 {
                     cmd.Parameters.AddWithValue("@InstructorID", instructorId);
                     try
                     {
-                        conn.Open();
                         int activeModulesCount = (int)cmd.ExecuteScalar();
                         litModules.Text = activeModulesCount.ToString();
                     }
                     catch (Exception ex) { litModules.Text = "0"; }
                 }
+
+                // litStudent count
+                using (SqlCommand cmd = new SqlCommand(studentsQuery, conn))
+                {
+                    cmd.Parameters.AddWithValue("@InstructorID", instructorId);
+                    try
+                    {
+                        int studentsCount = (int)cmd.ExecuteScalar();
+                        litStudents.Text = studentsCount.ToString();
+                    }
+                    catch (Exception ex) { litStudents.Text = "0"; }
+                }
             }
+
+            
 
             // TODO:
             // var stats = LecturerService.GetDashboardStats(userId);
