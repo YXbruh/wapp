@@ -1,11 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Data.SqlClient;
 using System.IO;
+using System.Linq;
 using System.Text.RegularExpressions;
 using System.Web.UI;
 using System.Web.UI.WebControls;
-using System.Configuration;
 
 namespace CSA.Lecturer
 {
@@ -24,7 +25,7 @@ namespace CSA.Lecturer
 
             if (!IsPostBack)
             {
-                EnsureTablesExist();          // Create missing tables if needed
+                EnsureTablesExist();
                 LoadCourseDropdown();
                 ActivateTab("Chapter");
                 LoadContentList();
@@ -44,55 +45,55 @@ namespace CSA.Lecturer
         // ========================================================================
         private void EnsureTablesExist()
         {
-            string connStr = GetConnectionString();
-            using (SqlConnection conn = new SqlConnection(connStr))
-            {
-                conn.Open();
+            //string connStr = GetConnectionString();
+            //using (SqlConnection conn = new SqlConnection(connStr))
+            //{
+            //    conn.Open();
 
-                // Create Articles table if missing
-                string createArticles = @"
-                    IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[Articles]') AND type in (N'U'))
-                    BEGIN
-                        CREATE TABLE Articles (
-                            ArticleID    NVARCHAR(10)  NOT NULL PRIMARY KEY,
-                            CourseID     NVARCHAR(10)  NOT NULL,
-                            Title        NVARCHAR(200) NOT NULL,
-                            Tag          NVARCHAR(100) NULL,
-                            Body         NVARCHAR(MAX) NOT NULL,
-                            Url          NVARCHAR(500) NULL,
-                            IsPublished  BIT           NOT NULL DEFAULT 0,
-                            CreatedByID  NVARCHAR(10)  NOT NULL,
-                            CreatedAt    DATETIME      NOT NULL DEFAULT GETDATE(),
-                            UpdatedAt    DATETIME      NOT NULL DEFAULT GETDATE(),
-                            CONSTRAINT FK_Articles_Course    FOREIGN KEY (CourseID)    REFERENCES Courses(CourseID),
-                            CONSTRAINT FK_Articles_CreatedBy FOREIGN KEY (CreatedByID) REFERENCES Users(UserID)
-                        );
-                    END";
+            //    // Create Articles table if missing
+            //    string createArticles = @"
+            //        IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[Articles]') AND type in (N'U'))
+            //        BEGIN
+            //            CREATE TABLE Articles (
+            //                ArticleID    NVARCHAR(10)  NOT NULL PRIMARY KEY,
+            //                CourseID     NVARCHAR(10)  NOT NULL,
+            //                Title        NVARCHAR(200) NOT NULL,
+            //                Tag          NVARCHAR(100) NULL,
+            //                Body         NVARCHAR(MAX) NOT NULL,
+            //                Url          NVARCHAR(500) NULL,
+            //                IsPublished  BIT           NOT NULL DEFAULT 0,
+            //                CreatedByID  NVARCHAR(10)  NOT NULL,
+            //                CreatedAt    DATETIME      NOT NULL DEFAULT GETDATE(),
+            //                UpdatedAt    DATETIME      NOT NULL DEFAULT GETDATE(),
+            //                CONSTRAINT FK_Articles_Course    FOREIGN KEY (CourseID)    REFERENCES Courses(CourseID),
+            //                CONSTRAINT FK_Articles_CreatedBy FOREIGN KEY (CreatedByID) REFERENCES Users(UserID)
+            //            );
+            //        END";
 
-                // Create Media table if missing
-                string createMedia = @"
-                    IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[Media]') AND type in (N'U'))
-                    BEGIN
-                        CREATE TABLE Media (
-                            MediaID      NVARCHAR(10)  NOT NULL PRIMARY KEY,
-                            CourseID     NVARCHAR(10)  NOT NULL,
-                            Title        NVARCHAR(200) NOT NULL,
-                            Description  NVARCHAR(500) NULL,
-                            FileName     NVARCHAR(500) NOT NULL,
-                            MediaType    NVARCHAR(50)  NOT NULL,
-                            CreatedByID  NVARCHAR(10)  NOT NULL,
-                            CreatedAt    DATETIME      NOT NULL DEFAULT GETDATE(),
-                            UpdatedAt    DATETIME      NOT NULL DEFAULT GETDATE(),
-                            CONSTRAINT FK_Media_Course    FOREIGN KEY (CourseID)    REFERENCES Courses(CourseID),
-                            CONSTRAINT FK_Media_CreatedBy FOREIGN KEY (CreatedByID) REFERENCES Users(UserID)
-                        );
-                    END";
+            //    // Create Media table if missing
+            //    string createMedia = @"
+            //        IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[Media]') AND type in (N'U'))
+            //        BEGIN
+            //            CREATE TABLE Media (
+            //                MediaID      NVARCHAR(10)  NOT NULL PRIMARY KEY,
+            //                CourseID     NVARCHAR(10)  NOT NULL,
+            //                Title        NVARCHAR(200) NOT NULL,
+            //                Description  NVARCHAR(500) NULL,
+            //                FileName     NVARCHAR(500) NOT NULL,
+            //                MediaType    NVARCHAR(50)  NOT NULL,
+            //                CreatedByID  NVARCHAR(10)  NOT NULL,
+            //                CreatedAt    DATETIME      NOT NULL DEFAULT GETDATE(),
+            //                UpdatedAt    DATETIME      NOT NULL DEFAULT GETDATE(),
+            //                CONSTRAINT FK_Media_Course    FOREIGN KEY (CourseID)    REFERENCES Courses(CourseID),
+            //                CONSTRAINT FK_Media_CreatedBy FOREIGN KEY (CreatedByID) REFERENCES Users(UserID)
+            //            );
+            //        END";
 
-                //using (SqlCommand cmd = new SqlCommand(createArticles, conn))
-                //    cmd.ExecuteNonQuery();
-                //using (SqlCommand cmd = new SqlCommand(createMedia, conn))
-                //    cmd.ExecuteNonQuery();
-            }
+            //    using (SqlCommand cmd = new SqlCommand(createArticles, conn))
+            //        cmd.ExecuteNonQuery();
+            //    using (SqlCommand cmd = new SqlCommand(createMedia, conn))
+            //        cmd.ExecuteNonQuery();
+            //}
         }
 
         // ========================================================================
@@ -289,10 +290,10 @@ namespace CSA.Lecturer
             string title = tbTitle.Text.Trim();
             int sortOrder = string.IsNullOrEmpty(tbChapterNum.Text) ? 0 : Convert.ToInt32(tbChapterNum.Text);
             string body = tbChapterBody.Text.Trim();
-            string objectives = tbObjectives.Text.Trim(); // stored in Content field? We'll append to body or store separately? We'll combine with body.
+            string objectives = tbObjectives.Text.Trim();
             bool isPublished = cbPublishChapter.Checked;
 
-            // Combine body and objectives (or store objectives in a separate column? We'll store as part of body with a marker)
+            // Combine body and objectives
             string fullContent = body;
             if (!string.IsNullOrEmpty(objectives))
                 fullContent += $"\n\n## Learning Objectives\n{objectives}";
@@ -484,27 +485,22 @@ namespace CSA.Lecturer
             {
                 // Populate form with existing data
                 string userId = Session["UserID"].ToString();
-                string table = "";
                 string query = "";
                 switch (tab)
                 {
                     case "Chapter":
-                        table = "Chapters";
                         query = @"
-                            SELECT ChapterID, CourseID, ChapterTitle AS Title, Content, SortOrder, IsPublished,
-                                   CreatedByID
+                            SELECT ChapterID, CourseID, ChapterTitle AS Title, Content, SortOrder, IsPublished
                             FROM Chapters WHERE ChapterID = @ID AND CreatedByID = @UserID";
                         break;
                     case "Article":
-                        table = "Articles";
                         query = @"
-                            SELECT ArticleID AS ID, CourseID, Title, Tag, Body, Url, IsPublished, CreatedByID
+                            SELECT ArticleID AS ID, CourseID, Title, Tag, Body, Url, IsPublished
                             FROM Articles WHERE ArticleID = @ID AND CreatedByID = @UserID";
                         break;
                     case "Media":
-                        table = "Media";
                         query = @"
-                            SELECT MediaID AS ID, CourseID, Title, Description, FileName, MediaType, CreatedByID
+                            SELECT MediaID AS ID, CourseID, Title, Description, FileName, MediaType
                             FROM Media WHERE MediaID = @ID AND CreatedByID = @UserID";
                         break;
                 }
@@ -531,13 +527,12 @@ namespace CSA.Lecturer
                         if (tab == "Chapter")
                         {
                             string content = reader["Content"].ToString();
-                            // Extract objectives if stored with marker? We stored combined. To edit, we need to separate? We'll just put body and objectives in separate fields if possible.
-                            // For simplicity, we'll put full content in body, and leave objectives empty.
+                            // For simplicity, we put full content in body; objectives are not separated.
                             tbChapterBody.Text = content;
-                            tbObjectives.Text = ""; // We could parse but we'll keep it simple
+                            tbObjectives.Text = "";
                             tbChapterNum.Text = reader["SortOrder"].ToString();
                             cbPublishChapter.Checked = Convert.ToBoolean(reader["IsPublished"]);
-                            ActivateTab("Chapter"); // ensure correct panel visible
+                            ActivateTab("Chapter");
                         }
                         else if (tab == "Article")
                         {
@@ -617,10 +612,16 @@ namespace CSA.Lecturer
         private void ShowError(string msg)
         { pnlError.Visible = true; litError.Text = Server.HtmlEncode(msg); pnlSuccess.Visible = false; }
 
+        /// <summary>
+        /// Generates a short ID that fits in NVARCHAR(10).
+        /// Prefix (2 chars) + 6 random alphanumeric characters = 8 chars total.
+        /// </summary>
         private string GenerateId(string prefix)
         {
-            // Simple ID generation: prefix + timestamp + random
-            return prefix + DateTime.Now.ToString("yyyyMMddHHmmss") + new Random().Next(1000, 9999).ToString();
+            const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+            var random = new Random();
+            var randomPart = new string(Enumerable.Repeat(chars, 6).Select(s => s[random.Next(s.Length)]).ToArray());
+            return prefix + randomPart; // e.g., "CH" + "A1B2C3" = "CHA1B2C3" (8 chars)
         }
 
         protected void lbLogout_Click(object sender, EventArgs e)
