@@ -22,13 +22,14 @@ namespace CSA.Lecturer
                 if (!string.IsNullOrEmpty(instructorId))
                 {
                     LoadCourseDropdown(instructorId);
-                    LoadData(instructorId, null);
+                    LoadData(instructorId, null, null);
                 }
             }
             else
             {
                 litTotal.Text = "0";
                 litAvgQuiz.Text = "0";
+
             }
         }
 
@@ -62,9 +63,11 @@ namespace CSA.Lecturer
             }
         }
 
-        private void LoadData(string instructorId, string courseId)
+        private void LoadData(string instructorId, string courseId, string searchTerm)
         {
             if (string.IsNullOrEmpty(instructorId)) courseId = null;
+            if (string.IsNullOrEmpty(courseId)) courseId = null;
+            if (string.IsNullOrEmpty(searchTerm)) searchTerm = "";
 
             string connString = ConfigurationManager.ConnectionStrings["CSAConnection"].ConnectionString;
 
@@ -104,7 +107,80 @@ namespace CSA.Lecturer
                   INNER JOIN Courses c ON e.CourseID = c.CourseID
                   WHERE c.InstructorID = @InstructorID
                     AND c.IsPublished = 1" +
-                    (string.IsNullOrEmpty(courseId) ? "" : " AND c.CourseID = @CourseID") +")";
+                    (string.IsNullOrEmpty(courseId) ? "" : " AND c.CourseID = @CourseID") + ")";
+
+            // Students Table Data
+            string studentQuery = @"
+                    WITH StudentCourses AS (
+                        SELECT DISTINCT e.StudentID, c.CourseID
+                        FROM Enrollments e
+                        INNER JOIN Courses c ON e.CourseID = c.CourseID
+                        WHERE c.InstructorID = @InstructorID AND c.IsPublished = 1
+                          " + (string.IsNullOrEmpty(courseId) ? "" : " AND c.CourseID = @CourseID") + @"
+                    ),
+                    LabTotals AS (
+                        SELECT vl.CourseID, COUNT(*) AS TotalLabs
+                        FROM VirtualLabs vl
+                        WHERE vl.IsPublished = 1
+                        GROUP BY vl.CourseID
+                    ),
+                    StudentLabs AS (
+                        SELECT sc.StudentID,
+                               COUNT(DISTINCT vl.LabID) AS TotalLabs,
+                               COUNT(DISTINCT CASE WHEN ls.Result = 'Passed' THEN ls.LabID END) AS PassedLabs
+                        FROM StudentCourses sc
+                        INNER JOIN VirtualLabs vl ON sc.CourseID = vl.CourseID
+                        LEFT JOIN LabSubmissions ls ON ls.LabID = vl.LabID AND ls.StudentID = sc.StudentID
+                        WHERE vl.IsPublished = 1
+                        GROUP BY sc.StudentID
+                    ),
+                    StudentQuiz AS (
+                        SELECT qa.StudentID,
+                               ISNULL(AVG(qa.Score), 0) AS QuizAvg
+                        FROM QuizAttempts qa
+                        INNER JOIN StudentCourses sc ON qa.StudentID = sc.StudentID
+                        GROUP BY qa.StudentID
+                    )
+                    SELECT 
+                        u.UserID,
+                        u.FullName,
+                        u.Email,
+                        ISNULL(sq.QuizAvg, 0) AS QuizAvg,
+                        ISNULL(sl.PassedLabs, 0) AS LabsDone,
+                        ISNULL(sl.TotalLabs, 0) AS LabsTotal,
+                        0 AS ChallengesDone,      -- not implemented yet
+                        0 AS ChallengesTotal,
+                        CASE WHEN ISNULL(sl.PassedLabs, 0) > 0 THEN 1 ELSE 0 END AS SandboxCleared,
+                        ISNULL(u.LastLoginDate, u.CreatedAt) AS LastActive
+                    FROM Users u
+                    INNER JOIN StudentCourses sc ON u.UserID = sc.StudentID
+                    LEFT JOIN StudentLabs sl ON u.UserID = sl.StudentID
+                    LEFT JOIN StudentQuiz sq ON u.UserID = sq.StudentID
+                    WHERE u.UserID IN (SELECT StudentID FROM StudentCourses)
+                      AND (u.FullName LIKE @Search OR u.Email LIKE @Search)
+                    ORDER BY u.FullName";
+
+            // Quiz Breakdown Data
+            string quizBreakdownQuery = @"
+            SELECT 
+                q.Title AS QuizName,
+                COUNT(qa.AttemptID) AS AttemptCount,
+                ISNULL(AVG(qa.Score), 0) AS AvgScore,
+                ISNULL(MAX(qa.Score), 0) AS HighScore,
+                ISNULL(MIN(qa.Score), 0) AS LowScore,
+                ISNULL(
+                    (SUM(CASE WHEN qa.IsPassed = 1 THEN 1 ELSE 0 END) * 100.0) / NULLIF(COUNT(qa.AttemptID), 0), 
+                    0
+                ) AS PassRate
+            FROM Quizzes q
+            INNER JOIN Courses c ON q.CourseID = c.CourseID
+            LEFT JOIN QuizAttempts qa ON q.QuizID = qa.QuizID
+            WHERE c.InstructorID = @InstructorID
+              AND c.IsPublished = 1
+              AND q.IsPublished = 1" +
+                        (string.IsNullOrEmpty(courseId) ? "" : " AND c.CourseID = @CourseID") + @"
+            GROUP BY q.QuizID, q.Title
+            ORDER BY q.Title";
 
             using (SqlConnection conn = new SqlConnection(connString))
             {
@@ -164,35 +240,82 @@ namespace CSA.Lecturer
                     litSandboxCleared.Text = cmd.ExecuteScalar()?.ToString() ?? "0";
                 }
 
-                pnlEmpty.Visible = pnlNoQuiz.Visible = true;
+                // students table
+                using (SqlCommand cmd = new SqlCommand(studentQuery, conn))
+                {
+                    cmd.Parameters.AddWithValue("@InstructorID", instructorId);
+                    if (!string.IsNullOrEmpty(courseId))
+                        cmd.Parameters.AddWithValue("@CourseID", courseId);
+                    cmd.Parameters.AddWithValue("@Search", "%" + searchTerm + "%");
+
+                    SqlDataReader reader = cmd.ExecuteReader();
+                    var students = new List<StudentPerformanceViewModel>();
+                    while (reader.Read())
+                    {
+                        students.Add(new StudentPerformanceViewModel
+                        {
+                            UserID = reader["UserID"].ToString(),
+                            FullName = reader["FullName"].ToString(),
+                            Email = reader["Email"].ToString(),
+                            QuizAvg = Convert.ToInt32(Math.Round(Convert.ToDecimal(reader["QuizAvg"]), 0)),
+                            LabsDone = Convert.ToInt32(reader["LabsDone"]),
+                            LabsTotal = Convert.ToInt32(reader["LabsTotal"]),
+                            ChallengesDone = 0,
+                            ChallengesTotal = 0,
+                            SandboxCleared = Convert.ToBoolean(reader["SandboxCleared"]),
+                            LastActive = Convert.ToDateTime(reader["LastActive"])
+                        });
+                    }
+                    reader.Close();
+
+                    rptStudents.DataSource = students;
+                    rptStudents.DataBind();
+                    pnlEmpty.Visible = students.Count == 0;
+                }
+
+                using (SqlCommand cmd = new SqlCommand(quizBreakdownQuery, conn))
+                {
+                    cmd.Parameters.AddWithValue("@InstructorID", instructorId);
+                    if (!string.IsNullOrEmpty(courseId))
+                        cmd.Parameters.AddWithValue("@CourseID", courseId);
+
+                    SqlDataReader reader = cmd.ExecuteReader();
+                    var quizBreakdown = new List<QuizBreakdownViewModel>();
+                    while (reader.Read())
+                    {
+                        quizBreakdown.Add(new QuizBreakdownViewModel
+                        {
+                            QuizName = reader["QuizName"].ToString(),
+                            AttemptCount = Convert.ToInt32(reader["AttemptCount"]),
+                            AvgScore = Convert.ToInt32(Math.Round(Convert.ToDecimal(reader["AvgScore"]), 0)),
+                            HighScore = Convert.ToInt32(Math.Round(Convert.ToDecimal(reader["HighScore"]), 0)),
+                            LowScore = Convert.ToInt32(Math.Round(Convert.ToDecimal(reader["LowScore"]), 0)),
+                            PassRate = Convert.ToInt32(Math.Round(Convert.ToDecimal(reader["PassRate"]), 0))
+                        });
+                    }
+
+                    reader.Close();
+
+                    rptQuizBreakdown.DataSource = quizBreakdown;
+                    rptQuizBreakdown.DataBind();
+                    pnlNoQuiz.Visible = quizBreakdown.Count == 0;
+                }
             }
-
-            
-
-            // TODO:
-            // var stats = AnalyticsService.GetClassStats(userId, courseId, tbSearch.Text.Trim());
-            // litTotal.Text          = stats.TotalStudents.ToString();
-            // litAvgQuiz.Text        = stats.AvgQuizScore + "%";
-            // litLabRate.Text        = stats.LabCompletionRate + "%";
-            // litSandboxCleared.Text = stats.SandboxClearedCount.ToString();
-            // rptStudents.DataSource      = stats.Students;      rptStudents.DataBind();
-            // rptQuizBreakdown.DataSource = stats.QuizBreakdown; rptQuizBreakdown.DataBind();
-            // pnlEmpty.Visible  = stats.Students.Count == 0;
-            // pnlNoQuiz.Visible = stats.QuizBreakdown.Count == 0;
-
         }
 
         protected void ddlCourse_Changed(object sender, EventArgs e)
-        { 
+        {
             string instructorId = Session["UserID"] != null ? Session["UserID"].ToString().Trim() : "";
             string courseId = ddlCourse.SelectedValue;
-            LoadData(instructorId, courseId);
+            string search = tbSearch.Text.Trim();
+            LoadData(instructorId, courseId, search);
         }
         protected void tbSearch_Changed(object sender, EventArgs e)
         {
             string instructorId = Session["UserID"] != null ? Session["UserID"].ToString().Trim() : "";
             string courseId = ddlCourse.SelectedValue;
-            LoadData(instructorId, courseId);
+            string search = tbSearch.Text.Trim();
+            LoadData(instructorId, courseId, search);
         }
 
         protected void lbExport_Click(object sender, EventArgs e)
@@ -205,6 +328,42 @@ namespace CSA.Lecturer
 
         protected void lbLogout_Click(object sender, EventArgs e)
         { Session.Clear(); Session.Abandon(); Response.Redirect("~/Login.aspx?msg=loggedout"); }
-    }
 
+        public class StudentPerformanceViewModel
+        {
+            public string UserID { get; set; }
+            public string FullName { get; set; }
+            public string Email { get; set; }
+            public int QuizAvg { get; set; }
+            public int LabsDone { get; set; }
+            public int LabsTotal { get; set; }
+            public int ChallengesDone { get; set; }
+            public int ChallengesTotal { get; set; }
+            public bool SandboxCleared { get; set; }
+            public DateTime LastActive { get; set; }
+
+            // For display
+            public string LastActiveDisplay => GetRelativeTime(LastActive);
+
+            private string GetRelativeTime(DateTime date)
+            {
+                var diff = DateTime.Now - date;
+                if (diff.TotalMinutes < 1) return "Just now";
+                if (diff.TotalMinutes < 60) return $"{(int)diff.TotalMinutes} min ago";
+                if (diff.TotalHours < 24) return $"{(int)diff.TotalHours} hr ago";
+                if (diff.TotalDays < 7) return $"{(int)diff.TotalDays} days ago";
+                return date.ToString("MMM dd, yyyy");
+            }
+        }
+
+        public class QuizBreakdownViewModel
+        {
+            public string QuizName { get; set; }
+            public int AttemptCount { get; set; }
+            public int AvgScore { get; set; }
+            public int HighScore { get; set; }
+            public int LowScore { get; set; }
+            public int PassRate { get; set; }
+        }
+    }
 }
