@@ -95,15 +95,16 @@ namespace CSA.Lecturer
 
             // Sandbox cleared
             string sandboxQuery = @"
-                    SELECT COUNT(DISTINCT e.StudentID)
-                FROM Enrollments e
-                INNER JOIN Courses c ON e.CourseID = c.CourseID
-                INNER JOIN VirtualLabs vl ON c.CourseID = vl.CourseID
-                INNER JOIN LabSubmissions ls ON vl.LabID = ls.LabID AND ls.StudentID = e.StudentID
-                WHERE c.InstructorID = @InstructorID
-                  AND c.IsPublished = 1
-                  AND ls.IsCorrect = 1" +
-                (string.IsNullOrEmpty(courseId) ? "" : " AND c.CourseID = @CourseID");
+                    SELECT COUNT(ls.SubmissionID)
+            FROM LabSubmissions ls
+            WHERE ls.Result = 'Passed'
+              AND ls.StudentID IN (
+                  SELECT DISTINCT e.StudentID
+                  FROM Enrollments e
+                  INNER JOIN Courses c ON e.CourseID = c.CourseID
+                  WHERE c.InstructorID = @InstructorID
+                    AND c.IsPublished = 1" +
+                    (string.IsNullOrEmpty(courseId) ? "" : " AND c.CourseID = @CourseID") +")";
 
             using (SqlConnection conn = new SqlConnection(connString))
             {
@@ -154,6 +155,7 @@ namespace CSA.Lecturer
                     }
                 }
 
+                // sandbox cleared
                 using (SqlCommand cmd = new SqlCommand(sandboxQuery, conn))
                 {
                     cmd.Parameters.AddWithValue("@InstructorID", instructorId);
