@@ -101,10 +101,10 @@
                                 <div class="fb-preview"><%# Eval("CommentPreview") %></div>
                                 <div style="margin-top:6px;display:flex;gap:6px">
                                     <span class="badge <%# Eval("IsRead").ToString()=="False" ? "badge-amber":"badge-green" %>">
-                                        <%# Eval("IsRead").ToString()=="False" ? "Unread":"Replied" %>
+                                        <%# Eval("IsRead").ToString()=="False" ? "Unread":"Read" %>
                                     </span>
                                     <asp:LinkButton runat="server" CssClass="btn-sm secondary"
-                                        CommandName="Open" CommandArgument='<%# Eval("FeedbackID") %>'
+                                        CommandName="Select" CommandArgument='<%# Eval("FeedbackID") %>'
                                         style="padding:2px 8px;font-size:11px">
                                         Open &rarr;
                                     </asp:LinkButton>
@@ -129,7 +129,7 @@
                 <asp:Panel ID="pnlNoSelection" runat="server">
                     <div style="text-align:center;padding:60px 20px">
                         <i class="ti ti-message-circle" style="font-size:44px;color:var(--text3)" aria-hidden="true"></i>
-                        <p class="text-muted mt-16">Select a feedback item to read and reply.</p>
+                        <p class="text-muted mt-16">Select a feedback item to read</p>
                     </div>
                 </asp:Panel>
 
@@ -158,12 +158,21 @@
                         </a>
                     </div>
 
-                    <!-- Star rating -->
+                    <!-- Star rating selector -->
                     <div style="margin-bottom:16px">
-                        <div class="form-label" style="margin-bottom:6px">Student Rating</div>
-                        <div style="font-size:22px;color:#EF9F27">
-                            <asp:Literal ID="litDetailStars" runat="server" />
-                        </div>
+                        <div class="form-label" style="margin-bottom:6px">Your Rating (0.5 – 5.0)</div>
+                        <asp:DropDownList ID="ddlStarRating" runat="server" CssClass="form-select" style="width:auto;min-width:120px">
+                            <asp:ListItem Value="0.5">⭐ 0.5</asp:ListItem>
+                            <asp:ListItem Value="1.0">⭐ 1.0</asp:ListItem>
+                            <asp:ListItem Value="1.5">⭐ 1.5</asp:ListItem>
+                            <asp:ListItem Value="2.0">⭐ 2.0</asp:ListItem>
+                            <asp:ListItem Value="2.5">⭐ 2.5</asp:ListItem>
+                            <asp:ListItem Value="3.0">⭐ 3.0</asp:ListItem>
+                            <asp:ListItem Value="3.5">⭐ 3.5</asp:ListItem>
+                            <asp:ListItem Value="4.0">⭐ 4.0</asp:ListItem>
+                            <asp:ListItem Value="4.5">⭐ 4.5</asp:ListItem>
+                            <asp:ListItem Value="5.0">⭐ 5.0</asp:ListItem>
+                        </asp:DropDownList>
                         <div class="text-small text-muted mt-4">
                             <asp:Literal ID="litDetailRatingNum" runat="server" /> / 5 &middot;
                             <asp:Literal ID="litDetailDate" runat="server" />
@@ -217,6 +226,13 @@
                         <div class="alert-success mb-16">
                             <i class="ti ti-circle-check" aria-hidden="true"></i>
                             <asp:Literal ID="litSuccess" runat="server" />
+                        </div>
+                    </asp:Panel>
+
+                    <asp:Panel ID="pnlError" runat="server" Visible="false">
+                        <div class="validation-summary-errors mb-16">
+                            <i class="ti ti-alert-circle" aria-hidden="true"></i>
+                            <asp:Literal ID="litError" runat="server" />
                         </div>
                     </asp:Panel>
 
@@ -293,9 +309,9 @@
 }
 </style>
 <script>
-function selectFeedback(el) {
-    document.querySelectorAll('.feedback-item').forEach(f => f.classList.remove('selected'));
-    el.classList.add('selected');
-}
+    function selectFeedback(el) {
+        document.querySelectorAll('.feedback-item').forEach(f => f.classList.remove('selected'));
+        el.classList.add('selected');
+    }
 </script>
 </asp:Content>

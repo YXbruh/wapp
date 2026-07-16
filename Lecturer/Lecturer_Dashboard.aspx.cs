@@ -47,10 +47,10 @@ namespace CSA.Lecturer
 
             string connString = ConfigurationManager.ConnectionStrings["CSAConnection"].ConnectionString;
 
-            // Query 1
+            // Query 1: Count active modules (published courses)
             string modulesQuery = "SELECT COUNT(*) FROM Courses WHERE InstructorID = @InstructorID AND IsPublished = 1";
 
-            // Query 2
+            // Query 2: Count distinct students enrolled
             string studentsQuery = @"
                 SELECT COUNT(DISTINCT e.StudentID) 
                 FROM Enrollments e
@@ -58,7 +58,7 @@ namespace CSA.Lecturer
                 WHERE c.InstructorID = @InstructorID 
                   AND c.IsPublished = 1";
 
-            // Query 3
+            // Query 3: Average progress from enrollments
             string labRateQuery = @"
                 SELECT ISNULL(AVG(e.Progress), 0) AS AvgProgress
                 FROM Enrollments e
@@ -66,7 +66,7 @@ namespace CSA.Lecturer
                 WHERE c.InstructorID = @InstructorID 
                   AND c.IsPublished = 1";
 
-            // Query 4
+            // Query 4: Average quiz score for all students enrolled in lecturer's courses
             string quizAvgQuery = @"
                 SELECT ISNULL(AVG(qa.Score), 0) AS AvgQuizScore
                 FROM QuizAttempts qa
@@ -75,7 +75,7 @@ namespace CSA.Lecturer
                 WHERE c.InstructorID = @InstructorID 
                   AND c.IsPublished = 1";
 
-            // Query 5
+            // Query 5: Lab completion rates per course based on Enrollment Status
             string labRatesQuery = @"
                 SELECT 
                     c.CourseID,
@@ -100,7 +100,7 @@ namespace CSA.Lecturer
                 GROUP BY c.CourseID, c.CourseName
                 ORDER BY CompletionPct DESC";
 
-            // Query 6
+            // Query 6: Quiz scores per quiz for the lecturer's courses
             string quizScoresQuery = @"
                 SELECT 
                     q.QuizID,
@@ -117,7 +117,7 @@ namespace CSA.Lecturer
                 GROUP BY q.QuizID, q.Title, c.CourseName
                 ORDER BY AvgScore DESC";
 
-            // Query 7
+            // Query 7: Unified list of all content modules (Chapters, Labs, Quizzes)
             string modulesListQuery = @"
                 -- Chapters
                 SELECT 
@@ -180,7 +180,7 @@ namespace CSA.Lecturer
             {
                 conn.Open();
 
-                // active modules count
+                // Get active modules count
                 using (SqlCommand cmd = new SqlCommand(modulesQuery, conn))
                 {
                     cmd.Parameters.AddWithValue("@InstructorID", instructorId);
@@ -195,7 +195,7 @@ namespace CSA.Lecturer
                     }
                 }
 
-                // enrolled count
+                // Get enrolled students count
                 using (SqlCommand cmd = new SqlCommand(studentsQuery, conn))
                 {
                     cmd.Parameters.AddWithValue("@InstructorID", instructorId);
@@ -210,7 +210,7 @@ namespace CSA.Lecturer
                     }
                 }
 
-                // average progress
+                // Get average progress
                 using (SqlCommand cmd = new SqlCommand(labRateQuery, conn))
                 {
                     cmd.Parameters.AddWithValue("@InstructorID", instructorId);
@@ -226,7 +226,7 @@ namespace CSA.Lecturer
                     }
                 }
 
-                // average score
+                // Get average quiz score
                 using (SqlCommand cmd = new SqlCommand(quizAvgQuery, conn))
                 {
                     cmd.Parameters.AddWithValue("@InstructorID", instructorId);
@@ -242,7 +242,7 @@ namespace CSA.Lecturer
                     }
                 }
 
-                //lab completion rates
+                // Get lab completion rates per course
                 using (SqlCommand cmd = new SqlCommand(labRatesQuery, conn))
                 {
                     cmd.Parameters.AddWithValue("@InstructorID", instructorId);
@@ -266,6 +266,7 @@ namespace CSA.Lecturer
                         rptLabRates.DataSource = labRates;
                         rptLabRates.DataBind();
 
+                        // Show/hide the no data panel
                         pnlNoLabs.Visible = labRates.Count == 0;
                     }
                     catch (Exception ex)
@@ -276,7 +277,7 @@ namespace CSA.Lecturer
                     }
                 }
 
-                // quiz scores per quiz
+                // Get quiz scores per quiz
                 using (SqlCommand cmd = new SqlCommand(quizScoresQuery, conn))
                 {
                     cmd.Parameters.AddWithValue("@InstructorID", instructorId);
@@ -300,6 +301,7 @@ namespace CSA.Lecturer
                         rptQuizScores.DataSource = quizScores;
                         rptQuizScores.DataBind();
 
+                        // Show/hide the no data panel
                         pnlNoQuiz.Visible = quizScores.Count == 0;
                     }
                     catch (Exception ex)
@@ -310,7 +312,7 @@ namespace CSA.Lecturer
                     }
                 }
 
-                // modules list
+                // Get unified modules list
                 using (SqlCommand cmd = new SqlCommand(modulesListQuery, conn))
                 {
                     cmd.Parameters.AddWithValue("@InstructorID", instructorId);
@@ -337,6 +339,8 @@ namespace CSA.Lecturer
 
                         rptModules.DataSource = modules;
                         rptModules.DataBind();
+
+                        // Show/hide the no data panel
                         pnlNoModules.Visible = modules.Count == 0;
                     }
                     catch (Exception ex)
@@ -363,7 +367,7 @@ namespace CSA.Lecturer
         }
     }
 
-    // lab rates
+    // ViewModel for lab rates
     public class LabRateViewModel
     {
         public string CourseName { get; set; }
@@ -372,7 +376,7 @@ namespace CSA.Lecturer
         public int CompletionPct { get; set; }
     }
 
-    // quiz scores
+    // ViewModel for quiz scores
     public class QuizScoreViewModel
     {
         public string QuizName { get; set; }
@@ -381,7 +385,7 @@ namespace CSA.Lecturer
         public int AvgScore { get; set; }
     }
 
-    // modules list
+    // ViewModel for modules (Chapters, Labs, Quizzes)
     public class ModuleViewModel
     {
         public string Title { get; set; }
@@ -393,7 +397,7 @@ namespace CSA.Lecturer
         public DateTime UpdatedAt { get; set; }
         public string ContentID { get; set; }
 
-        // property for display
+        // Computed property for display
         public string UpdatedDisplay => GetRelativeTime(UpdatedAt);
 
         private string GetRelativeTime(DateTime date)
