@@ -101,7 +101,7 @@
                                 <div class="fb-preview"><%# Eval("CommentPreview") %></div>
                                 <div style="margin-top:6px;display:flex;gap:6px">
                                     <span class="badge <%# Eval("IsRead").ToString()=="False" ? "badge-amber":"badge-green" %>">
-                                        <%# Eval("IsRead").ToString()=="False" ? "Unread":"Replied" %>
+                                        <%# Eval("IsRead").ToString()=="False" ? "Unread":"Read" %>
                                     </span>
                                     <asp:LinkButton runat="server" CssClass="btn-sm secondary"
                                         CommandName="Open" CommandArgument='<%# Eval("FeedbackID") %>'
@@ -129,7 +129,7 @@
                 <asp:Panel ID="pnlNoSelection" runat="server">
                     <div style="text-align:center;padding:60px 20px">
                         <i class="ti ti-message-circle" style="font-size:44px;color:var(--text3)" aria-hidden="true"></i>
-                        <p class="text-muted mt-16">Select a feedback item to read and reply.</p>
+                        <p class="text-muted mt-16">Select a feedback item to read</p>
                     </div>
                 </asp:Panel>
 

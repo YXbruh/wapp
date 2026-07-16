@@ -423,5 +423,7 @@ CREATE TABLE SecurityAlerts (
 );
 GO
 
+
+
 PRINT '=== CyberShield Academy schema created successfully! ===';
 GO
