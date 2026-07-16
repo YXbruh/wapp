@@ -2,8 +2,6 @@
 using System.Configuration;
 using System.Data;
 using System.Data.SqlClient;
-using System.IO;
-using System.Text;
 using System.Web.UI;
 using System.Web.UI.WebControls;
 
@@ -30,20 +28,6 @@ namespace CSA.Student
             }
         }
 
-        private string SelectedCertificateId
-        {
-            get
-            {
-                return Convert.ToString(
-                    ViewState["CertificateID"]);
-            }
-            set
-            {
-                ViewState["CertificateID"] =
-                    value;
-            }
-        }
-
         protected void Page_Load(
             object sender,
             EventArgs e)
@@ -56,6 +40,9 @@ namespace CSA.Student
 
             if (!IsPostBack)
             {
+                pnlCertificateList.Visible = true;
+                pnlCertificatePreview.Visible = false;
+
                 LoadCertificates();
             }
         }
@@ -99,22 +86,36 @@ namespace CSA.Student
 
             foreach (DataRow row in dt.Rows)
             {
-                row["IssuedDate"] =
-                    row["CompletedAt"] == DBNull.Value
-                        ? "—"
-                        : Convert.ToDateTime(
-                            row["CompletedAt"]
-                          ).ToString("dd MMM yyyy");
+                if (row["CompletedAt"] ==
+                    DBNull.Value)
+                {
+                    row["IssuedDate"] = "—";
+                }
+                else
+                {
+                    DateTime completedAt =
+                        Convert.ToDateTime(
+                            row["CompletedAt"]);
+
+                    row["IssuedDate"] =
+                        completedAt.ToString(
+                            "dd MMM yyyy");
+                }
             }
 
             litCount.Text =
                 dt.Rows.Count.ToString();
 
-            litLatest.Text =
-                dt.Rows.Count == 0
-                    ? "—"
-                    : Convert.ToString(
+            if (dt.Rows.Count == 0)
+            {
+                litLatest.Text = "—";
+            }
+            else
+            {
+                litLatest.Text =
+                    Convert.ToString(
                         dt.Rows[0]["IssuedDate"]);
+            }
 
             rptCerts.DataSource = dt;
             rptCerts.DataBind();
@@ -131,14 +132,28 @@ namespace CSA.Student
                 Convert.ToString(
                     e.CommandArgument);
 
+            if (string.IsNullOrWhiteSpace(
+                certificateId))
+            {
+                return;
+            }
+
             if (e.CommandName == "View")
             {
                 LoadPreview(certificateId);
             }
             else if (e.CommandName == "Download")
             {
-                DownloadCertificate(
-                    certificateId);
+                LoadPreview(certificateId);
+
+                ScriptManager.RegisterStartupScript(
+                    this,
+                    GetType(),
+                    "DownloadCertificatePdf",
+                    "setTimeout(function () " +
+                    "{ downloadCertificatePdf(); }, 500);",
+                    true
+                );
             }
         }
 
@@ -167,8 +182,10 @@ namespace CSA.Student
                       ON c.CourseID = e.CourseID
                   WHERE e.EnrollmentID =
                         @CertificateID
-                    AND e.StudentID = @UserID
-                    AND e.Status = 'Completed'
+                    AND e.StudentID =
+                        @UserID
+                    AND e.Status =
+                        'Completed'
                     AND e.Progress >= 100",
                 con))
             {
@@ -202,9 +219,18 @@ namespace CSA.Student
                         Convert.ToString(
                             reader["CourseName"]);
 
-                    completedAt =
-                        Convert.ToDateTime(
-                            reader["CompletedAt"]);
+                    if (reader["CompletedAt"] ==
+                        DBNull.Value)
+                    {
+                        completedAt =
+                            DateTime.Now;
+                    }
+                    else
+                    {
+                        completedAt =
+                            Convert.ToDateTime(
+                                reader["CompletedAt"]);
+                    }
 
                     return true;
                 }
@@ -218,23 +244,31 @@ namespace CSA.Student
             string courseName;
             DateTime completedAt;
 
-            if (!GetCertificate(
+            bool certificateFound =
+                GetCertificate(
                     certificateId,
                     out studentName,
                     out courseName,
-                    out completedAt))
+                    out completedAt);
+
+            if (!certificateFound)
             {
+                pnlCertificatePreview.Visible =
+                    false;
+
+                pnlCertificateList.Visible =
+                    true;
+
                 return;
             }
 
-            SelectedCertificateId =
-                certificateId;
-
             litPreviewStudent.Text =
-                Server.HtmlEncode(studentName);
+                Server.HtmlEncode(
+                    studentName);
 
             litPreviewCourse.Text =
-                Server.HtmlEncode(courseName);
+                Server.HtmlEncode(
+                    courseName);
 
             litPreviewDate.Text =
                 completedAt.ToString(
@@ -244,76 +278,24 @@ namespace CSA.Student
                 Server.HtmlEncode(
                     certificateId);
 
-            pnlCertificateList.Visible = false;
-            pnlCertificatePreview.Visible = true;
+            pnlCertificateList.Visible =
+                false;
+
+            pnlCertificatePreview.Visible =
+                true;
         }
 
         protected void btnBackToCertificates_Click(
             object sender,
             EventArgs e)
         {
-            pnlCertificatePreview.Visible = false;
-            pnlCertificateList.Visible = true;
-        }
+            pnlCertificatePreview.Visible =
+                false;
 
-        protected void btnDownloadPreview_Click(
-            object sender,
-            EventArgs e)
-        {
-            DownloadCertificate(
-                SelectedCertificateId);
-        }
+            pnlCertificateList.Visible =
+                true;
 
-        private void DownloadCertificate(
-            string certificateId)
-        {
-            string studentName;
-            string courseName;
-            DateTime completedAt;
-
-            if (!GetCertificate(
-                    certificateId,
-                    out studentName,
-                    out courseName,
-                    out completedAt))
-            {
-                return;
-            }
-
-            string text =
-                "CYBERSHIELD ACADEMY\r\n\r\n" +
-                "CERTIFICATE OF COMPLETION\r\n\r\n" +
-                "This certificate is presented to\r\n" +
-                studentName + "\r\n\r\n" +
-                "for successfully completing\r\n" +
-                courseName + "\r\n\r\n" +
-                "Issued: " +
-                completedAt.ToString(
-                    "dd MMMM yyyy") +
-                "\r\nCertificate ID: " +
-                certificateId;
-
-            byte[] bytes =
-                Encoding.UTF8.GetBytes(text);
-
-            Response.Clear();
-            Response.ContentType =
-                "application/octet-stream";
-
-            Response.AddHeader(
-                "Content-Disposition",
-                "attachment; filename=Certificate-" +
-                certificateId + ".txt");
-
-            Response.OutputStream.Write(
-                bytes,
-                0,
-                bytes.Length);
-
-            Response.Flush();
-
-            Context.ApplicationInstance
-                .CompleteRequest();
+            LoadCertificates();
         }
 
         protected void lbLogout_Click(
