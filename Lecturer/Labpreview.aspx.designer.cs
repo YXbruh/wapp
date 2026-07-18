@@ -116,55 +116,31 @@ namespace CSA.Lecturer
         /// <summary>
         /// tbCommand control.
         /// </summary>
-        /// <remarks>
-        /// Auto-generated field.
-        /// To modify move field declaration from designer file to code-behind file.
-        /// </remarks>
         protected global::System.Web.UI.WebControls.TextBox tbCommand;
 
         /// <summary>
         /// btnRun control.
         /// </summary>
-        /// <remarks>
-        /// Auto-generated field.
-        /// To modify move field declaration from designer file to code-behind file.
-        /// </remarks>
         protected global::System.Web.UI.WebControls.Button btnRun;
 
         /// <summary>
         /// pnlResult control.
         /// </summary>
-        /// <remarks>
-        /// Auto-generated field.
-        /// To modify move field declaration from designer file to code-behind file.
-        /// </remarks>
         protected global::System.Web.UI.WebControls.Panel pnlResult;
 
         /// <summary>
         /// iResultIcon control.
         /// </summary>
-        /// <remarks>
-        /// Auto-generated field.
-        /// To modify move field declaration from designer file to code-behind file.
-        /// </remarks>
         protected global::System.Web.UI.HtmlControls.HtmlGenericControl iResultIcon;
 
         /// <summary>
         /// litResultTitle control.
         /// </summary>
-        /// <remarks>
-        /// Auto-generated field.
-        /// To modify move field declaration from designer file to code-behind file.
-        /// </remarks>
         protected global::System.Web.UI.WebControls.Literal litResultTitle;
 
         /// <summary>
         /// litResultDetail control.
         /// </summary>
-        /// <remarks>
-        /// Auto-generated field.
-        /// To modify move field declaration from designer file to code-behind file.
-        /// </remarks>
         protected global::System.Web.UI.WebControls.Literal litResultDetail;
     }
 }

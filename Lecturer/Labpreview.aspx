@@ -76,7 +76,7 @@
                 </div>
             </div>
 
-            <!-- RIGHT: Functional terminal (mirrors student Challenges validation) -->
+            <!-- RIGHT: Student terminal — tests a command against the answer key -->
             <div class="card terminal-preview-card">
                 <div class="card-header">
                     <span><i class="ti ti-terminal-2" style="margin-right:6px" aria-hidden="true"></i>Student Terminal</span>
@@ -107,8 +107,7 @@
 
                 <asp:Panel ID="pnlResult" runat="server" Visible="false" CssClass="result-box mt-16">
                     <div style="display:flex;align-items:center;gap:8px;font-weight:700">
-                        <i id="iResultIcon" runat="server" class="ti"
-                           style="font-size:18px"></i>
+                        <i id="iResultIcon" runat="server" class="ti" style="font-size:18px"></i>
                         <asp:Literal ID="litResultTitle" runat="server" />
                     </div>
                     <div class="text-small text-muted mt-4">
@@ -122,6 +121,38 @@
                 </div>
             </div>
 
+        </div>
+
+        <!-- ===== In-browser terminal (shared with StartLab), full width at the bottom ===== -->
+        <div class="card mt-16">
+            <div class="card-header">
+                <span><i class="ti ti-terminal-2" style="margin-right:6px" aria-hidden="true"></i>Browser Terminal</span>
+                <span>
+                    <span class="text-muted text-small">runs entirely in your browser</span>
+                    <button type="button" class="btn-sm secondary" style="margin-left:8px" onclick="csaTerm.clear()">
+                        <i class="ti ti-eraser"></i> Clear
+                    </button>
+                </span>
+            </div>
+
+            <div id="termRoot"
+                 data-user="<%= Server.HtmlEncode(TermUser) %>"
+                 data-host="<%= Server.HtmlEncode(TermHost) %>"
+                 data-flag="<%= Server.HtmlEncode(TermFlag) %>"
+                 data-motd="<%= Server.HtmlEncode(TermMotd) %>">
+                <div class="term-screen" id="termScreen" tabindex="0"></div>
+                <div class="term-input-row">
+                    <span class="term-prompt" id="termPrompt">$</span>
+                    <input type="text" id="termInput" class="term-input" autocomplete="off" spellcheck="false"
+                           placeholder="type a command — try: help" />
+                </div>
+            </div>
+
+            <div class="val-hint mt-8">
+                <i class="ti ti-info-circle" aria-hidden="true"></i>
+                A free-play shell that runs entirely in your browser. It does not check the answer key — it is
+                for trying Linux commands. The Student Terminal above is what validates against your key.
+            </div>
         </div>
     </main>
 </div>
@@ -139,9 +170,9 @@
 .terminal-dot{width:12px;height:12px;border-radius:50%;display:inline-block}
 .terminal-body{padding:12px 14px;min-height:120px;color:#B0E4CC}
 .term-line{display:flex;align-items:flex-start;gap:6px;margin-bottom:4px}
-.term-prompt{color:#408A71;font-weight:600}
 .term-output{color:#B0E4CC}
 .result-box{padding:12px 14px;border-radius:8px;border:1px solid var(--border);background:var(--bg2)}
 @media(max-width:900px){.sandbox-layout{grid-template-columns:1fr}}
 </style>
+<script src='<%= ResolveUrl("~/Scripts/browser-terminal.js") %>'></script>
 </asp:Content>

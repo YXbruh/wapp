@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Data;
 using System.Text.RegularExpressions;
 using System.Web.UI;
@@ -10,6 +10,12 @@ namespace CSA.Lecturer
     {
         private string CurrentInstructorId => Session["UserID"]?.ToString() ?? "";
         private string LabId => Request.QueryString["id"] ?? "";
+
+        // Values handed to the shared in-browser terminal (data-* attributes).
+        public string TermUser { get; private set; } = "lecturer";
+        public string TermHost { get; private set; } = "cybershield-lab";
+        public string TermFlag { get; private set; } = "CSA{preview}";
+        public string TermMotd { get; private set; } = "Lab preview shell";
 
         protected void Page_Load(object sender, EventArgs e)
         {
@@ -38,7 +44,9 @@ namespace CSA.Lecturer
 
         private void BindLab(DataRow lab)
         {
-            litTitle.Text = Server.HtmlEncode(lab["LabTitle"].ToString());
+            string title = lab["LabTitle"].ToString();
+
+            litTitle.Text = Server.HtmlEncode(title);
             litInstructions.Text = Server.HtmlEncode(
                 lab["Scenario"] == DBNull.Value ? "" : lab["Scenario"].ToString());
             litDifficulty.Text = Server.HtmlEncode(lab["Difficulty"].ToString());
@@ -60,6 +68,39 @@ namespace CSA.Lecturer
             bool published = Convert.ToBoolean(lab["IsPublished"]);
             spanStatusBadge.Attributes["class"] = "badge " + (published ? "badge-green" : "badge-amber");
             litStatusText.Text = published ? "Published" : "Draft";
+
+            // Flavour the browser terminal for this lab.
+            TermUser = SlugUser(Session["FullName"] as string);
+            TermHost = Slug(title, "lab");
+            TermFlag = "CSA{" + LabId.ToLowerInvariant() + "}";
+            TermMotd = title + " — preview shell";
+        }
+
+        /// <summary>
+        /// Linux-safe handle from the lecturer's name, skipping a leading title so
+        /// "Dr. Farah Aziz" becomes "farah" rather than "dr".
+        /// </summary>
+        private static string SlugUser(string fullName)
+        {
+            var titles = new[] { "dr", "mr", "mrs", "ms", "prof", "miss" };
+            string[] parts = (fullName ?? "lecturer")
+                .Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+
+            foreach (string part in parts)
+            {
+                string handle = Regex.Replace(part.ToLowerInvariant(), "[^a-z0-9]", "");
+                if (handle.Length > 0 && Array.IndexOf(titles, handle) < 0)
+                    return handle;
+            }
+            return "lecturer";
+        }
+
+        /// <summary>Turns text into a short, Linux-hostname-safe slug.</summary>
+        private static string Slug(string text, string fallback)
+        {
+            string slug = Regex.Replace((text ?? "").ToLowerInvariant(), "[^a-z0-9]+", "-").Trim('-');
+            if (slug.Length > 24) slug = slug.Substring(0, 24).Trim('-');
+            return slug.Length > 0 ? slug : fallback;
         }
 
         protected void btnRun_Click(object sender, EventArgs e)

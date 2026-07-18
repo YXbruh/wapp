@@ -111,6 +111,30 @@ a:hover { color: var(--accent3); }
 /* Uploaded picture fills the avatar circle; falls back to initials when unset. */
 .nav-avatar-img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block; }
 
+/* ---------- In-browser terminal (StartLab + Lab Preview) ---------- */
+.term-code { font-family: "Consolas","Cascadia Mono",monospace; background: var(--bg3); padding: 1px 5px; border-radius: 4px; }
+.term-screen {
+    background: #0b0f0e; border: 1px solid var(--border); border-radius: 8px 8px 0 0; padding: 14px; margin: 0;
+    height: 360px; overflow: auto; white-space: pre-wrap; word-break: break-word;
+    font-family: "Consolas","Cascadia Mono","Courier New",monospace; font-size: 13px; line-height: 1.5; color: #d6e9e3;
+}
+.term-screen .cmd { color: #6FCF97; font-weight: 700; }
+.term-screen .err { color: #E24B4A; }
+.term-screen .dir { color: #5bc8ff; font-weight: 700; }
+.term-screen .ok  { color: #6FCF97; }
+.term-input-row {
+    display: flex; gap: 8px; align-items: center; background: #0b0f0e;
+    border: 1px solid var(--border); border-top: none; border-radius: 0 0 8px 8px; padding: 10px 12px;
+}
+.term-prompt {
+    font-family: "Consolas","Cascadia Mono","Courier New",monospace; font-size: 13px; color: #6FCF97;
+    white-space: nowrap; max-width: 320px; overflow: hidden; text-overflow: ellipsis;
+}
+.term-input {
+    flex: 1; background: transparent; border: none; color: #d6e9e3;
+    font-family: "Consolas","Cascadia Mono","Courier New",monospace; font-size: 13px; outline: none;
+}
+
 /* Large avatar on profile pages: initials block, or the uploaded picture. */
 .profile-avatar {
     width: 64px; height: 64px; border-radius: 50%;

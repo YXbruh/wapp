@@ -160,7 +160,9 @@
     <Content Include="Lecturer\TerminalSandbox.aspx" />
     <Content Include="Lecturer\Labpreview.aspx" />
     <Content Include="Login.aspx" />
+    <Content Include="StartLab.aspx" />
     <Content Include="Register.aspx" />
+    <Content Include="Scripts\browser-terminal.js" />
     <Content Include="Scripts\bootstrap.bundle.js" />
     <Content Include="Scripts\bootstrap.bundle.min.js" />
     <Content Include="Scripts\bootstrap.esm.js" />
@@ -289,6 +291,7 @@
     <Compile Include="Services\AttachmentService.cs" />
     <Compile Include="Services\PendingAttachmentService.cs" />
     <Compile Include="Services\ProfileService.cs" />
+    <Compile Include="Services\VirtualMachineManager.cs" />
     <Compile Include="App_Start\BundleConfig.cs" />
     <Compile Include="About.aspx.cs">
       <DependentUpon>About.aspx</DependentUpon>
@@ -323,6 +326,13 @@
     </Compile>
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
+    </Compile>
+    <Compile Include="StartLab.aspx.cs">
+      <DependentUpon>StartLab.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="StartLab.aspx.designer.cs">
+      <DependentUpon>StartLab.aspx</DependentUpon>
     </Compile>
     <Compile Include="Login.aspx.cs">
       <DependentUpon>Login.aspx</DependentUpon>

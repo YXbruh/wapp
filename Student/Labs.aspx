@@ -28,6 +28,14 @@
             <p>Hands-on labs from your enrolled courses.</p>
         </div>
 
+        <div class="attachments-cta mb-16">
+            <i class="ti ti-terminal-2" aria-hidden="true"></i>
+            <span>
+                Each lab opens a <strong>Linux terminal that runs right in your browser</strong> — no install, nothing to download. Or
+                <a href="<%= ResolveUrl("~/StartLab.aspx") %>" style="color:var(--accent2);font-weight:600">open a free-play terminal</a>.
+            </span>
+        </div>
+
         <!-- Summary metrics -->
         <div class="metrics" style="grid-template-columns:repeat(3,1fr);margin-bottom:24px">
             <div class="metric">
@@ -77,7 +85,7 @@
                         </div>
                         <div class="lab-actions">
                             <span class="badge <%# Eval("StatusBadgeClass") %>"><%# Eval("StatusLabel") %></span>
-                            <a href='LabDetail.aspx?id=<%# Eval("LabID") %>'
+                            <a href='<%# ResolveUrl("~/StartLab.aspx") %>?id=<%# Eval("LabID") %>'
                                class="btn-sm <%# Eval("StatusKey").ToString()=="done" ? "secondary" : "" %>">
                                 <i class="ti <%# Eval("StatusKey").ToString()=="done" ? "ti-eye" : "ti-player-play" %>" aria-hidden="true"></i>
                                 <%# Eval("StatusKey").ToString()=="done" ? "Review" : Eval("StatusKey").ToString()=="in-progress" ? "Continue" : "Start Lab" %>
