@@ -1,6 +1,7 @@
 using System;
 using System.Data;
 using System.Data.SqlClient;
+using System.Linq;
 using CSA.DataAccess;
 
 namespace CSA.Services
@@ -66,9 +67,14 @@ namespace CSA.Services
             string hash = PasswordHelper.Hash(password);
             string studentRoleId = GetRoleIdByName("Student");
 
+            string newUserId = GenerateUserId();
+            string newStuId = GenStuId();
+
             DBHelper.ExecuteNonQuery(
-                @"INSERT INTO Users (FullName, Email, PasswordHash, RoleID, IsActive, CreatedAt)
-                  VALUES (@Name, @Email, @Hash, @RoleID, 1, GETDATE())",
+                @"INSERT INTO Users (UserID, StudentID, FullName, Email, PasswordHash, RoleID, IsActive, CreatedAt)
+                  VALUES (@UserID, @StudentID, @Name, @Email, @Hash, @RoleID, 1, GETDATE())",
+                new SqlParameter("@UserID", newUserId),
+                new SqlParameter("@StudentID", newStuId),
                 new SqlParameter("@Name", fullName),
                 new SqlParameter("@Email", email),
                 new SqlParameter("@Hash", hash),
@@ -212,6 +218,35 @@ namespace CSA.Services
                 sb.AppendLine($"{row["UserID"]},\"{row["FullName"]}\",\"{row["Email"]}\",{row["Role"]},{row["IsActive"]},{row["LastLoginDate"]},{row["CreatedAt"]}");
             }
             return sb.ToString();
+        }
+
+        private static string GenerateUserId()
+        {
+            const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+            const string digits = "0123456789";
+            var random = new Random();
+            var randomPart = new string(Enumerable.Repeat(chars, 3).Select(s => s[random.Next(s.Length)]).ToArray());
+            var digitPart = new string(Enumerable.Repeat(digits, 3).Select(s => s[random.Next(s.Length)]).ToArray());
+            return "USR" + randomPart + digitPart;
+        }
+
+        public static string GenStuId()
+        {
+            string sql = "SELECT MAX(StudentID) FROM Users WHERE StudentID LIKE 'TP[0-9][0-9][0-9][0-9][0-9][0-9]'";
+            object result = DBHelper.ExecuteScalar(sql);
+            if (result == DBNull.Value || result == null)
+                return "TP000001";
+
+            string maxId = result.ToString();
+            if (maxId.Length < 8)
+                return "TP000001";
+
+            string numPart = maxId.Substring(2);
+            if (!int.TryParse(numPart, out int currentNum))
+                return "TP000001";
+
+            int newNum = currentNum + 1;
+            return "TP" + newNum.ToString("D6");
         }
     }
 }
