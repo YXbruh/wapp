@@ -39,21 +39,7 @@
             </div>
         </asp:Panel>
 
-        <!-- Content type tabs -->
-        <div class="auth-tabs" style="max-width:420px;margin-bottom:24px" role="tablist">
-            <asp:LinkButton ID="tabChapter" runat="server" CssClass="auth-tab active"
-                OnClick="tabChapter_Click" role="tab">
-                <i class="ti ti-book"></i> Chapter
-            </asp:LinkButton>
-            <asp:LinkButton ID="tabArticle" runat="server" CssClass="auth-tab"
-                OnClick="tabArticle_Click" role="tab">
-                <i class="ti ti-article"></i> Article
-            </asp:LinkButton>
-            <asp:LinkButton ID="tabMedia" runat="server" CssClass="auth-tab"
-                OnClick="tabMedia_Click" role="tab">
-                <i class="ti ti-paperclip"></i> Media
-            </asp:LinkButton>
-        </div>
+        <asp:HiddenField ID="hfEditID" runat="server" Value="" />
 
         <div class="cards-row" style="align-items:start">
 
