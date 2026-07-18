@@ -60,6 +60,15 @@ namespace CSA
         protected global::System.Web.UI.WebControls.Panel pnlStudentNav;
 
         /// <summary>
+        /// pnlLecNav control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Panel pnlLecNav;
+
+        /// <summary>
         /// pnlAdminNav control.
         /// </summary>
         /// <remarks>

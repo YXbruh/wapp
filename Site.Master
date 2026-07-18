@@ -41,6 +41,10 @@
                 <asp:Panel ID="pnlStudentNav" runat="server" CssClass="d-flex" Visible="false">
                     <a href="~/Student/Student_Dashboard.aspx" runat="server" class="nav-link"><i class="ti ti-layout-dashboard" aria-hidden="true"></i>Dashboard</a>
                 </asp:Panel>
+                <!-- lectuere dashboard link -->
+                <asp:Panel ID="pnlLecNav" runat="server" CssClass="d-flex" Visible="false">
+                    <a href="~/Lecturer/Lecturer_Dashboard.aspx" runat="server" class="nav-link"><i class="ti ti-layout-dashboard" aria-hidden="true"></i>Dashboard</a>
+                                    </asp:Panel>
                 <asp:Panel ID="pnlAdminNav" runat="server" CssClass="d-flex" Visible="false">
                     <a href="~/Admin/Admin_Dashboard.aspx" runat="server" class="nav-link"><i class="ti ti-settings" aria-hidden="true"></i>Admin</a>
                 </asp:Panel>

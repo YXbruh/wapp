@@ -9,11 +9,15 @@ namespace CSA
         {
             // Show/hide nav items and avatar based on session role
             bool isLoggedIn = Session["UserID"] != null;
-            string role = Session["Role"] as string ?? "";
+
+
+
+            string role = Session["Role"] as string;
 
             pnlGuest.Visible = !isLoggedIn;
             pnlUser.Visible = isLoggedIn;
-            pnlStudentNav.Visible = isLoggedIn && role != "Admin";
+            pnlStudentNav.Visible = isLoggedIn && role == "Student";
+            pnlLecNav.Visible = isLoggedIn && role == "Lecturer";
             pnlAdminNav.Visible = isLoggedIn && role == "Admin";
 
             // Set avatar initials and profile link from session

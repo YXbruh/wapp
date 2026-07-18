@@ -44,7 +44,6 @@
                 OnClick="tabChapter_Click" role="tab">
                 <i class="ti ti-book"></i> Chapter
             </asp:LinkButton>
-            <!--
             <asp:LinkButton ID="tabArticle" runat="server" CssClass="auth-tab"
                 OnClick="tabArticle_Click" role="tab">
                 <i class="ti ti-article"></i> Article
@@ -53,7 +52,6 @@
                 OnClick="tabMedia_Click" role="tab">
                 <i class="ti ti-paperclip"></i> Media
             </asp:LinkButton>
-            -->
         </div>
 
         <asp:HiddenField ID="hfActiveTab" runat="server" Value="Chapter" />
