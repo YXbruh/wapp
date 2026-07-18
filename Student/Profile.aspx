@@ -1,6 +1,6 @@
 ﻿<%@ Page Title="My Profile – CyberShield Academy" Language="C#"
     MasterPageFile="~/Site.Master" AutoEventWireup="true"
-    CodeFile="Profile.aspx.cs" Inherits="CSA.Student.Student_Profile" %>
+    CodeBehind="Profile.aspx.cs" Inherits="CSA.Student.Student_Profile" %>
 
 <asp:Content ID="cMain" ContentPlaceHolderID="MainContent" runat="server">
 <div class="dash-layout">
@@ -48,10 +48,16 @@
                 <div class="card-header">Personal Information</div>
 
                 <!-- Avatar -->
-                <div style="display:flex;align-items:center;gap:16px;margin-bottom:24px">
-                    <div class="profile-avatar">
-                        <asp:Literal ID="litAvatarInitials" runat="server" Text="CS" />
-                    </div>
+                <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px">
+                    <asp:Panel ID="pnlPicture" runat="server" Visible="false">
+                        <asp:Image ID="imgAvatar" runat="server" CssClass="profile-avatar-img"
+                            AlternateText="Profile picture" />
+                    </asp:Panel>
+                    <asp:Panel ID="pnlInitials" runat="server">
+                        <div class="profile-avatar">
+                            <asp:Literal ID="litAvatarInitials" runat="server" Text="CS" />
+                        </div>
+                    </asp:Panel>
                     <div>
                         <div style="font-size:15px;font-weight:700;color:var(--text)">
                             <asp:Literal ID="litDisplayName" runat="server" />
@@ -59,6 +65,24 @@
                         <div class="text-muted text-small mt-4">
                             Member since <asp:Literal ID="litJoined" runat="server" />
                         </div>
+                    </div>
+                </div>
+
+                <!-- Profile picture -->
+                <div class="attachment-add-grid" style="margin-bottom:20px">
+                    <div class="form-group" style="margin-bottom:0">
+                        <label class="form-label"><i class="ti ti-photo" aria-hidden="true"></i>Profile Picture
+                            <span class="text-muted" style="font-weight:400">(PNG, JPG, GIF or WEBP, max 5 MB)</span>
+                        </label>
+                        <asp:FileUpload ID="fuPicture" runat="server" CssClass="file-input"
+                            accept=".png,.jpg,.jpeg,.gif,.webp" />
+                    </div>
+                    <div style="display:flex;gap:8px">
+                        <asp:Button ID="btnUploadPicture" runat="server" CssClass="btn-sm secondary"
+                            CausesValidation="false" OnClick="btnUploadPicture_Click" Text="Upload" />
+                        <asp:Button ID="btnRemovePicture" runat="server" CssClass="btn-danger"
+                            CausesValidation="false" OnClick="btnRemovePicture_Click" Text="Remove"
+                            OnClientClick="return confirm('Remove your profile picture?');" />
                     </div>
                 </div>
 

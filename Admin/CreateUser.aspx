@@ -1,6 +1,6 @@
 ﻿<%@ Page Title="Create User – CyberShield Academy" Language="C#"
     MasterPageFile="~/Site.Master" AutoEventWireup="true"
-    CodeFile="CreateUser.aspx.cs" Inherits="CSA.Admin.CreateUser" %>
+    CodeBehind="CreateUser.aspx.cs" Inherits="CSA.Admin.CreateUser" %>
 
 <asp:Content ID="cMain" ContentPlaceHolderID="MainContent" runat="server">
 <div class="dash-layout">

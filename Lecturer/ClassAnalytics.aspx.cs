@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Web;
 using System.Web.UI;
 using System.Web.UI.WebControls;
@@ -110,55 +111,7 @@ namespace CSA.Lecturer
                     (string.IsNullOrEmpty(courseId) ? "" : " AND c.CourseID = @CourseID") + ")";
 
             // Students Table Data
-            string studentQuery = @"
-                    WITH StudentCourses AS (
-                        SELECT DISTINCT e.StudentID, c.CourseID
-                        FROM Enrollments e
-                        INNER JOIN Courses c ON e.CourseID = c.CourseID
-                        WHERE c.InstructorID = @InstructorID AND c.IsPublished = 1
-                          " + (string.IsNullOrEmpty(courseId) ? "" : " AND c.CourseID = @CourseID") + @"
-                    ),
-                    LabTotals AS (
-                        SELECT vl.CourseID, COUNT(*) AS TotalLabs
-                        FROM VirtualLabs vl
-                        WHERE vl.IsPublished = 1
-                        GROUP BY vl.CourseID
-                    ),
-                    StudentLabs AS (
-                        SELECT sc.StudentID,
-                               COUNT(DISTINCT vl.LabID) AS TotalLabs,
-                               COUNT(DISTINCT CASE WHEN ls.Result = 'Passed' THEN ls.LabID END) AS PassedLabs
-                        FROM StudentCourses sc
-                        INNER JOIN VirtualLabs vl ON sc.CourseID = vl.CourseID
-                        LEFT JOIN LabSubmissions ls ON ls.LabID = vl.LabID AND ls.StudentID = sc.StudentID
-                        WHERE vl.IsPublished = 1
-                        GROUP BY sc.StudentID
-                    ),
-                    StudentQuiz AS (
-                        SELECT qa.StudentID,
-                               ISNULL(AVG(qa.Score), 0) AS QuizAvg
-                        FROM QuizAttempts qa
-                        INNER JOIN StudentCourses sc ON qa.StudentID = sc.StudentID
-                        GROUP BY qa.StudentID
-                    )
-                    SELECT 
-                        u.UserID,
-                        u.FullName,
-                        u.Email,
-                        ISNULL(sq.QuizAvg, 0) AS QuizAvg,
-                        ISNULL(sl.PassedLabs, 0) AS LabsDone,
-                        ISNULL(sl.TotalLabs, 0) AS LabsTotal,
-                        0 AS ChallengesDone,      -- not implemented yet
-                        0 AS ChallengesTotal,
-                        CASE WHEN ISNULL(sl.PassedLabs, 0) > 0 THEN 1 ELSE 0 END AS SandboxCleared,
-                        ISNULL(u.LastLoginDate, u.CreatedAt) AS LastActive
-                    FROM Users u
-                    INNER JOIN StudentCourses sc ON u.UserID = sc.StudentID
-                    LEFT JOIN StudentLabs sl ON u.UserID = sl.StudentID
-                    LEFT JOIN StudentQuiz sq ON u.UserID = sq.StudentID
-                    WHERE u.UserID IN (SELECT StudentID FROM StudentCourses)
-                      AND (u.FullName LIKE @Search OR u.Email LIKE @Search)
-                    ORDER BY u.FullName";
+            string studentQuery = BuildStudentQuery(courseId);
 
             // Quiz Breakdown Data
             string quizBreakdownQuery = @"
@@ -249,23 +202,7 @@ namespace CSA.Lecturer
                     cmd.Parameters.AddWithValue("@Search", "%" + searchTerm + "%");
 
                     SqlDataReader reader = cmd.ExecuteReader();
-                    var students = new List<StudentPerformanceViewModel>();
-                    while (reader.Read())
-                    {
-                        students.Add(new StudentPerformanceViewModel
-                        {
-                            UserID = reader["UserID"].ToString(),
-                            FullName = reader["FullName"].ToString(),
-                            Email = reader["Email"].ToString(),
-                            QuizAvg = Convert.ToInt32(Math.Round(Convert.ToDecimal(reader["QuizAvg"]), 0)),
-                            LabsDone = Convert.ToInt32(reader["LabsDone"]),
-                            LabsTotal = Convert.ToInt32(reader["LabsTotal"]),
-                            ChallengesDone = 0,
-                            ChallengesTotal = 0,
-                            SandboxCleared = Convert.ToBoolean(reader["SandboxCleared"]),
-                            LastActive = Convert.ToDateTime(reader["LastActive"])
-                        });
-                    }
+                    var students = ReadStudentPerformance(reader);
                     reader.Close();
 
                     rptStudents.DataSource = students;
@@ -303,6 +240,104 @@ namespace CSA.Lecturer
             }
         }
 
+        private string BuildStudentQuery(string courseId)
+        {
+            return @"
+                    WITH StudentCourses AS (
+                        SELECT DISTINCT e.StudentID, c.CourseID
+                        FROM Enrollments e
+                        INNER JOIN Courses c ON e.CourseID = c.CourseID
+                        WHERE c.InstructorID = @InstructorID AND c.IsPublished = 1
+                          " + (string.IsNullOrEmpty(courseId) ? "" : " AND c.CourseID = @CourseID") + @"
+                    ),
+                    LabTotals AS (
+                        SELECT vl.CourseID, COUNT(*) AS TotalLabs
+                        FROM VirtualLabs vl
+                        WHERE vl.IsPublished = 1
+                        GROUP BY vl.CourseID
+                    ),
+                    StudentLabs AS (
+                        SELECT sc.StudentID,
+                               COUNT(DISTINCT vl.LabID) AS TotalLabs,
+                               COUNT(DISTINCT CASE WHEN ls.Result = 'Passed' THEN ls.LabID END) AS PassedLabs
+                        FROM StudentCourses sc
+                        INNER JOIN VirtualLabs vl ON sc.CourseID = vl.CourseID
+                        LEFT JOIN LabSubmissions ls ON ls.LabID = vl.LabID AND ls.StudentID = sc.StudentID
+                        WHERE vl.IsPublished = 1
+                        GROUP BY sc.StudentID
+                    ),
+                    StudentQuiz AS (
+                        SELECT qa.StudentID,
+                               ISNULL(AVG(qa.Score), 0) AS QuizAvg
+                        FROM QuizAttempts qa
+                        INNER JOIN StudentCourses sc ON qa.StudentID = sc.StudentID
+                        GROUP BY qa.StudentID
+                    )
+                    SELECT
+                        u.UserID,
+                        u.FullName,
+                        u.Email,
+                        ISNULL(sq.QuizAvg, 0) AS QuizAvg,
+                        ISNULL(sl.PassedLabs, 0) AS LabsDone,
+                        ISNULL(sl.TotalLabs, 0) AS LabsTotal,
+                        0 AS ChallengesDone,      -- not implemented yet
+                        0 AS ChallengesTotal,
+                        CASE WHEN ISNULL(sl.PassedLabs, 0) > 0 THEN 1 ELSE 0 END AS SandboxCleared,
+                        ISNULL(u.LastLoginDate, u.CreatedAt) AS LastActive
+                    FROM Users u
+                    INNER JOIN StudentCourses sc ON u.UserID = sc.StudentID
+                    LEFT JOIN StudentLabs sl ON u.UserID = sl.StudentID
+                    LEFT JOIN StudentQuiz sq ON u.UserID = sq.StudentID
+                    WHERE u.UserID IN (SELECT StudentID FROM StudentCourses)
+                      AND (u.FullName LIKE @Search OR u.Email LIKE @Search)
+                    ORDER BY u.FullName";
+        }
+
+        private List<StudentPerformanceViewModel> ReadStudentPerformance(SqlDataReader reader)
+        {
+            var students = new List<StudentPerformanceViewModel>();
+            while (reader.Read())
+            {
+                students.Add(new StudentPerformanceViewModel
+                {
+                    UserID = reader["UserID"].ToString(),
+                    FullName = reader["FullName"].ToString(),
+                    Email = reader["Email"].ToString(),
+                    QuizAvg = Convert.ToInt32(Math.Round(Convert.ToDecimal(reader["QuizAvg"]), 0)),
+                    LabsDone = Convert.ToInt32(reader["LabsDone"]),
+                    LabsTotal = Convert.ToInt32(reader["LabsTotal"]),
+                    ChallengesDone = 0,
+                    ChallengesTotal = 0,
+                    SandboxCleared = Convert.ToBoolean(reader["SandboxCleared"]),
+                    LastActive = Convert.ToDateTime(reader["LastActive"])
+                });
+            }
+            return students;
+        }
+
+        private List<StudentPerformanceViewModel> GetStudentPerformance(
+            string instructorId, string courseId, string searchTerm)
+        {
+            if (string.IsNullOrEmpty(searchTerm)) searchTerm = "";
+            string connString = ConfigurationManager.ConnectionStrings["CSAConnection"].ConnectionString;
+            string studentQuery = BuildStudentQuery(courseId);
+
+            using (SqlConnection conn = new SqlConnection(connString))
+            using (SqlCommand cmd = new SqlCommand(studentQuery, conn))
+            {
+                cmd.Parameters.AddWithValue("@InstructorID", instructorId);
+                if (!string.IsNullOrEmpty(courseId))
+                    cmd.Parameters.AddWithValue("@CourseID", courseId);
+                cmd.Parameters.AddWithValue("@Search", "%" + searchTerm + "%");
+
+                conn.Open();
+                SqlDataReader reader = cmd.ExecuteReader();
+                var students = ReadStudentPerformance(reader);
+                reader.Close();
+                return students;
+            }
+        }
+
         protected void ddlCourse_Changed(object sender, EventArgs e)
         {
             string instructorId = Session["UserID"] != null ? Session["UserID"].ToString().Trim() : "";
@@ -320,7 +355,40 @@ namespace CSA.Lecturer
 
         protected void lbExport_Click(object sender, EventArgs e)
         {
-            // TODO: CSV export
+            string instructorId = Session["UserID"] != null ? Session["UserID"].ToString().Trim() : "";
+            string courseId = ddlCourse.SelectedValue;
+            string search = tbSearch.Text.Trim();
+
+            var students = GetStudentPerformance(instructorId, courseId, search);
+
+            var sb = new StringBuilder();
+            sb.AppendLine("Student,Email,Quiz Avg (%),Labs Done,Labs Total,Sandbox Cleared,Last Active");
+            foreach (var s in students)
+            {
+                sb.AppendLine(string.Join(",",
+                    CsvField(s.FullName),
+                    CsvField(s.Email),
+                    s.QuizAvg.ToString(),
+                    s.LabsDone.ToString(),
+                    s.LabsTotal.ToString(),
+                    s.SandboxCleared ? "Yes" : "No",
+                    CsvField(s.LastActive.ToString("yyyy-MM-dd HH:mm"))));
+            }
+
+            Response.Clear();
+            Response.ContentType = "text/csv";
+            Response.AddHeader("Content-Disposition",
+                $"attachment; filename=ClassAnalytics_{DateTime.Now:yyyyMMdd_HHmmss}.csv");
+            Response.Write(sb.ToString());
+            Response.End();
+        }
+
+        private static string CsvField(string value)
+        {
+            if (string.IsNullOrEmpty(value)) return "";
+            if (value.IndexOfAny(new[] { ',', '"', '\n', '\r' }) >= 0)
+                return "\"" + value.Replace("\"", "\"\"") + "\"";
+            return value;
         }
 
         public string GetScoreColor(int score) =>

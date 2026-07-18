@@ -1,6 +1,6 @@
 ﻿<%@ Page Title="Edit User – CyberShield Academy" Language="C#"
     MasterPageFile="~/Site.Master" AutoEventWireup="true"
-    CodeFile="EditUser.aspx.cs" Inherits="CSA.Admin.EditUser" %>
+    CodeBehind="EditUser.aspx.cs" Inherits="CSA.Admin.EditUser" %>
 
 <asp:Content ID="cMain" ContentPlaceHolderID="MainContent" runat="server">
 <div class="dash-layout">
@@ -86,7 +86,7 @@
                         style="flex:1;max-width:260px" />
                     <asp:Button ID="btnGeneratePw" runat="server" CssClass="btn-sm secondary"
                         Text="Generate" OnClick="btnGeneratePw_Click"
-                        OnClientClick="return showLogoutConfirm(this);"
+                        OnClientClick="return showConfirmAction(this, 'Generate a new random password? This will overwrite anything typed above.', 'Generate');"
                         style="white-space:nowrap" />
                 </div>
                 <asp:RegularExpressionValidator ID="revPassword" runat="server"

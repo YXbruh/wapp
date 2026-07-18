@@ -1,6 +1,6 @@
 ﻿<%@ Page Title="Analytics – CyberShield Academy" Language="C#"
     MasterPageFile="~/Site.Master" AutoEventWireup="true"
-    CodeFile="Analytics.aspx.cs" Inherits="CSA.Student.Student_Analytics" %>
+    CodeBehind="Analytics.aspx.cs" Inherits="CSA.Student.Student_Analytics" %>
 
 <asp:Content ID="cMain" ContentPlaceHolderID="MainContent" runat="server">
 <div class="dash-layout">

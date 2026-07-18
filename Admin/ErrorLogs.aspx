@@ -1,6 +1,6 @@
 ﻿<%@ Page Title="Error Logs – CyberShield Academy" Language="C#"
     MasterPageFile="~/Site.Master" AutoEventWireup="true"
-    CodeFile="ErrorLogs.aspx.cs" Inherits="CSA.Admin.ErrorLogs" %>
+    CodeBehind="ErrorLogs.aspx.cs" Inherits="CSA.Admin.ErrorLogs" %>
 
 <asp:Content ID="cMain" ContentPlaceHolderID="MainContent" runat="server">
 <div class="dash-layout">
@@ -125,7 +125,7 @@
                                         <asp:LinkButton runat="server" CssClass="btn-sm secondary"
                                             CommandName="Resolve" CommandArgument='<%# Eval("ErrorID") %>'
                                             Visible='<%# !Convert.ToBoolean(Eval("IsResolved")) %>'
-                                            OnClientClick="return showLogoutConfirm(this);">
+                                            OnClientClick="return showConfirmAction(this, 'Mark this error as resolved?', 'Resolve');">
                                             <i class="ti ti-circle-check"></i> Resolve
                                         </asp:LinkButton>
                                     </td>

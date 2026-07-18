@@ -1,6 +1,6 @@
 ﻿<%@ Page Title="Terminal Sandbox – CyberShield Academy" Language="C#"
     MasterPageFile="~/Site.Master" AutoEventWireup="true"
-    CodeFile="TerminalSandbox.aspx.cs" Inherits="CSA.Lecturer.TerminalSandbox" %>
+    CodeBehind="TerminalSandbox.aspx.cs" Inherits="CSA.Lecturer.TerminalSandbox" %>
 
 <asp:Content ID="cMain" ContentPlaceHolderID="MainContent" runat="server">
 <div class="dash-layout">
@@ -15,6 +15,7 @@
         <a href="ClassAnalytics.aspx"  class="sidebar-link"><i class="ti ti-chart-bar"></i>Class Analytics</a>
         <a href="Mentorship.aspx"      class="sidebar-link"><i class="ti ti-messages"></i>Mentorship</a>
         <div class="sidebar-section">Account</div>
+        <a href="Profile.aspx" class="sidebar-link"><i class="ti ti-user"></i>Profile</a>
         <asp:LinkButton ID="lbLogout" OnClientClick="return showLogoutConfirm(this);" runat="server" CssClass="sidebar-link" OnClick="lbLogout_Click">
             <i class="ti ti-logout"></i>Sign Out
         </asp:LinkButton>
@@ -42,9 +43,10 @@
         <div class="card mb-24">
             <div class="card-header">
                 Lab Scenarios
-                <button type="button" class="btn-sm" onclick="toggleEditor(true)">
+                <asp:LinkButton ID="btnNewScenario" runat="server" CssClass="btn-sm"
+                    CausesValidation="false" OnClick="btnNewScenario_Click">
                     <i class="ti ti-plus" aria-hidden="true"></i>New Scenario
-                </button>
+                </asp:LinkButton>
             </div>
             <div style="overflow-x:auto">
                 <table class="admin-table">
@@ -85,7 +87,7 @@
                                             </asp:LinkButton>
                                             <asp:LinkButton runat="server" CssClass="btn-danger"
                                                 CommandName="Delete" CommandArgument='<%# Eval("LabID") %>'
-                                                OnClientClick="return showLogoutConfirm(this);">
+                                                OnClientClick="return showConfirmAction(this, 'Delete this lab scenario? This cannot be undone.', 'Delete');">
                                                 <i class="ti ti-trash"></i>
                                             </asp:LinkButton>
                                         </div>
@@ -224,6 +226,61 @@
                     <asp:Button ID="btnSaveLab" runat="server" CssClass="btn-primary"
                         ValidationGroup="LabGroup" OnClick="btnSaveLab_Click"
                         Text="Save Lab Scenario" />
+
+                    <!-- ===== ATTACHMENTS (articles, pictures, media links, documents) ===== -->
+                    <asp:Panel ID="pnlAttachments" runat="server" Visible="true" CssClass="attachments-block">
+                        <div class="card-header" style="margin-top:24px">
+                            <i class="ti ti-paperclip" style="margin-right:6px" aria-hidden="true"></i>Attachments
+                            <span class="text-muted text-small">(<asp:Literal ID="litAttCount" runat="server" Text="0" />)</span>
+                        </div>
+
+                        <asp:Repeater ID="rptAttachments" runat="server" OnItemCommand="rptAttachments_ItemCommand">
+                            <ItemTemplate>
+                                <div class="attachment-row">
+                                    <i class="ti <%# GetAttachmentIcon(Eval("AttachmentType").ToString()) %>" aria-hidden="true"></i>
+                                    <div class="attachment-info">
+                                        <a href='<%# GetAttachmentHref(Eval("AttachmentType"), Eval("FilePath"), Eval("LinkUrl"), Eval("IsPending")) %>'
+                                           target="_blank" rel="noopener"><%# Eval("Title") %></a>
+                                        <div class="text-small text-muted">
+                                            <%# GetAttachmentMeta(Eval("AttachmentType"), Eval("UploadedByName"), Eval("UploadedAt"), Eval("IsPending")) %>
+                                        </div>
+                                    </div>
+                                    <asp:LinkButton runat="server" CssClass="btn-danger" CausesValidation="false"
+                                        CommandName="Delete" CommandArgument='<%# Eval("AttachmentID") %>'
+                                        OnClientClick="return confirm('Remove this attachment?');">
+                                        <i class="ti ti-trash"></i>
+                                    </asp:LinkButton>
+                                </div>
+                            </ItemTemplate>
+                        </asp:Repeater>
+                        <asp:Panel ID="pnlNoAttachments" runat="server" Visible="false">
+                            <p class="text-muted text-small" style="padding:8px 0">No attachments yet.</p>
+                        </asp:Panel>
+
+                        <div class="attachment-add-grid">
+                            <div class="form-group" style="margin-bottom:0">
+                                <label class="form-label"><i class="ti ti-upload" aria-hidden="true"></i>Upload Files / Pictures / Documents
+                                    <span class="text-muted" style="font-weight:400">(multiple allowed, max 20 MB each)</span>
+                                </label>
+                                <asp:FileUpload ID="fuAttachFiles" runat="server" AllowMultiple="true" CssClass="file-input"
+                                    accept=".pdf,.doc,.docx,.txt,.ppt,.pptx,.xls,.xlsx,.zip,.png,.jpg,.jpeg,.gif,.webp" />
+                            </div>
+                            <asp:Button ID="btnUploadFiles" runat="server" CssClass="btn-sm secondary"
+                                CausesValidation="false" OnClick="btnUploadFiles_Click" Text="Upload" />
+                        </div>
+
+                        <div class="attachment-add-grid" style="margin-top:12px">
+                            <div class="form-group" style="margin-bottom:0">
+                                <label class="form-label"><i class="ti ti-link" aria-hidden="true"></i>Add a Media Link</label>
+                                <div style="display:flex;gap:8px">
+                                    <asp:TextBox ID="tbLinkTitle" runat="server" CssClass="form-input" placeholder="Link title" MaxLength="200" style="flex:1" />
+                                    <asp:TextBox ID="tbLinkUrl" runat="server" CssClass="form-input" placeholder="https://..." MaxLength="500" style="flex:2" />
+                                </div>
+                            </div>
+                            <asp:Button ID="btnAddLink" runat="server" CssClass="btn-sm secondary"
+                                CausesValidation="false" OnClick="btnAddLink_Click" Text="Add Link" />
+                        </div>
+                    </asp:Panel>
                 </div>
 
                 <!-- RIGHT: Terminal Preview -->
@@ -303,8 +360,12 @@
 <script>
 // Toggle editor panel
 function toggleEditor(show) {
-    document.getElementById('editorPanel').style.display = show ? 'block' : 'none';
-    if (show) updatePreview();
+    var panel = document.getElementById('editorPanel');
+    panel.style.display = show ? 'block' : 'none';
+    if (show) {
+        updatePreview();
+        panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
 }
 
 // Live preview updates from form fields
@@ -313,71 +374,71 @@ function updatePreview() {
     var instr = document.getElementById('<%= tbInstructions.ClientID %>');
     var hint  = document.getElementById('<%= tbHint.ClientID %>');
 
-    if (title) document.getElementById('prevTitle').textContent        = title.value || 'Lab Title';
-    if (instr) document.getElementById('prevInstructions').textContent = instr.value || 'Task instructions will appear here...';
+        if (title) document.getElementById('prevTitle').textContent = title.value || 'Lab Title';
+        if (instr) document.getElementById('prevInstructions').textContent = instr.value || 'Task instructions will appear here...';
 
-    var hintVal  = hint ? hint.value.trim() : '';
-    var hintWrap = document.getElementById('prevHintWrap');
-    hintWrap.style.display = hintVal ? 'block' : 'none';
-    document.getElementById('prevHint').textContent = hintVal;
-}
-
-// Simulated terminal interaction (preview only)
-var termHistory = [];
-var termPos = 0;
-function handleTermInput(e) {
-    var input = document.getElementById('termInput');
-    if (e.key === 'Enter') {
-        var cmd = input.value.trim();
-        if (!cmd) return;
-        termHistory.push(cmd);
-        termPos = termHistory.length;
-        appendTermLine(cmd, 'prompt');
-
-        // Simulate a few basic commands for demo
-        var out = simulateCmd(cmd);
-        if (out.error) appendTermLine(out.text, 'error');
-        else           appendTermLine(out.text, 'output');
-        input.value = '';
-    } else if (e.key === 'ArrowUp') {
-        if (termPos > 0) { termPos--; input.value = termHistory[termPos]; }
-        e.preventDefault();
-    } else if (e.key === 'ArrowDown') {
-        if (termPos < termHistory.length - 1) { termPos++; input.value = termHistory[termPos]; }
-        else { termPos = termHistory.length; input.value = ''; }
-        e.preventDefault();
+        var hintVal = hint ? hint.value.trim() : '';
+        var hintWrap = document.getElementById('prevHintWrap');
+        hintWrap.style.display = hintVal ? 'block' : 'none';
+        document.getElementById('prevHint').textContent = hintVal;
     }
-}
 
-function appendTermLine(text, type) {
-    var body = document.getElementById('terminalOutput');
-    var div  = document.createElement('div');
-    div.className = 'term-line';
-    if (type === 'prompt') {
-        div.innerHTML = '<span class="term-prompt">student@cybershield:~$</span><span class="term-output"> ' + escHtml(text) + '</span>';
-    } else if (type === 'error') {
-        div.innerHTML = '<span class="term-error">' + escHtml(text) + '</span>';
-    } else {
-        div.innerHTML = '<span class="term-output">' + escHtml(text) + '</span>';
+    // Simulated terminal interaction (preview only)
+    var termHistory = [];
+    var termPos = 0;
+    function handleTermInput(e) {
+        var input = document.getElementById('termInput');
+        if (e.key === 'Enter') {
+            var cmd = input.value.trim();
+            if (!cmd) return;
+            termHistory.push(cmd);
+            termPos = termHistory.length;
+            appendTermLine(cmd, 'prompt');
+
+            // Simulate a few basic commands for demo
+            var out = simulateCmd(cmd);
+            if (out.error) appendTermLine(out.text, 'error');
+            else appendTermLine(out.text, 'output');
+            input.value = '';
+        } else if (e.key === 'ArrowUp') {
+            if (termPos > 0) { termPos--; input.value = termHistory[termPos]; }
+            e.preventDefault();
+        } else if (e.key === 'ArrowDown') {
+            if (termPos < termHistory.length - 1) { termPos++; input.value = termHistory[termPos]; }
+            else { termPos = termHistory.length; input.value = ''; }
+            e.preventDefault();
+        }
     }
-    body.appendChild(div);
-    body.scrollTop = body.scrollHeight;
-}
 
-function simulateCmd(cmd) {
-    var c = cmd.toLowerCase().trim();
-    if (c === 'ls' || c === 'ls -la') return { text: 'auth.log  syslog  kern.log  dpkg.log' };
-    if (c === 'pwd')                  return { text: '/home/student' };
-    if (c === 'whoami')               return { text: 'student' };
-    if (c === 'clear') { document.getElementById('terminalOutput').innerHTML = ''; return { text: '' }; }
-    if (c === 'help') return { text: 'Available: ls, pwd, whoami, cd, cat, clear' };
-    if (c.startsWith('cd '))          return { text: '' };
-    if (c.startsWith('cat '))         return { text: '[Preview] File contents would appear here in live environment.' };
-    return { text: 'bash: ' + cmd.split(' ')[0] + ': command not found (preview mode)', error: true };
-}
+    function appendTermLine(text, type) {
+        var body = document.getElementById('terminalOutput');
+        var div = document.createElement('div');
+        div.className = 'term-line';
+        if (type === 'prompt') {
+            div.innerHTML = '<span class="term-prompt">student@cybershield:~$</span><span class="term-output"> ' + escHtml(text) + '</span>';
+        } else if (type === 'error') {
+            div.innerHTML = '<span class="term-error">' + escHtml(text) + '</span>';
+        } else {
+            div.innerHTML = '<span class="term-output">' + escHtml(text) + '</span>';
+        }
+        body.appendChild(div);
+        body.scrollTop = body.scrollHeight;
+    }
 
-function escHtml(s) {
-    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
+    function simulateCmd(cmd) {
+        var c = cmd.toLowerCase().trim();
+        if (c === 'ls' || c === 'ls -la') return { text: 'auth.log  syslog  kern.log  dpkg.log' };
+        if (c === 'pwd') return { text: '/home/student' };
+        if (c === 'whoami') return { text: 'student' };
+        if (c === 'clear') { document.getElementById('terminalOutput').innerHTML = ''; return { text: '' }; }
+        if (c === 'help') return { text: 'Available: ls, pwd, whoami, cd, cat, clear' };
+        if (c.startsWith('cd ')) return { text: '' };
+        if (c.startsWith('cat ')) return { text: '[Preview] File contents would appear here in live environment.' };
+        return { text: 'bash: ' + cmd.split(' ')[0] + ': command not found (preview mode)', error: true };
+    }
+
+    function escHtml(s) {
+        return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
 </script>
 </asp:Content>

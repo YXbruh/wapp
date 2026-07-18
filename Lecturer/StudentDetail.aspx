@@ -1,6 +1,6 @@
 ﻿<%@ Page Title="Student Detail – CyberShield Academy" Language="C#"
     MasterPageFile="~/Site.Master" AutoEventWireup="true"
-    CodeFile="StudentDetail.aspx.cs" Inherits="CSA.Lecturer.StudentDetail" %>
+    CodeBehind="StudentDetail.aspx.cs" Inherits="CSA.Lecturer.StudentDetail" %>
 
 <asp:Content ID="cMain" ContentPlaceHolderID="MainContent" runat="server">
 <div class="dash-layout">
@@ -15,6 +15,7 @@
         <a href="ClassAnalytics.aspx"  class="sidebar-link active"><i class="ti ti-chart-bar"></i>Class Analytics</a>
         <a href="Mentorship.aspx"      class="sidebar-link"><i class="ti ti-messages"></i>Mentorship</a>
         <div class="sidebar-section">Account</div>
+        <a href="Profile.aspx" class="sidebar-link"><i class="ti ti-user"></i>Profile</a>
         <asp:LinkButton ID="lbLogout" OnClientClick="return showLogoutConfirm(this);" runat="server" CssClass="sidebar-link" OnClick="lbLogout_Click">
             <i class="ti ti-logout"></i>Sign Out
         </asp:LinkButton>
@@ -45,10 +46,42 @@
                         &middot; Last active: <asp:Literal ID="litLastActive" runat="server" />
                     </div>
                 </div>
-                <a href='Mentorship.aspx?studentId=<%= Request.QueryString["id"] %>'
-                   class="btn-sm">
+                <button type="button" class="btn-sm" onclick="showFeedbackModal()">
                     <i class="ti ti-message" aria-hidden="true"></i> Send Feedback
-                </a>
+                </button>
+            </div>
+        </div>
+
+        <!-- Send Feedback modal -->
+        <div id="sendFeedbackModal" class="modal-overlay" style="display:none">
+            <div class="modal-box" style="max-width:480px;text-align:left">
+                <div class="modal-icon"><i class="ti ti-message"></i></div>
+                <p class="modal-text" style="margin-bottom:14px">
+                    Send feedback to <asp:Literal ID="litModalStudentName" runat="server" />
+                </p>
+
+                <asp:Panel ID="pnlFeedbackSuccess" runat="server" Visible="false">
+                    <div class="alert-success mb-16">
+                        <i class="ti ti-circle-check" aria-hidden="true"></i>
+                        <asp:Literal ID="litFeedbackSuccess" runat="server" />
+                    </div>
+                </asp:Panel>
+                <asp:Panel ID="pnlFeedbackError" runat="server" Visible="false">
+                    <div class="validation-summary-errors mb-16">
+                        <asp:Literal ID="litFeedbackError" runat="server" />
+                    </div>
+                </asp:Panel>
+
+                <asp:TextBox ID="tbFeedbackMessage" runat="server" CssClass="form-input"
+                    TextMode="MultiLine" Rows="5" MaxLength="2000" style="width:100%;margin-bottom:14px"
+                    placeholder="Write feedback, guidance, or remediation advice for this student..." />
+
+                <div style="display:flex;justify-content:center;gap:12px">
+                    <button type="button" class="form-submit" onclick="closeFeedbackModal()"
+                        style="width:auto;min-width:120px;background:var(--bg2);color:var(--text)">Cancel</button>
+                    <asp:Button ID="btnSendFeedback" runat="server" CssClass="form-submit"
+                        OnClick="btnSendFeedback_Click" Text="Send" style="width:auto;min-width:120px" />
+                </div>
             </div>
         </div>
 
@@ -149,5 +182,14 @@
 <style>
 .profile-avatar{width:52px;height:52px;border-radius:50%;background:var(--accent1);border:2px solid var(--accent2);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:var(--accent3);flex-shrink:0}
 .text-center{text-align:center}
+.alert-success{background:rgba(111,207,151,0.12);border:1px solid rgba(111,207,151,0.4);border-radius:8px;padding:12px 16px;font-size:13px;color:var(--success);display:flex;align-items:center;gap:8px;text-align:left}
 </style>
+<script>
+function showFeedbackModal() {
+    document.getElementById('sendFeedbackModal').style.display = 'flex';
+}
+function closeFeedbackModal() {
+    document.getElementById('sendFeedbackModal').style.display = 'none';
+}
+</script>
 </asp:Content>

@@ -1,6 +1,6 @@
 ﻿<%@ Page Title="Content Review – CyberShield Academy" Language="C#"
     MasterPageFile="~/Site.Master" AutoEventWireup="true"
-    CodeFile="ContentReview.aspx.cs" Inherits="CSA.Admin.ContentReview" %>
+    CodeBehind="ContentReview.aspx.cs" Inherits="CSA.Admin.ContentReview" %>
 
 <asp:Content ID="cMain" ContentPlaceHolderID="MainContent" runat="server">
 <div class="dash-layout">
@@ -109,7 +109,7 @@
                                             </asp:LinkButton>
                                             <asp:LinkButton runat="server" CssClass="btn-danger"
                                                 CommandName="Reject" CommandArgument='<%# Eval("ContentID") %>'
-                                                OnClientClick="return showLogoutConfirm(this);">
+                                                OnClientClick="return showConfirmAction(this, 'Reject this content item?', 'Reject');">
                                                 <i class="ti ti-circle-x"></i> Reject
                                             </asp:LinkButton>
                                         </div>

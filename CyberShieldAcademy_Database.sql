@@ -1,13 +1,3 @@
-USE master;
-GO
-
-IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = 'CyberShieldAcademy')
-    CREATE DATABASE CyberShieldAcademy;
-GO
-
-USE CyberShieldAcademy;
-GO
-
 -- ============================================================
 -- 1. ROLES
 -- ============================================================
@@ -136,6 +126,14 @@ CREATE TABLE Quizzes (
     ChapterID    NVARCHAR(10)  NULL,
     Title        NVARCHAR(200) NOT NULL,
     Description  NVARCHAR(1000) NULL,
+    -- Availability window and time limit. All optional: a quiz may simply be a
+    -- downloadable file (see Attachments) with no schedule and no questions.
+    StartDate       DATETIME   NULL,
+    EndDate         DATETIME   NULL,
+    DurationMinutes INT        NULL,
+    -- Marks the quiz is out of. The Points of its questions must add up to this;
+    -- the Quiz Editor blocks a batch that would overshoot it.
+    TotalMarks      INT        NULL,
     MaxAttempts  INT           NOT NULL DEFAULT 3,
     PassMark     DECIMAL(5,2)  NOT NULL DEFAULT 50.00,
     CreatedByID  NVARCHAR(10)  NOT NULL,
@@ -156,15 +154,21 @@ CREATE TABLE QuizQuestions (
     QuizID        NVARCHAR(10)  NOT NULL,
     QuestionText  NVARCHAR(2000) NOT NULL,
     QuestionType  NVARCHAR(20)  NOT NULL DEFAULT 'MCQ',
+    -- MCQ options. Unused by Structure and TrueFalse questions.
     OptionA       NVARCHAR(500) NULL,
     OptionB       NVARCHAR(500) NULL,
     OptionC       NVARCHAR(500) NULL,
     OptionD       NVARCHAR(500) NULL,
+    -- MCQ      : comma-separated option keys, one or more may be correct ("A" or "A,C")
+    -- TrueFalse: 'True' or 'False'
+    -- Structure: the expected answer text
     CorrectAnswer NVARCHAR(500) NOT NULL,
+    MatchStrategy NVARCHAR(20)  NULL,
     Explanation   NVARCHAR(1000) NULL,
+    Points        INT           NOT NULL DEFAULT 5,   -- marks for this question
     SortOrder     INT           NOT NULL DEFAULT 0,
     CONSTRAINT FK_QQ_Quiz FOREIGN KEY (QuizID) REFERENCES Quizzes(QuizID),
-    CONSTRAINT CK_QQ_Type CHECK (QuestionType IN ('MCQ', 'TrueFalse', 'FillBlank'))
+    CONSTRAINT CK_QQ_Type CHECK (QuestionType IN ('MCQ', 'TrueFalse', 'Structure'))
 );
 GO
 
@@ -278,18 +282,56 @@ GO
 CREATE TABLE Feedback (
     FeedbackID  INT           NOT NULL IDENTITY(1,1) PRIMARY KEY,
     StudentID   NVARCHAR(10)  NOT NULL,
+    LecturerID  NVARCHAR(10)  NULL,   -- NULL = student-submitted review; set = lecturer authored/replied
     CourseID    NVARCHAR(10)  NULL,
     ChapterID   NVARCHAR(10)  NULL,
     QuizID      NVARCHAR(10)  NULL,
     LabID       NVARCHAR(10)  NULL,
-    StarRating  TINYINT       NOT NULL CHECK (StarRating BETWEEN 1 AND 5),
+    StarRating  TINYINT       NULL CHECK (StarRating BETWEEN 1 AND 5),
     Comment     NVARCHAR(2000) NULL,
     SubmittedAt DATETIME      NOT NULL DEFAULT GETDATE(),
-    CONSTRAINT FK_FB_Student FOREIGN KEY (StudentID) REFERENCES Users(UserID),
-    CONSTRAINT FK_FB_Course  FOREIGN KEY (CourseID)  REFERENCES Courses(CourseID),
-    CONSTRAINT FK_FB_Chapter FOREIGN KEY (ChapterID) REFERENCES Chapters(ChapterID),
-    CONSTRAINT FK_FB_Quiz    FOREIGN KEY (QuizID)    REFERENCES Quizzes(QuizID),
-    CONSTRAINT FK_FB_Lab     FOREIGN KEY (LabID)     REFERENCES VirtualLabs(LabID)
+    InstReadAt  DATETIME      NULL,   -- NULL = unread by lecturer; timestamp = when they read it
+    RepText     NVARCHAR(2000) NULL,  -- lecturer's reply text
+    RepAt       DATETIME      NULL,   -- when the lecturer replied
+    CONSTRAINT FK_FB_Student  FOREIGN KEY (StudentID)  REFERENCES Users(UserID),
+    CONSTRAINT FK_FB_Lecturer FOREIGN KEY (LecturerID) REFERENCES Users(UserID),
+    CONSTRAINT FK_FB_Course   FOREIGN KEY (CourseID)   REFERENCES Courses(CourseID),
+    CONSTRAINT FK_FB_Chapter  FOREIGN KEY (ChapterID)  REFERENCES Chapters(ChapterID),
+    CONSTRAINT FK_FB_Quiz     FOREIGN KEY (QuizID)     REFERENCES Quizzes(QuizID),
+    CONSTRAINT FK_FB_Lab      FOREIGN KEY (LabID)      REFERENCES VirtualLabs(LabID)
+);
+GO
+
+-- ============================================================
+-- 16b. ATTACHMENTS (files, images, links attached to a chapter, lab, or quiz)
+-- ============================================================
+CREATE TABLE Attachments (
+    AttachmentID   NVARCHAR(10)  NOT NULL PRIMARY KEY,
+    ChapterID      NVARCHAR(10)  NULL,
+    LabID          NVARCHAR(10)  NULL,
+    QuizID         NVARCHAR(10)  NULL,
+    QuestionID     NVARCHAR(10)  NULL,
+    AttachmentType NVARCHAR(20)  NOT NULL,   -- 'File' | 'Image' | 'Link'
+    Title          NVARCHAR(200) NOT NULL,
+    FilePath       NVARCHAR(500) NULL,       -- site-relative path, set for File/Image
+    LinkUrl        NVARCHAR(500) NULL,       -- external URL, set for Link
+    FileSizeBytes  INT           NULL,
+    UploadedByID   NVARCHAR(10)  NOT NULL,
+    UploadedAt     DATETIME      NOT NULL DEFAULT GETDATE(),
+    CONSTRAINT FK_Att_Chapter    FOREIGN KEY (ChapterID)    REFERENCES Chapters(ChapterID),
+    CONSTRAINT FK_Att_Lab        FOREIGN KEY (LabID)        REFERENCES VirtualLabs(LabID),
+    CONSTRAINT FK_Att_Quiz       FOREIGN KEY (QuizID)       REFERENCES Quizzes(QuizID),
+    CONSTRAINT FK_Att_Question   FOREIGN KEY (QuestionID)   REFERENCES QuizQuestions(QuestionID),
+    CONSTRAINT FK_Att_UploadedBy FOREIGN KEY (UploadedByID) REFERENCES Users(UserID),
+    CONSTRAINT CK_Att_Type CHECK (AttachmentType IN ('File', 'Image', 'Link')),
+    -- A quiz may carry its own files (e.g. the quiz paper as a PDF) while each
+    -- question inside it carries its own; every row belongs to exactly one parent.
+    CONSTRAINT CK_Att_OneParent CHECK (
+        (CASE WHEN ChapterID  IS NOT NULL THEN 1 ELSE 0 END +
+         CASE WHEN LabID      IS NOT NULL THEN 1 ELSE 0 END +
+         CASE WHEN QuizID     IS NOT NULL THEN 1 ELSE 0 END +
+         CASE WHEN QuestionID IS NOT NULL THEN 1 ELSE 0 END) = 1
+    )
 );
 GO
 

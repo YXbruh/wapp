@@ -146,8 +146,7 @@ namespace CSA.Student
             {
                 LoadPreview(certificateId);
 
-                ScriptManager.RegisterStartupScript(
-                    this,
+                ClientScript.RegisterStartupScript(
                     GetType(),
                     "DownloadCertificatePdf",
                     "setTimeout(function () " +

@@ -1,6 +1,6 @@
 ﻿<%@ Page Title="Security Alerts – CyberShield Academy" Language="C#"
     MasterPageFile="~/Site.Master" AutoEventWireup="true"
-    CodeFile="SecurityAlerts.aspx.cs" Inherits="CSA.Admin.SecurityAlerts" %>
+    CodeBehind="SecurityAlerts.aspx.cs" Inherits="CSA.Admin.SecurityAlerts" %>
 
 <asp:Content ID="cMain" ContentPlaceHolderID="MainContent" runat="server">
 <div class="dash-layout">
@@ -140,12 +140,12 @@
                                             <asp:LinkButton runat="server" CssClass="btn-sm"
                                                 CommandName="Resolve" CommandArgument='<%# Eval("AlertID") %>'
                                                 Visible='<%# Eval("AlertStatus").ToString() != "Resolved" %>'
-                                                OnClientClick="return showLogoutConfirm(this);">
+                                                OnClientClick="return showConfirmAction(this, 'Mark this security alert as resolved?', 'Resolve');">
                                                 <i class="ti ti-circle-check"></i> Resolve
                                             </asp:LinkButton>
                                             <asp:LinkButton runat="server" CssClass="btn-sm secondary"
                                                 CommandName="BlockUser" CommandArgument='<%# Eval("AlertID") %>'
-                                                OnClientClick="return showLogoutConfirm(this);">
+                                                OnClientClick="return showConfirmAction(this, 'Block this user? They will be immediately signed out and unable to log back in.', 'Block User');">
                                                 <i class="ti ti-user-off"></i> Block
                                             </asp:LinkButton>
                                         </div>

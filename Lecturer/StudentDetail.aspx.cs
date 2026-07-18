@@ -1,14 +1,15 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Web;
+using System.Data;
 using System.Web.UI;
-using System.Web.UI.WebControls;
+using CSA.DataAccess;
+using CSA.Services;
 
 namespace CSA.Lecturer
 {
     public partial class StudentDetail : Page
     {
+        private string CurrentInstructorId => Session["UserID"]?.ToString() ?? "";
+
         protected void Page_Load(object sender, EventArgs e)
         {
             if (Session["UserID"] == null || Session["Role"] as string != "Lecturer")
@@ -18,38 +19,89 @@ namespace CSA.Lecturer
             if (string.IsNullOrEmpty(studentId))
             { Response.Redirect("~/Lecturer/ClassAnalytics.aspx"); return; }
 
+            // A lecturer may only view students enrolled in their own courses.
+            if (!StudentDetailService.Owns(CurrentInstructorId, studentId))
+            { Response.Redirect("~/Lecturer/ClassAnalytics.aspx?err=access"); return; }
+
             if (!IsPostBack) LoadStudentData(studentId);
         }
 
         private void LoadStudentData(string studentId)
         {
-            // TODO:
-            // var student = UserService.GetById(studentId);
-            // if (student == null) { Response.Redirect("~/Lecturer/ClassAnalytics.aspx"); return; }
-            // litName.Text       = student.FullName;
-            // litEmail.Text      = student.Email;
-            // litEnrolled.Text   = student.EnrolledCount + " courses";
-            // litLastActive.Text = student.LastActive.ToString("dd MMM yyyy");
-            // string[] parts = student.FullName.Split(' ');
-            // litInitials.Text = parts.Length >= 2
-            //     ? $"{parts[0][0]}{parts[parts.Length-1][0]}" : student.FullName.Substring(0,2);
+            // ---- Profile header ----
+            DataRow profile = StudentDetailService.GetProfile(studentId, CurrentInstructorId);
+            if (profile == null)
+            { Response.Redirect("~/Lecturer/ClassAnalytics.aspx"); return; }
 
-            // var stats = AnalyticsService.GetStudentDetail(studentId, Session["UserID"].ToString());
-            // litQuizAvg.Text    = stats.QuizAvg + "%";
-            // litLabsDone.Text   = stats.LabsDone.ToString();
-            // litLabsTotal.Text  = stats.LabsTotal.ToString();
-            // litChallenges.Text = stats.ChallengesDone.ToString();
-            // litSandbox.Text    = stats.SandboxCleared ? "Cleared ?" : "Pending";
-            // rptQuizAttempts.DataSource = stats.QuizAttempts; rptQuizAttempts.DataBind();
-            // rptLabs.DataSource         = stats.Labs;         rptLabs.DataBind();
-            // pnlNoQuiz.Visible = stats.QuizAttempts.Count == 0;
-            // pnlNoLabs.Visible = stats.Labs.Count == 0;
+            string fullName = profile["FullName"].ToString();
+            litName.Text = Server.HtmlEncode(fullName);
+            litEmail.Text = Server.HtmlEncode(profile["Email"].ToString());
+            litInitials.Text = Server.HtmlEncode(GetInitials(fullName));
+            litModalStudentName.Text = Server.HtmlEncode(fullName);
+            litEnrolled.Text = profile["EnrolledCount"] + " course(s)";
+            litLastActive.Text = profile["LastLoginDate"] == DBNull.Value
+                ? "Never"
+                : Convert.ToDateTime(profile["LastLoginDate"]).ToString("dd MMM yyyy");
 
-            litName.Text = "Student Name";
-            litEmail.Text = "student@example.com";
-            pnlNoQuiz.Visible = pnlNoLabs.Visible = true;
+            // ---- Metric cards ----
+            DataRow m = StudentDetailService.GetMetrics(studentId, CurrentInstructorId);
+            if (m != null)
+            {
+                litQuizAvg.Text = Math.Round(Convert.ToDecimal(m["QuizAvg"])) + "%";
+                litLabsDone.Text = m["LabsDone"].ToString();
+                litLabsTotal.Text = m["LabsTotal"].ToString();
+                litChallenges.Text = m["ChallengesDone"].ToString();
+
+                int labsDone = Convert.ToInt32(m["LabsDone"]);
+                litSandbox.Text = labsDone > 0 ? "Cleared ✓" : "Pending";
+            }
+
+            // ---- Quiz attempts table ----
+            DataTable quizzes = StudentDetailService.GetQuizAttempts(studentId, CurrentInstructorId);
+            rptQuizAttempts.DataSource = quizzes;
+            rptQuizAttempts.DataBind();
+            pnlNoQuiz.Visible = quizzes.Rows.Count == 0;
+
+            // ---- Lab completion list ----
+            DataTable labs = StudentDetailService.GetLabStatus(studentId, CurrentInstructorId);
+            rptLabs.DataSource = labs;
+            rptLabs.DataBind();
+            pnlNoLabs.Visible = labs.Rows.Count == 0;
         }
 
+        protected void btnSendFeedback_Click(object sender, EventArgs e)
+        {
+            string studentId = Request.QueryString["id"];
+            string message = tbFeedbackMessage.Text.Trim();
+
+            if (string.IsNullOrEmpty(message))
+            {
+                pnlFeedbackError.Visible = true;
+                litFeedbackError.Text = "Message cannot be empty.";
+                pnlFeedbackSuccess.Visible = false;
+            }
+            else
+            {
+                StudentDetailService.SendFeedback(CurrentInstructorId, studentId, message);
+                pnlFeedbackSuccess.Visible = true;
+                litFeedbackSuccess.Text = "Feedback sent to the student.";
+                pnlFeedbackError.Visible = false;
+                tbFeedbackMessage.Text = "";
+            }
+
+            ClientScript.RegisterStartupScript(GetType(), "reopenFeedbackModal", "showFeedbackModal();", true);
+        }
+
+        private static string GetInitials(string fullName)
+        {
+            if (string.IsNullOrWhiteSpace(fullName)) return "S";
+            string[] parts = fullName.Trim().Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length >= 2)
+                return ("" + parts[0][0] + parts[parts.Length - 1][0]).ToUpper();
+            return fullName.Length >= 2 ? fullName.Substring(0, 2).ToUpper() : fullName.ToUpper();
+        }
+
+        // ---- Repeater display helpers (called from markup) ----
         public string GetScoreColor(int s) =>
             s >= 80 ? "var(--success)" : s >= 60 ? "var(--warning)" : "var(--danger)";
 
@@ -62,5 +114,4 @@ namespace CSA.Lecturer
         protected void lbLogout_Click(object sender, EventArgs e)
         { Session.Clear(); Session.Abandon(); Response.Redirect("~/Login.aspx?msg=loggedout"); }
     }
-
 }

@@ -1,6 +1,6 @@
 ﻿<%@ Page Title="Mentorship & Feedback – CyberShield Academy" Language="C#"
     MasterPageFile="~/Site.Master" AutoEventWireup="true"
-    CodeFile="Mentorship.aspx.cs" Inherits="CSA.Lecturer.Mentorship" %>
+    CodeBehind="Mentorship.aspx.cs" Inherits="CSA.Lecturer.Mentorship" %>
 
 <asp:Content ID="cMain" ContentPlaceHolderID="MainContent" runat="server">
 <div class="dash-layout">
@@ -15,6 +15,7 @@
         <a href="ClassAnalytics.aspx"  class="sidebar-link"><i class="ti ti-chart-bar"></i>Class Analytics</a>
         <a href="Mentorship.aspx"      class="sidebar-link active"><i class="ti ti-messages"></i>Mentorship</a>
         <div class="sidebar-section">Account</div>
+        <a href="Profile.aspx" class="sidebar-link"><i class="ti ti-user"></i>Profile</a>
         <asp:LinkButton ID="lbLogout" OnClientClick="return showLogoutConfirm(this);" runat="server" CssClass="sidebar-link" OnClick="lbLogout_Click">
             <i class="ti ti-logout"></i>Sign Out
         </asp:LinkButton>
@@ -136,7 +137,8 @@
                 <!-- Active feedback detail -->
                 <asp:Panel ID="pnlDetail" runat="server" Visible="false">
 
-                    <asp:HiddenField ID="hfFeedbackID" runat="server" Value="0" />
+                    <asp:HiddenField ID="hfFeedbackID" runat="server" Value="" />
+                    <asp:HiddenField ID="hfComposeStudentID" runat="server" Value="" />
 
                     <!-- Student info -->
                     <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border)">
@@ -152,56 +154,61 @@
                                 &middot; <asp:Literal ID="litDetailQuiz" runat="server" />
                             </div>
                         </div>
-                        <a href='StudentDetail.aspx?id=<asp:Literal ID="litDetailStudentID" runat="server" />'
-                           class="btn-sm secondary">
+                        <a id="hrefAnalytics" runat="server" class="btn-sm secondary">
                             <i class="ti ti-chart-bar" aria-hidden="true"></i> Analytics
                         </a>
                     </div>
 
-                    <!-- Star rating selector -->
-                    <div style="margin-bottom:16px">
-                        <div class="form-label" style="margin-bottom:6px">Your Rating (0.5 – 5.0)</div>
-                        <asp:DropDownList ID="ddlStarRating" runat="server" CssClass="form-select" style="width:auto;min-width:120px">
-                            <asp:ListItem Value="0.5">⭐ 0.5</asp:ListItem>
-                            <asp:ListItem Value="1.0">⭐ 1.0</asp:ListItem>
-                            <asp:ListItem Value="1.5">⭐ 1.5</asp:ListItem>
-                            <asp:ListItem Value="2.0">⭐ 2.0</asp:ListItem>
-                            <asp:ListItem Value="2.5">⭐ 2.5</asp:ListItem>
-                            <asp:ListItem Value="3.0">⭐ 3.0</asp:ListItem>
-                            <asp:ListItem Value="3.5">⭐ 3.5</asp:ListItem>
-                            <asp:ListItem Value="4.0">⭐ 4.0</asp:ListItem>
-                            <asp:ListItem Value="4.5">⭐ 4.5</asp:ListItem>
-                            <asp:ListItem Value="5.0">⭐ 5.0</asp:ListItem>
-                        </asp:DropDownList>
-                        <div class="text-small text-muted mt-4">
-                            <asp:Literal ID="litDetailRatingNum" runat="server" /> / 5 &middot;
-                            <asp:Literal ID="litDetailDate" runat="server" />
-                        </div>
-                    </div>
-
-                    <!-- Student comment -->
-                    <div style="background:var(--bg2);border-left:3px solid var(--accent2);border-radius:0 8px 8px 0;padding:14px;margin-bottom:20px;font-size:13px;color:var(--text2);line-height:1.7">
-                        <div class="form-label" style="margin-bottom:8px;color:var(--text3)">
-                            <i class="ti ti-quote" aria-hidden="true"></i> Student Comment
-                        </div>
-                        <asp:Literal ID="litDetailComment" runat="server" />
-                    </div>
-
-                    <!-- Quiz score context -->
-                    <div style="display:flex;gap:12px;margin-bottom:20px">
-                        <div class="metric" style="flex:1;padding:12px">
-                            <div class="metric-label">Quiz Score</div>
-                            <div class="metric-val" style="font-size:20px">
-                                <asp:Literal ID="litDetailScore" runat="server" Text="—"/>
+                    <!-- Star rating (student's own rating - display only, reply mode only) -->
+                    <asp:Panel ID="pnlRatingBlock" runat="server">
+                        <div style="margin-bottom:16px">
+                            <div class="form-label" style="margin-bottom:6px">Student's Rating</div>
+                            <asp:DropDownList ID="ddlStarRating" runat="server" CssClass="form-select" style="width:auto;min-width:120px" Enabled="false">
+                                <asp:ListItem Value="0.5">⭐ 0.5</asp:ListItem>
+                                <asp:ListItem Value="1.0">⭐ 1.0</asp:ListItem>
+                                <asp:ListItem Value="1.5">⭐ 1.5</asp:ListItem>
+                                <asp:ListItem Value="2.0">⭐ 2.0</asp:ListItem>
+                                <asp:ListItem Value="2.5">⭐ 2.5</asp:ListItem>
+                                <asp:ListItem Value="3.0">⭐ 3.0</asp:ListItem>
+                                <asp:ListItem Value="3.5">⭐ 3.5</asp:ListItem>
+                                <asp:ListItem Value="4.0">⭐ 4.0</asp:ListItem>
+                                <asp:ListItem Value="4.5">⭐ 4.5</asp:ListItem>
+                                <asp:ListItem Value="5.0">⭐ 5.0</asp:ListItem>
+                            </asp:DropDownList>
+                            <div class="text-small text-muted mt-4">
+                                <asp:Literal ID="litDetailRatingNum" runat="server" /> / 5 &middot;
+                                <asp:Literal ID="litDetailDate" runat="server" />
                             </div>
                         </div>
-                        <div class="metric" style="flex:1;padding:12px">
-                            <div class="metric-label">Labs Done</div>
-                            <div class="metric-val" style="font-size:20px">
-                                <asp:Literal ID="litDetailLabs" runat="server" Text="—"/>
+                    </asp:Panel>
+
+                    <!-- Student comment (reply mode only) -->
+                    <asp:Panel ID="pnlStudentComment" runat="server">
+                        <div style="background:var(--bg2);border-left:3px solid var(--accent2);border-radius:0 8px 8px 0;padding:14px;margin-bottom:20px;font-size:13px;color:var(--text2);line-height:1.7">
+                            <div class="form-label" style="margin-bottom:8px;color:var(--text3)">
+                                <i class="ti ti-quote" aria-hidden="true"></i> Student Comment
+                            </div>
+                            <asp:Literal ID="litDetailComment" runat="server" />
+                        </div>
+                    </asp:Panel>
+
+                    <!-- Quiz score context (reply mode only) -->
+                    <asp:Panel ID="pnlQuizContext" runat="server">
+                        <div style="display:flex;gap:12px;margin-bottom:20px">
+                            <div class="metric" style="flex:1;padding:12px">
+                                <div class="metric-label">Quiz Score</div>
+                                <div class="metric-val" style="font-size:20px">
+                                    <asp:Literal ID="litDetailScore" runat="server" Text="—"/>
+                                </div>
+                            </div>
+                            <div class="metric" style="flex:1;padding:12px">
+                                <div class="metric-label">Labs Done</div>
+                                <div class="metric-val" style="font-size:20px">
+                                    <asp:Literal ID="litDetailLabs" runat="server" Text="—"/>
+                                </div>
                             </div>
                         </div>
-                    </div>
+                    </asp:Panel>
 
                     <!-- Previous reply (if any) -->
                     <asp:Panel ID="pnlPrevReply" runat="server" Visible="false">
@@ -239,7 +246,7 @@
                     <div class="form-group">
                         <label class="form-label" for="<%= tbReply.ClientID %>">
                             <i class="ti ti-pencil" aria-hidden="true"></i>
-                            Your Response / Remediation Guidance
+                            <asp:Literal ID="litReplyLabel" runat="server" Text="Your Response / Remediation Guidance" />
                         </label>
                         <asp:TextBox ID="tbReply" runat="server" CssClass="form-input"
                             TextMode="MultiLine" Rows="6"
@@ -247,11 +254,11 @@
                         <asp:RequiredFieldValidator ID="rfvReply" runat="server"
                             ControlToValidate="tbReply" ValidationGroup="ReplyGroup"
                             Display="Dynamic" CssClass="val-error"
-                            ErrorMessage="Reply cannot be empty."
-                            Text="<i class='ti ti-alert-circle'></i> Reply cannot be empty." />
+                            ErrorMessage="Message cannot be empty."
+                            Text="<i class='ti ti-alert-circle'></i> Message cannot be empty." />
                         <div class="val-hint">
                             <i class="ti ti-info-circle" aria-hidden="true"></i>
-                            This reply will appear on the student's dashboard under their quiz results.
+                            This message will appear on the student's dashboard.
                         </div>
                     </div>
 

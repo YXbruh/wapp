@@ -65,10 +65,16 @@ namespace CSA.Services
 
             string hash = PasswordHelper.Hash(password);
             string studentRoleId = GetRoleIdByName("Student");
+            if (string.IsNullOrEmpty(studentRoleId))
+            { errorMsg = "Student role is not configured. Contact an administrator."; return false; }
+
+            // UserID is a NOT NULL primary key with no default, so it must be supplied.
+            string userId = IdGenerator.NewId("USR");
 
             DBHelper.ExecuteNonQuery(
-                @"INSERT INTO Users (FullName, Email, PasswordHash, RoleID, IsActive, CreatedAt)
-                  VALUES (@Name, @Email, @Hash, @RoleID, 1, GETDATE())",
+                @"INSERT INTO Users (UserID, FullName, Email, PasswordHash, RoleID, IsActive, CreatedAt)
+                  VALUES (@UserID, @Name, @Email, @Hash, @RoleID, 1, GETDATE())",
+                new SqlParameter("@UserID", userId),
                 new SqlParameter("@Name", fullName),
                 new SqlParameter("@Email", email),
                 new SqlParameter("@Hash", hash),

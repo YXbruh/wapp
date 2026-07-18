@@ -1,6 +1,6 @@
 ﻿<%@ Page Title="Course Categories – CyberShield Academy" Language="C#"
     MasterPageFile="~/Site.Master" AutoEventWireup="true"
-    CodeFile="Categories.aspx.cs" Inherits="CSA.Admin.Categories" %>
+    CodeBehind="Categories.aspx.cs" Inherits="CSA.Admin.Categories" %>
 
 <asp:Content ID="cMain" ContentPlaceHolderID="MainContent" runat="server">
 <div class="dash-layout">
@@ -109,7 +109,7 @@
                                                 </asp:LinkButton>
                                                 <asp:LinkButton runat="server" CssClass="btn-danger"
                                                     CommandName="Delete" CommandArgument='<%# Eval("CategoryID") %>'
-                                                    OnClientClick="return showLogoutConfirm(this);">
+                                                    OnClientClick="return showConfirmAction(this, 'Delete this category? This cannot be undone.', 'Delete');">
                                                     <i class="ti ti-trash"></i>
                                                 </asp:LinkButton>
                                             </div>

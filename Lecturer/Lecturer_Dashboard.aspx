@@ -1,6 +1,6 @@
 ﻿<%@ Page Title="Lecturer Dashboard – CyberShield Academy" Language="C#"
     MasterPageFile="~/Site.Master" AutoEventWireup="true"
-    CodeFile="Lecturer_Dashboard.aspx.cs" Inherits="CSA.Lecturer.Lecturer_Dashboard" %>
+    CodeBehind="Lecturer_Dashboard.aspx.cs" Inherits="CSA.Lecturer.Lecturer_Dashboard" %>
 
 <asp:Content ID="cMain" ContentPlaceHolderID="MainContent" runat="server">
 <div class="dash-layout">
@@ -15,6 +15,7 @@
         <a href="ClassAnalytics.aspx" class="sidebar-link"><i class="ti ti-chart-bar"></i>Class Analytics</a>
         <a href="Mentorship.aspx"     class="sidebar-link"><i class="ti ti-messages"></i>Mentorship</a>
         <div class="sidebar-section">Account</div>
+        <a href="Profile.aspx" class="sidebar-link"><i class="ti ti-user"></i>Profile</a>
         <asp:LinkButton ID="lbLogout" OnClientClick="return showLogoutConfirm(this);" runat="server" CssClass="sidebar-link" OnClick="lbLogout_Click">
             <i class="ti ti-logout"></i>Sign Out
         </asp:LinkButton>

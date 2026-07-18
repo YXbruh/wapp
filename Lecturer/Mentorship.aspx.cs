@@ -1,14 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Configuration;
+using System.Data;
 using System.Data.SqlClient;
 using System.Web.UI;
 using System.Web.UI.WebControls;
+using CSA.Services;
 
 namespace CSA.Lecturer
 {
     public partial class Mentorship : Page
     {
+        private string CurrentInstructorId => Session["UserID"]?.ToString().Trim() ?? "";
+
         // ====================================================================
         // Page Load
         // ====================================================================
@@ -22,8 +26,17 @@ namespace CSA.Lecturer
                 LoadCourseDropdown();
                 LoadMetrics();
                 LoadFeedbackList();
-                pnlNoSelection.Visible = true;
-                pnlDetail.Visible = false;
+
+                string studentId = Request.QueryString["studentId"];
+                if (!string.IsNullOrEmpty(studentId) && StudentDetailService.Owns(CurrentInstructorId, studentId))
+                {
+                    LoadComposeMode(studentId);
+                }
+                else
+                {
+                    pnlNoSelection.Visible = true;
+                    pnlDetail.Visible = false;
+                }
             }
         }
 
@@ -59,36 +72,47 @@ namespace CSA.Lecturer
         }
 
         // ====================================================================
-        // Load metrics (unread = total, replied = 0)
+        // Load metrics
         // ====================================================================
         private void LoadMetrics()
         {
-            string instructorId = Session["UserID"].ToString().Trim();
+            string instructorId = CurrentInstructorId;
 
-            // Total feedback (all are considered "unread" for now)
-            string totalQuery = @"
+            // Feedback the lecturer hasn't opened yet
+            string unreadQuery = @"
                 SELECT COUNT(DISTINCT f.FeedbackID)
                 FROM Feedback f
-                INNER JOIN Courses c ON f.CourseID = c.CourseID
-                WHERE c.InstructorID = @InstructorID";
+                LEFT JOIN Courses c ON f.CourseID = c.CourseID
+                WHERE (c.InstructorID = @InstructorID OR f.LecturerID = @InstructorID)
+                  AND f.InstReadAt IS NULL";
 
-            // Replied is always 0 because we have no reply tracking
-            litReplied.Text = "0";
+            // Feedback this lecturer has replied to / messages they sent
+            string repliedQuery = @"
+                SELECT COUNT(DISTINCT f.FeedbackID)
+                FROM Feedback f
+                LEFT JOIN Courses c ON f.CourseID = c.CourseID
+                WHERE (c.InstructorID = @InstructorID OR f.LecturerID = @InstructorID)
+                  AND f.RepText IS NOT NULL";
 
-            // Average rating (of all feedback)
+            // Average rating (of actual student reviews only)
             string avgRatingQuery = @"
                 SELECT ISNULL(AVG(CAST(StarRating AS FLOAT)), 0)
                 FROM Feedback f
                 INNER JOIN Courses c ON f.CourseID = c.CourseID
-                WHERE c.InstructorID = @InstructorID";
+                WHERE c.InstructorID = @InstructorID AND f.StarRating IS NOT NULL";
 
             using (SqlConnection conn = new SqlConnection(GetConnectionString()))
             {
                 conn.Open();
-                using (SqlCommand cmd = new SqlCommand(totalQuery, conn))
+                using (SqlCommand cmd = new SqlCommand(unreadQuery, conn))
                 {
                     cmd.Parameters.AddWithValue("@InstructorID", instructorId);
                     litUnread.Text = cmd.ExecuteScalar()?.ToString() ?? "0";
+                }
+                using (SqlCommand cmd = new SqlCommand(repliedQuery, conn))
+                {
+                    cmd.Parameters.AddWithValue("@InstructorID", instructorId);
+                    litReplied.Text = cmd.ExecuteScalar()?.ToString() ?? "0";
                 }
                 using (SqlCommand cmd = new SqlCommand(avgRatingQuery, conn))
                 {
@@ -106,41 +130,44 @@ namespace CSA.Lecturer
         }
 
         // ====================================================================
-        // Load feedback list (no reply filtering)
+        // Load feedback list (student reviews + lecturer-initiated messages)
         // ====================================================================
         private void LoadFeedbackList()
         {
-            string instructorId = Session["UserID"].ToString().Trim();
+            string instructorId = CurrentInstructorId;
             string search = tbSearch.Text.Trim();
             string filter = ddlFilter.SelectedValue;
             string courseId = ddlCourse.SelectedValue;
 
-            // Base query: all feedback for the instructor's courses
+            // Base query: feedback tied to the instructor's courses, plus any
+            // message this lecturer sent directly (which may have no CourseID).
             string query = @"
-                SELECT 
+                SELECT
                     f.FeedbackID,
                     u.FullName AS StudentName,
                     c.CourseName,
                     q.Title AS QuizName,
                     f.StarRating,
                     f.Comment,
+                    f.RepText,
                     f.SubmittedAt,
-                    0 AS HasReply,     -- no replies
-                    0 AS IsRead        -- treat all as unread
+                    CASE WHEN f.RepText IS NOT NULL THEN 1 ELSE 0 END AS HasReply,
+                    CASE WHEN f.InstReadAt IS NOT NULL THEN 1 ELSE 0 END AS IsRead
                 FROM Feedback f
                 INNER JOIN Users u ON f.StudentID = u.UserID
                 LEFT JOIN Courses c ON f.CourseID = c.CourseID
                 LEFT JOIN Quizzes q ON f.QuizID = q.QuizID
-                WHERE c.InstructorID = @InstructorID
-                  AND (u.FullName LIKE @Search OR f.Comment LIKE @Search)";
+                WHERE (c.InstructorID = @InstructorID OR f.LecturerID = @InstructorID)
+                  AND (u.FullName LIKE @Search OR f.Comment LIKE @Search OR f.RepText LIKE @Search)";
 
             if (!string.IsNullOrEmpty(courseId))
                 query += " AND f.CourseID = @CourseID";
 
-            // Filter: since we have no reply, "Unread" = all, "Replied" = none
             if (filter == "Replied")
-                query += " AND 1 = 0"; // no results for replied
-            // else Unread or All → all feedback
+                query += " AND f.RepText IS NOT NULL";
+            else if (filter == "Unread")
+                query += " AND f.InstReadAt IS NULL";
+            // else "All" → no extra filter
 
             query += " ORDER BY f.SubmittedAt DESC";
 
@@ -157,17 +184,23 @@ namespace CSA.Lecturer
                 var list = new List<FeedbackListItem>();
                 while (reader.Read())
                 {
+                    string comment = reader["Comment"]?.ToString() ?? "";
+                    string repText = reader["RepText"] == DBNull.Value ? "" : reader["RepText"].ToString();
+                    bool hasReply = Convert.ToInt32(reader["HasReply"]) == 1;
+                    bool isRead = Convert.ToInt32(reader["IsRead"]) == 1;
+
                     list.Add(new FeedbackListItem
                     {
                         FeedbackID = Convert.ToInt32(reader["FeedbackID"]),
                         StudentName = reader["StudentName"].ToString(),
-                        CourseName = reader["CourseName"]?.ToString() ?? "N/A",
+                        CourseName = reader["CourseName"]?.ToString() ?? "Direct Message",
                         QuizName = reader["QuizName"]?.ToString() ?? "N/A",
-                        StarRating = Convert.ToInt32(reader["StarRating"]),
-                        Comment = reader["Comment"]?.ToString() ?? "",
+                        StarRating = reader["StarRating"] == DBNull.Value ? 0 : Convert.ToInt32(reader["StarRating"]),
+                        // Lecturer-initiated rows have no student Comment - preview the sent message instead.
+                        Comment = string.IsNullOrEmpty(comment) ? "You: " + repText : comment,
                         SubmittedAt = Convert.ToDateTime(reader["SubmittedAt"]),
-                        HasReply = false,
-                        IsRead = false
+                        HasReply = hasReply,
+                        IsRead = isRead
                     });
                 }
                 reader.Close();
@@ -186,17 +219,36 @@ namespace CSA.Lecturer
             if (e.CommandName == "Select")
             {
                 int feedbackId = Convert.ToInt32(e.CommandArgument);
+                MarkAsRead(feedbackId);
                 LoadFeedbackDetail(feedbackId);
+                LoadMetrics();
+                LoadFeedbackList();
             }
         }
 
         // ====================================================================
-        // Load detail for the selected feedback
+        // Mark a feedback item as opened (first view only - doesn't overwrite
+        // an existing InstReadAt).
+        // ====================================================================
+        private void MarkAsRead(int feedbackId)
+        {
+            using (SqlConnection conn = new SqlConnection(GetConnectionString()))
+            using (SqlCommand cmd = new SqlCommand(
+                "UPDATE Feedback SET InstReadAt = ISNULL(InstReadAt, GETDATE()) WHERE FeedbackID = @FeedbackID;", conn))
+            {
+                cmd.Parameters.AddWithValue("@FeedbackID", feedbackId);
+                conn.Open();
+                cmd.ExecuteNonQuery();
+            }
+        }
+
+        // ====================================================================
+        // Load detail for the selected feedback (reply mode)
         // ====================================================================
         private void LoadFeedbackDetail(int feedbackId)
         {
             string query = @"
-                SELECT 
+                SELECT
                     f.FeedbackID,
                     u.FullName AS StudentName,
                     u.UserID AS StudentID,
@@ -204,7 +256,9 @@ namespace CSA.Lecturer
                     q.Title AS QuizTitle,
                     f.StarRating,
                     f.Comment,
-                    f.SubmittedAt
+                    f.SubmittedAt,
+                    f.RepText,
+                    f.RepAt
                 FROM Feedback f
                 INNER JOIN Users u ON f.StudentID = u.UserID
                 LEFT JOIN Courses c ON f.CourseID = c.CourseID
@@ -222,30 +276,51 @@ namespace CSA.Lecturer
                     pnlNoSelection.Visible = false;
                     pnlDetail.Visible = true;
                     hfFeedbackID.Value = feedbackId.ToString();
+                    hfComposeStudentID.Value = "";
+
+                    string studentId = reader["StudentID"].ToString();
+                    string studentName = reader["StudentName"].ToString();
 
                     // Student info
-                    litDetailName.Text = reader["StudentName"].ToString();
-                    litDetailStudentID.Text = reader["StudentID"].ToString();
-                    litDetailCourse.Text = reader["CourseName"]?.ToString() ?? "N/A";
+                    litDetailName.Text = studentName;
+                    litDetailCourse.Text = reader["CourseName"]?.ToString() ?? "Direct Message";
                     litDetailQuiz.Text = reader["QuizTitle"]?.ToString() ?? "N/A";
-                    litDetailInitials.Text = GetInitials(reader["StudentName"].ToString());
+                    litDetailInitials.Text = GetInitials(studentName);
+                    hrefAnalytics.HRef = ResolveUrl("~/Lecturer/StudentDetail.aspx?id=" + Server.UrlEncode(studentId));
 
-                    // Rating (int)
-                    int ratingInt = Convert.ToInt32(reader["StarRating"]);
-                    litDetailRatingNum.Text = ratingInt.ToString("0.0");
+                    // Rating (student's own rating - display only, may be absent for
+                    // a lecturer-initiated message with no underlying student review)
+                    bool hasRating = reader["StarRating"] != DBNull.Value;
+                    pnlRatingBlock.Visible = hasRating;
+                    if (hasRating)
+                    {
+                        int ratingInt = Convert.ToInt32(reader["StarRating"]);
+                        ddlStarRating.SelectedValue = ratingInt.ToString("0.0");
+                        litDetailRatingNum.Text = ratingInt.ToString("0.0");
+                    }
                     litDetailDate.Text = Convert.ToDateTime(reader["SubmittedAt"]).ToString("dd MMM yyyy, HH:mm");
 
-                    // Comment
-                    litDetailComment.Text = reader["Comment"]?.ToString() ?? "";
+                    // Student comment (absent for lecturer-initiated messages)
+                    string comment = reader["Comment"]?.ToString() ?? "";
+                    pnlStudentComment.Visible = !string.IsNullOrEmpty(comment);
+                    litDetailComment.Text = comment;
 
-                    // Placeholders
+                    pnlQuizContext.Visible = true;
                     litDetailScore.Text = "—";
                     litDetailLabs.Text = "—";
 
-                    // No previous reply, so hide the panel
-                    pnlPrevReply.Visible = false;
-                    // Set default rating dropdown
-                    ddlStarRating.SelectedValue = "5.0";
+                    // Previous reply, if any
+                    string repText = reader["RepText"] == DBNull.Value ? "" : reader["RepText"].ToString();
+                    pnlPrevReply.Visible = !string.IsNullOrEmpty(repText);
+                    if (pnlPrevReply.Visible)
+                    {
+                        litPrevReply.Text = Server.HtmlEncode(repText);
+                        litReplyDate.Text = reader["RepAt"] == DBNull.Value
+                            ? "" : Convert.ToDateTime(reader["RepAt"]).ToString("dd MMM yyyy, HH:mm");
+                    }
+
+                    litReplyLabel.Text = "Your Response / Remediation Guidance";
+                    btnSendReply.Text = "Send Reply";
 
                     pnlSuccess.Visible = false;
                     pnlError.Visible = false;
@@ -260,47 +335,110 @@ namespace CSA.Lecturer
         }
 
         // ====================================================================
-        // Send Reply (saved as a new feedback record? We'll store it as a new row,
-        // but without ReplyToFeedbackID we can't link it. So we'll update the 
-        // original feedback's Comment? But that would overwrite student's comment.
-        // Given no reply mechanism, we'll just show a success message and clear.
+        // Load the "send a new message to this student" compose panel
+        // ====================================================================
+        private void LoadComposeMode(string studentId)
+        {
+            DataRow profile = StudentDetailService.GetProfile(studentId, CurrentInstructorId);
+            if (profile == null)
+            {
+                pnlNoSelection.Visible = true;
+                pnlDetail.Visible = false;
+                return;
+            }
+
+            pnlNoSelection.Visible = false;
+            pnlDetail.Visible = true;
+
+            hfFeedbackID.Value = "";
+            hfComposeStudentID.Value = studentId;
+
+            string fullName = profile["FullName"].ToString();
+            litDetailName.Text = fullName;
+            litDetailInitials.Text = GetInitials(fullName);
+            litDetailCourse.Text = "New message";
+            litDetailQuiz.Text = "";
+            hrefAnalytics.HRef = ResolveUrl("~/Lecturer/StudentDetail.aspx?id=" + Server.UrlEncode(studentId));
+
+            // None of these apply when composing a brand-new message.
+            pnlRatingBlock.Visible = false;
+            pnlStudentComment.Visible = false;
+            pnlQuizContext.Visible = false;
+            pnlPrevReply.Visible = false;
+
+            litReplyLabel.Text = "Your Message";
+            btnSendReply.Text = "Send Feedback";
+
+            pnlSuccess.Visible = false;
+            pnlError.Visible = false;
+            tbReply.Text = "";
+        }
+
+        // ====================================================================
+        // Send Reply (to existing student feedback) OR Send Feedback
+        // (new lecturer-initiated message, compose mode)
         // ====================================================================
         protected void btnSendReply_Click(object sender, EventArgs e)
         {
             if (!Page.IsValid) return;
 
-            // Get rating from dropdown (rounded to int)
-            if (!decimal.TryParse(ddlStarRating.SelectedValue, out decimal ratingDecimal))
-            {
-                ShowError("Invalid rating selected.");
-                return;
-            }
-            int starRating = (int)Math.Round(ratingDecimal, MidpointRounding.AwayFromZero);
-            if (starRating < 1) starRating = 1;
-            if (starRating > 5) starRating = 5;
-
             string replyText = tbReply.Text.Trim();
             if (string.IsNullOrEmpty(replyText))
             {
-                ShowError("Reply cannot be empty.");
+                ShowError("Message cannot be empty.");
                 return;
             }
 
-            int feedbackId = Convert.ToInt32(hfFeedbackID.Value);
+            string instructorId = CurrentInstructorId;
+            string feedbackIdRaw = hfFeedbackID.Value;
+            string composeStudentId = hfComposeStudentID.Value;
 
-            // Since we cannot link a reply, we'll simply update the original feedback's StarRating
-            // and append the reply to the comment (or store it elsewhere). 
-            // But to keep it simple and avoid data loss, we'll just show success and clear.
-            // In a real scenario, you'd have a separate Replies table.
+            if (!string.IsNullOrEmpty(feedbackIdRaw))
+            {
+                // Replying to an existing student-submitted feedback item.
+                int feedbackId = Convert.ToInt32(feedbackIdRaw);
 
-            // For now, we just pretend to send a reply.
-            ShowSuccess("Reply sent successfully. (Note: reply is not stored permanently until you add a reply mechanism.)");
+                using (SqlConnection conn = new SqlConnection(GetConnectionString()))
+                using (SqlCommand cmd = new SqlCommand(@"
+                    UPDATE Feedback
+                    SET RepText = @RepText, RepAt = GETDATE(), LecturerID = @InstructorID,
+                        InstReadAt = ISNULL(InstReadAt, GETDATE())
+                    WHERE FeedbackID = @FeedbackID;", conn))
+                {
+                    cmd.Parameters.AddWithValue("@RepText", replyText);
+                    cmd.Parameters.AddWithValue("@InstructorID", instructorId);
+                    cmd.Parameters.AddWithValue("@FeedbackID", feedbackId);
+                    conn.Open();
+                    cmd.ExecuteNonQuery();
+                }
 
-            // Reload and clear
-            LoadMetrics();
-            LoadFeedbackList();
-            LoadFeedbackDetail(feedbackId);
-            tbReply.Text = "";
+                ShowSuccess("Reply sent to the student.");
+                LoadMetrics();
+                LoadFeedbackList();
+                LoadFeedbackDetail(feedbackId);
+                tbReply.Text = "";
+            }
+            else if (!string.IsNullOrEmpty(composeStudentId))
+            {
+                // New lecturer-initiated message to a specific student.
+                if (!StudentDetailService.Owns(instructorId, composeStudentId))
+                {
+                    ShowError("You can only message students enrolled in your own courses.");
+                    return;
+                }
+
+                StudentDetailService.SendFeedback(instructorId, composeStudentId, replyText);
+
+                ShowSuccess("Feedback sent to the student.");
+                LoadMetrics();
+                LoadFeedbackList();
+                LoadComposeMode(composeStudentId);
+                tbReply.Text = "";
+            }
+            else
+            {
+                ShowError("Nothing selected to reply to.");
+            }
         }
 
         // ====================================================================
@@ -309,7 +447,6 @@ namespace CSA.Lecturer
         protected void btnClear_Click(object sender, EventArgs e)
         {
             tbReply.Text = "";
-            ddlStarRating.SelectedValue = "5.0";
             pnlSuccess.Visible = false;
             pnlError.Visible = false;
         }

@@ -1,6 +1,6 @@
 ﻿<%@ Page Title="Database Backup – CyberShield Academy" Language="C#"
     MasterPageFile="~/Site.Master" AutoEventWireup="true"
-    CodeFile="Backup.aspx.cs" Inherits="CSA.Admin.Backup" %>
+    CodeBehind="Backup.aspx.cs" Inherits="CSA.Admin.Backup" %>
 
 <asp:Content ID="cMain" ContentPlaceHolderID="MainContent" runat="server">
 <div class="dash-layout">
@@ -101,7 +101,7 @@
 
                 <asp:Button ID="btnBackup" runat="server" CssClass="btn-primary"
                     OnClick="btnBackup_Click"
-                    OnClientClick="return showLogoutConfirm(this);"
+                    OnClientClick="return showConfirmAction(this, 'Start a full database backup? This may take a few minutes.', 'Start Backup');"
                     Text="Start Backup" />
             </div>
 
@@ -138,7 +138,7 @@
                                                 </asp:LinkButton>
                                                 <asp:LinkButton runat="server" CssClass="btn-danger"
                                                     CommandName="Delete" CommandArgument='<%# Eval("BackupID") %>'
-                                                    OnClientClick="return showLogoutConfirm(this);">
+                                                    OnClientClick="return showConfirmAction(this, 'Delete this backup? This cannot be undone.', 'Delete');">
                                                     <i class="ti ti-trash"></i>
                                                 </asp:LinkButton>
                                             </div>

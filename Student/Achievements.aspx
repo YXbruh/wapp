@@ -2,7 +2,7 @@
     Language="C#"
     MasterPageFile="~/Site.Master"
     AutoEventWireup="true"
-    CodeFile="Achievements.aspx.cs"
+    CodeBehind="Achievements.aspx.cs"
     Inherits="CSA.Student.Student_Achievements" %>
 
 <asp:Content

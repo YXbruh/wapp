@@ -2,7 +2,7 @@
     Language="C#"
     MasterPageFile="~/Site.Master"
     AutoEventWireup="true"
-    CodeFile="MyCourses.aspx.cs"
+    CodeBehind="MyCourses.aspx.cs"
     Inherits="CSA.Student.Student_MyCourses" %>
 
 <asp:Content ID="cMain"

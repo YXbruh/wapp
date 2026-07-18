@@ -1,19 +1,18 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Configuration;
+using System.Data;
 using System.Data.SqlClient;
-using System.IO;
-using System.Linq;
 using System.Text.RegularExpressions;
 using System.Web.UI;
 using System.Web.UI.WebControls;
+using CSA.Services;
 
 namespace CSA.Lecturer
 {
     public partial class ManageContent : Page
     {
-        private static readonly string[] AllowedExtensions = { ".pdf", ".png", ".jpg", ".jpeg", ".txt" };
-        private const long MaxBytes = 10 * 1024 * 1024; // 10 MB
+        private string CurrentInstructorId => Session["UserID"]?.ToString() ?? "";
 
         // ========================================================================
         // Page Load
@@ -23,12 +22,16 @@ namespace CSA.Lecturer
             if (Session["UserID"] == null || Session["Role"] as string != "Lecturer")
                 Response.Redirect("~/Login.aspx");
 
+            // Required for the plain <input type="file" multiple> attachment picker
+            // to actually transmit file bytes with the postback.
+            Form.Enctype = "multipart/form-data";
+
             if (!IsPostBack)
             {
-                EnsureTablesExist();
                 LoadCourseDropdown();
-                ActivateTab("Chapter");
                 LoadContentList();
+                PendingAttachmentService.Clear(AttachBucket);
+                LoadAttachments("");
             }
         }
 
@@ -41,183 +44,52 @@ namespace CSA.Lecturer
         }
 
         // ========================================================================
-        // Ensure Articles and Media tables exist (run once)
-        // ========================================================================
-        private void EnsureTablesExist()
-        {
-            //string connStr = GetConnectionString();
-            //using (SqlConnection conn = new SqlConnection(connStr))
-            //{
-            //    conn.Open();
-
-            //    // Create Articles table if missing
-            //    string createArticles = @"
-            //        IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[Articles]') AND type in (N'U'))
-            //        BEGIN
-            //            CREATE TABLE Articles (
-            //                ArticleID    NVARCHAR(10)  NOT NULL PRIMARY KEY,
-            //                CourseID     NVARCHAR(10)  NOT NULL,
-            //                Title        NVARCHAR(200) NOT NULL,
-            //                Tag          NVARCHAR(100) NULL,
-            //                Body         NVARCHAR(MAX) NOT NULL,
-            //                Url          NVARCHAR(500) NULL,
-            //                IsPublished  BIT           NOT NULL DEFAULT 0,
-            //                CreatedByID  NVARCHAR(10)  NOT NULL,
-            //                CreatedAt    DATETIME      NOT NULL DEFAULT GETDATE(),
-            //                UpdatedAt    DATETIME      NOT NULL DEFAULT GETDATE(),
-            //                CONSTRAINT FK_Articles_Course    FOREIGN KEY (CourseID)    REFERENCES Courses(CourseID),
-            //                CONSTRAINT FK_Articles_CreatedBy FOREIGN KEY (CreatedByID) REFERENCES Users(UserID)
-            //            );
-            //        END";
-
-            //    // Create Media table if missing
-            //    string createMedia = @"
-            //        IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[Media]') AND type in (N'U'))
-            //        BEGIN
-            //            CREATE TABLE Media (
-            //                MediaID      NVARCHAR(10)  NOT NULL PRIMARY KEY,
-            //                CourseID     NVARCHAR(10)  NOT NULL,
-            //                Title        NVARCHAR(200) NOT NULL,
-            //                Description  NVARCHAR(500) NULL,
-            //                FileName     NVARCHAR(500) NOT NULL,
-            //                MediaType    NVARCHAR(50)  NOT NULL,
-            //                CreatedByID  NVARCHAR(10)  NOT NULL,
-            //                CreatedAt    DATETIME      NOT NULL DEFAULT GETDATE(),
-            //                UpdatedAt    DATETIME      NOT NULL DEFAULT GETDATE(),
-            //                CONSTRAINT FK_Media_Course    FOREIGN KEY (CourseID)    REFERENCES Courses(CourseID),
-            //                CONSTRAINT FK_Media_CreatedBy FOREIGN KEY (CreatedByID) REFERENCES Users(UserID)
-            //            );
-            //        END";
-
-            //    using (SqlCommand cmd = new SqlCommand(createArticles, conn))
-            //        cmd.ExecuteNonQuery();
-            //    using (SqlCommand cmd = new SqlCommand(createMedia, conn))
-            //        cmd.ExecuteNonQuery();
-            //}
-        }
-
-        // ========================================================================
         // Load Course Dropdown
         // ========================================================================
         private void LoadCourseDropdown()
         {
-            string userId = Session["UserID"].ToString();
+            string userId = CurrentInstructorId;
             ddlCourse.Items.Clear();
             ddlCourse.Items.Add(new ListItem("— Select Course —", ""));
 
             string query = "SELECT CourseID, CourseName FROM Courses WHERE InstructorID = @InstructorID AND IsPublished = 1 ORDER BY CourseName";
             using (SqlConnection conn = new SqlConnection(GetConnectionString()))
+            using (SqlCommand cmd = new SqlCommand(query, conn))
             {
-                using (SqlCommand cmd = new SqlCommand(query, conn))
+                cmd.Parameters.AddWithValue("@InstructorID", userId);
+                conn.Open();
+                SqlDataReader reader = cmd.ExecuteReader();
+                while (reader.Read())
                 {
-                    cmd.Parameters.AddWithValue("@InstructorID", userId);
-                    conn.Open();
-                    SqlDataReader reader = cmd.ExecuteReader();
-                    while (reader.Read())
-                    {
-                        ddlCourse.Items.Add(new ListItem(
-                            reader["CourseName"].ToString(),
-                            reader["CourseID"].ToString()
-                        ));
-                    }
+                    ddlCourse.Items.Add(new ListItem(
+                        reader["CourseName"].ToString(),
+                        reader["CourseID"].ToString()
+                    ));
                 }
             }
         }
 
         // ========================================================================
-        // Tab switching
-        // ========================================================================
-        protected void tabChapter_Click(object sender, EventArgs e) { ActivateTab("Chapter"); LoadContentList(); }
-        protected void tabArticle_Click(object sender, EventArgs e) { ActivateTab("Article"); LoadContentList(); }
-        protected void tabMedia_Click(object sender, EventArgs e) { ActivateTab("Media"); LoadContentList(); }
-
-        private void ActivateTab(string tab)
-        {
-            hfActiveTab.Value = tab;
-
-            pnlChapter.Visible = tab == "Chapter";
-            pnlArticle.Visible = tab == "Article";
-            pnlMedia.Visible = tab == "Media";
-
-            // Enable/disable validators for the active tab
-            rfvChapterBody.Enabled = tab == "Chapter";
-            rfvArticleBody.Enabled = tab == "Article";
-            revArticleUrl.Enabled = tab == "Article";
-            rfvMediaDesc.Enabled = tab == "Media";
-
-            tabChapter.CssClass = tab == "Chapter" ? "auth-tab active" : "auth-tab";
-            tabArticle.CssClass = tab == "Article" ? "auth-tab active" : "auth-tab";
-            tabMedia.CssClass = tab == "Media" ? "auth-tab active" : "auth-tab";
-
-            litFormTitle.Text = $"New {tab}";
-            litListTitle.Text = tab == "Chapter" ? "Chapters" : tab == "Article" ? "Articles" : "Media Files";
-            btnSave.Text = $"Save {tab}";
-        }
-
-        // ========================================================================
-        // Load content list based on active tab and search filter
+        // Load chapter list
         // ========================================================================
         private void LoadContentList()
         {
-            string userId = Session["UserID"].ToString();
-            string tab = hfActiveTab.Value;
+            string userId = CurrentInstructorId;
             string search = tbSearch.Text.Trim();
 
-            string query = "";
-            string countQuery = "";
-            string table = "";
-
-            switch (tab)
-            {
-                case "Chapter":
-                    table = "Chapters";
-                    query = @"
-                        SELECT ch.ChapterID AS ContentID, ch.ChapterTitle AS Title, '' AS Subtitle,
-                               c.CourseName, ch.IsPublished, ch.UpdatedAt
-                        FROM Chapters ch
-                        INNER JOIN Courses c ON ch.CourseID = c.CourseID
-                        WHERE c.InstructorID = @InstructorID AND c.IsPublished = 1
-                          AND (ch.ChapterTitle LIKE @Search OR ch.Content LIKE @Search)
-                        ORDER BY ch.UpdatedAt DESC";
-                    countQuery = @"
-                        SELECT COUNT(*) FROM Chapters ch
-                        INNER JOIN Courses c ON ch.CourseID = c.CourseID
-                        WHERE c.InstructorID = @InstructorID AND c.IsPublished = 1
-                          AND (ch.ChapterTitle LIKE @Search OR ch.Content LIKE @Search)";
-                    break;
-                case "Article":
-                    table = "Articles";
-                    query = @"
-                        SELECT a.ArticleID AS ContentID, a.Title, '' AS Subtitle,
-                               c.CourseName, a.IsPublished, a.UpdatedAt
-                        FROM Articles a
-                        INNER JOIN Courses c ON a.CourseID = c.CourseID
-                        WHERE c.InstructorID = @InstructorID AND c.IsPublished = 1
-                          AND (a.Title LIKE @Search OR a.Body LIKE @Search OR a.Tag LIKE @Search)
-                        ORDER BY a.UpdatedAt DESC";
-                    countQuery = @"
-                        SELECT COUNT(*) FROM Articles a
-                        INNER JOIN Courses c ON a.CourseID = c.CourseID
-                        WHERE c.InstructorID = @InstructorID AND c.IsPublished = 1
-                          AND (a.Title LIKE @Search OR a.Body LIKE @Search OR a.Tag LIKE @Search)";
-                    break;
-                case "Media":
-                    table = "Media";
-                    query = @"
-                        SELECT m.MediaID AS ContentID, m.Title, m.Description AS Subtitle,
-                               c.CourseName, 1 AS IsPublished, m.UpdatedAt
-                        FROM Media m
-                        INNER JOIN Courses c ON m.CourseID = c.CourseID
-                        WHERE c.InstructorID = @InstructorID AND c.IsPublished = 1
-                          AND (m.Title LIKE @Search OR m.Description LIKE @Search)
-                        ORDER BY m.UpdatedAt DESC";
-                    countQuery = @"
-                        SELECT COUNT(*) FROM Media m
-                        INNER JOIN Courses c ON m.CourseID = c.CourseID
-                        WHERE c.InstructorID = @InstructorID AND c.IsPublished = 1
-                          AND (m.Title LIKE @Search OR m.Description LIKE @Search)";
-                    break;
-            }
+            string query = @"
+                SELECT ch.ChapterID AS ContentID, ch.ChapterTitle AS Title,
+                       c.CourseName, ch.IsPublished, ch.UpdatedAt
+                FROM Chapters ch
+                INNER JOIN Courses c ON ch.CourseID = c.CourseID
+                WHERE c.InstructorID = @InstructorID AND c.IsPublished = 1
+                  AND (ch.ChapterTitle LIKE @Search OR ch.Content LIKE @Search)
+                ORDER BY ch.UpdatedAt DESC";
+            string countQuery = @"
+                SELECT COUNT(*) FROM Chapters ch
+                INNER JOIN Courses c ON ch.CourseID = c.CourseID
+                WHERE c.InstructorID = @InstructorID AND c.IsPublished = 1
+                  AND (ch.ChapterTitle LIKE @Search OR ch.Content LIKE @Search)";
 
             using (SqlConnection conn = new SqlConnection(GetConnectionString()))
             {
@@ -242,7 +114,6 @@ namespace CSA.Lecturer
                         {
                             ContentID = reader["ContentID"].ToString(),
                             Title = reader["Title"].ToString(),
-                            Subtitle = reader["Subtitle"].ToString(),
                             CourseName = reader["CourseName"].ToString(),
                             IsPublished = Convert.ToBoolean(reader["IsPublished"]),
                             UpdatedAt = Convert.ToDateTime(reader["UpdatedAt"])
@@ -263,16 +134,7 @@ namespace CSA.Lecturer
         protected void btnSave_Click(object sender, EventArgs e)
         {
             if (!Page.IsValid) return;
-            string userId = Session["UserID"].ToString();
-            string editId = hfEditID.Value;
-            string tab = hfActiveTab.Value;
-
-            switch (tab)
-            {
-                case "Chapter": SaveChapter(userId, editId); break;
-                case "Article": SaveArticle(userId, editId); break;
-                case "Media": SaveMedia(userId); break;
-            }
+            SaveChapter(CurrentInstructorId, hfEditID.Value);
         }
 
         // ========================================================================
@@ -280,7 +142,6 @@ namespace CSA.Lecturer
         // ========================================================================
         private void SaveChapter(string userId, string editId)
         {
-            // Validate input
             if (!Regex.IsMatch(tbTitle.Text.Trim(), @"^[\w\s\-:.,]{3,200}$"))
             { ShowError("Title contains invalid characters."); return; }
             if (tbChapterBody.Text.Trim().Length > 20000)
@@ -293,17 +154,14 @@ namespace CSA.Lecturer
             string objectives = tbObjectives.Text.Trim();
             bool isPublished = cbPublishChapter.Checked;
 
-            // Combine body and objectives
             string fullContent = body;
             if (!string.IsNullOrEmpty(objectives))
                 fullContent += $"\n\n## Learning Objectives\n{objectives}";
 
-            string query = "";
-            if (string.IsNullOrEmpty(editId) || editId == "0")
+            if (string.IsNullOrEmpty(editId))
             {
-                // Insert
-                string newId = GenerateId("CH");
-                query = @"
+                string newId = IdGenerator.NewId("CHP");
+                string query = @"
                     INSERT INTO Chapters (ChapterID, CourseID, ChapterTitle, Content, SortOrder, IsPublished, CreatedByID, CreatedAt, UpdatedAt)
                     VALUES (@ChapterID, @CourseID, @Title, @Content, @SortOrder, @IsPublished, @CreatedByID, GETDATE(), GETDATE())";
                 using (SqlConnection conn = new SqlConnection(GetConnectionString()))
@@ -319,12 +177,23 @@ namespace CSA.Lecturer
                     conn.Open();
                     cmd.ExecuteNonQuery();
                 }
-                ShowSuccess("Chapter saved successfully.");
+                // Flush anything staged while the chapter was still unsaved.
+                int committed = PendingAttachmentService.Commit(AttachBucket, "Chapter", newId, userId);
+                ShowSuccess(committed > 0
+                    ? $"Chapter saved with {committed} attachment(s)."
+                    : "Chapter saved. You can now attach articles, pictures, media links, and documents to it.");
+
+                // Keep editing the chapter we just created so the Attachments panel opens.
+                editId = newId;
+                hfEditID.Value = newId;
+                litFormTitle.Text = "Edit Chapter";
+                lbCancelEdit.Visible = true;
+                btnSave.Text = "Update Chapter";
+                LoadAttachments(newId);
             }
             else
             {
-                // Update
-                query = @"
+                string query = @"
                     UPDATE Chapters SET
                         CourseID = @CourseID,
                         ChapterTitle = @Title,
@@ -346,132 +215,119 @@ namespace CSA.Lecturer
                     conn.Open();
                     cmd.ExecuteNonQuery();
                 }
-                ShowSuccess("Chapter updated successfully.");
+                int committed = PendingAttachmentService.Commit(AttachBucket, "Chapter", editId, userId);
+                ShowSuccess(committed > 0
+                    ? $"Chapter updated with {committed} new attachment(s)."
+                    : "Chapter updated successfully.");
+                LoadAttachments(editId);
             }
 
-            ResetForm();
             LoadContentList();
         }
 
         // ========================================================================
-        // Save Article
+        // Attachments (articles, pictures, media links, documents)
         // ========================================================================
-        private void SaveArticle(string userId, string editId)
+        /// <summary>Session bucket holding attachments staged for an unsaved chapter.</summary>
+        private const string AttachBucket = "Chapter";
+
+        private void LoadAttachments(string chapterId)
         {
-            string body = tbArticleBody.Text.Trim();
-            if (body.Length < 100) { ShowError("Article must be at least 100 characters."); return; }
-            if (body.Length > 50000) { ShowError("Article exceeds 50,000 character limit."); return; }
+            // The upload controls are always available: anything chosen before the
+            // chapter exists is staged and committed when the chapter is saved.
+            pnlAttachments.Visible = true;
 
-            string courseId = ddlCourse.SelectedValue;
-            string title = tbTitle.Text.Trim();
-            string tag = tbArticleTag.Text.Trim();
-            string url = tbArticleUrl.Text.Trim();
-            bool isPublished = cbPublishArticle.Checked;
+            DataTable committed = string.IsNullOrEmpty(chapterId)
+                ? null
+                : AttachmentService.GetByChapter(chapterId);
 
-            string query = "";
-            if (string.IsNullOrEmpty(editId) || editId == "0")
+            DataTable dt = PendingAttachmentService.BuildDisplayTable(committed, AttachBucket);
+            rptAttachments.DataSource = dt;
+            rptAttachments.DataBind();
+            litAttCount.Text = dt.Rows.Count.ToString();
+            pnlNoAttachments.Visible = dt.Rows.Count == 0;
+        }
+
+        // Bound by the attachment repeater markup.
+        public string GetAttachmentHref(object type, object filePath, object linkUrl, object isPending)
+            => PendingAttachmentService.DisplayHref(type, filePath, linkUrl, isPending);
+
+        public string GetAttachmentMeta(object type, object by, object at, object isPending)
+            => PendingAttachmentService.DisplayMeta(type, by, at, isPending);
+
+        protected void btnUploadFiles_Click(object sender, EventArgs e)
+        {
+            string chapterId = hfEditID.Value;
+
+            if (!fuAttachFiles.HasFiles)
+            { ShowError("Choose at least one file to upload."); LoadAttachments(chapterId); return; }
+
+            List<string> rejected;
+            int saved;
+            bool staged = string.IsNullOrEmpty(chapterId);
+
+            if (staged)
+                saved = PendingAttachmentService.StageFiles(fuAttachFiles.PostedFiles, AttachBucket, out rejected);
+            else
+                saved = AttachmentService.SaveFiles(fuAttachFiles.PostedFiles, "Chapter", chapterId, CurrentInstructorId, out rejected);
+
+            string verb = staged ? "file(s) ready — saved when you save the chapter." : "file(s) uploaded.";
+            if (saved > 0 && rejected.Count == 0)
+                ShowSuccess($"{saved} {verb}");
+            else if (saved > 0)
+                ShowError($"{saved} {verb} Skipped: {string.Join(", ", rejected)}");
+            else
+                ShowError(rejected.Count > 0 ? $"No files added. Skipped: {string.Join(", ", rejected)}" : "No files added.");
+
+            LoadAttachments(chapterId);
+        }
+
+        protected void btnAddLink_Click(object sender, EventArgs e)
+        {
+            string chapterId = hfEditID.Value;
+
+            string title = tbLinkTitle.Text.Trim();
+            string url = tbLinkUrl.Text.Trim();
+
+            if (string.IsNullOrEmpty(title) || string.IsNullOrEmpty(url))
+            { ShowError("Both a link title and URL are required."); LoadAttachments(chapterId); return; }
+
+            if (!Regex.IsMatch(url, @"^https?://[^\s]{4,}$"))
+            { ShowError("Enter a valid URL starting with http:// or https://"); LoadAttachments(chapterId); return; }
+
+            if (string.IsNullOrEmpty(chapterId))
             {
-                string newId = GenerateId("AR");
-                query = @"
-                    INSERT INTO Articles (ArticleID, CourseID, Title, Tag, Body, Url, IsPublished, CreatedByID, CreatedAt, UpdatedAt)
-                    VALUES (@ArticleID, @CourseID, @Title, @Tag, @Body, @Url, @IsPublished, @CreatedByID, GETDATE(), GETDATE())";
-                using (SqlConnection conn = new SqlConnection(GetConnectionString()))
-                using (SqlCommand cmd = new SqlCommand(query, conn))
-                {
-                    cmd.Parameters.AddWithValue("@ArticleID", newId);
-                    cmd.Parameters.AddWithValue("@CourseID", courseId);
-                    cmd.Parameters.AddWithValue("@Title", title);
-                    cmd.Parameters.AddWithValue("@Tag", tag);
-                    cmd.Parameters.AddWithValue("@Body", body);
-                    cmd.Parameters.AddWithValue("@Url", url);
-                    cmd.Parameters.AddWithValue("@IsPublished", isPublished);
-                    cmd.Parameters.AddWithValue("@CreatedByID", userId);
-                    conn.Open();
-                    cmd.ExecuteNonQuery();
-                }
-                ShowSuccess("Article saved successfully.");
+                PendingAttachmentService.StageLink(AttachBucket, title, url);
+                ShowSuccess("Link ready — saved when you save the chapter.");
             }
             else
             {
-                query = @"
-                    UPDATE Articles SET
-                        CourseID = @CourseID,
-                        Title = @Title,
-                        Tag = @Tag,
-                        Body = @Body,
-                        Url = @Url,
-                        IsPublished = @IsPublished,
-                        UpdatedAt = GETDATE()
-                    WHERE ArticleID = @ArticleID AND CreatedByID = @CreatedByID";
-                using (SqlConnection conn = new SqlConnection(GetConnectionString()))
-                using (SqlCommand cmd = new SqlCommand(query, conn))
-                {
-                    cmd.Parameters.AddWithValue("@ArticleID", editId);
-                    cmd.Parameters.AddWithValue("@CourseID", courseId);
-                    cmd.Parameters.AddWithValue("@Title", title);
-                    cmd.Parameters.AddWithValue("@Tag", tag);
-                    cmd.Parameters.AddWithValue("@Body", body);
-                    cmd.Parameters.AddWithValue("@Url", url);
-                    cmd.Parameters.AddWithValue("@IsPublished", isPublished);
-                    cmd.Parameters.AddWithValue("@CreatedByID", userId);
-                    conn.Open();
-                    cmd.ExecuteNonQuery();
-                }
-                ShowSuccess("Article updated successfully.");
+                AttachmentService.SaveLink("Chapter", chapterId, title, url, CurrentInstructorId);
+                ShowSuccess("Link added.");
             }
 
-            ResetForm();
-            LoadContentList();
+            tbLinkTitle.Text = "";
+            tbLinkUrl.Text = "";
+            LoadAttachments(chapterId);
         }
 
-        // ========================================================================
-        // Save Media
-        // ========================================================================
-        private void SaveMedia(string userId)
+        protected void rptAttachments_ItemCommand(object source, RepeaterCommandEventArgs e)
         {
-            if (!fuMedia.HasFile) { ShowError("Please select a file to upload."); return; }
-
-            string ext = Path.GetExtension(fuMedia.FileName).ToLower();
-            if (Array.IndexOf(AllowedExtensions, ext) < 0)
-            { ShowError($"File type '{ext}' not allowed. Use: PDF, PNG, JPG, TXT."); return; }
-
-            if (fuMedia.PostedFile.ContentLength > MaxBytes)
-            { ShowError("File exceeds 10 MB limit."); return; }
-
-            // Sanitize filename
-            string safeName = Regex.Replace(Path.GetFileNameWithoutExtension(fuMedia.FileName), @"[^\w\-]", "_");
-            string fileName = $"{userId}_{DateTime.Now:yyyyMMddHHmmss}_{safeName}{ext}";
-            string savePath = Server.MapPath($"~/App_Data/Uploads/{fileName}");
-            Directory.CreateDirectory(Path.GetDirectoryName(savePath));
-            fuMedia.SaveAs(savePath);
-
-            string courseId = ddlCourse.SelectedValue;
-            string title = tbTitle.Text.Trim();
-            string desc = tbMediaDesc.Text.Trim();
-            string mediaType = ddlMediaType.SelectedValue;
-
-            string newId = GenerateId("MD");
-            string query = @"
-                INSERT INTO Media (MediaID, CourseID, Title, Description, FileName, MediaType, CreatedByID, CreatedAt, UpdatedAt)
-                VALUES (@MediaID, @CourseID, @Title, @Description, @FileName, @MediaType, @CreatedByID, GETDATE(), GETDATE())";
-            using (SqlConnection conn = new SqlConnection(GetConnectionString()))
-            using (SqlCommand cmd = new SqlCommand(query, conn))
+            if (e.CommandName == "Delete")
             {
-                cmd.Parameters.AddWithValue("@MediaID", newId);
-                cmd.Parameters.AddWithValue("@CourseID", courseId);
-                cmd.Parameters.AddWithValue("@Title", title);
-                cmd.Parameters.AddWithValue("@Description", desc);
-                cmd.Parameters.AddWithValue("@FileName", fileName);
-                cmd.Parameters.AddWithValue("@MediaType", mediaType);
-                cmd.Parameters.AddWithValue("@CreatedByID", userId);
-                conn.Open();
-                cmd.ExecuteNonQuery();
-            }
+                string attachmentId = e.CommandArgument.ToString();
 
-            ShowSuccess($"File '{fuMedia.FileName}' uploaded successfully.");
-            ResetForm();
-            LoadContentList();
+                bool removed = attachmentId.StartsWith("PND")
+                    ? PendingAttachmentService.Remove(AttachBucket, attachmentId)
+                    : AttachmentService.Delete(attachmentId, CurrentInstructorId);
+
+                ShowSuccess(removed ? "Attachment removed." : "Attachment not found.");
+                LoadAttachments(hfEditID.Value);
+            }
         }
+
+        public string GetAttachmentIcon(string type) =>
+            type == "Image" ? "ti-photo" : type == "Link" ? "ti-link" : "ti-file-text";
 
         // ========================================================================
         // Repeater Item Command (Edit / Delete)
@@ -479,31 +335,13 @@ namespace CSA.Lecturer
         protected void rptContent_ItemCommand(object source, RepeaterCommandEventArgs e)
         {
             string id = e.CommandArgument.ToString();
-            string tab = hfActiveTab.Value;
+            string userId = CurrentInstructorId;
 
             if (e.CommandName == "Edit")
             {
-                // Populate form with existing data
-                string userId = Session["UserID"].ToString();
-                string query = "";
-                switch (tab)
-                {
-                    case "Chapter":
-                        query = @"
-                            SELECT ChapterID, CourseID, ChapterTitle AS Title, Content, SortOrder, IsPublished
-                            FROM Chapters WHERE ChapterID = @ID AND CreatedByID = @UserID";
-                        break;
-                    case "Article":
-                        query = @"
-                            SELECT ArticleID AS ID, CourseID, Title, Tag, Body, Url, IsPublished
-                            FROM Articles WHERE ArticleID = @ID AND CreatedByID = @UserID";
-                        break;
-                    case "Media":
-                        query = @"
-                            SELECT MediaID AS ID, CourseID, Title, Description, FileName, MediaType
-                            FROM Media WHERE MediaID = @ID AND CreatedByID = @UserID";
-                        break;
-                }
+                string query = @"
+                    SELECT ChapterID, CourseID, ChapterTitle AS Title, Content, SortOrder, IsPublished
+                    FROM Chapters WHERE ChapterID = @ID AND CreatedByID = @UserID";
 
                 using (SqlConnection conn = new SqlConnection(GetConnectionString()))
                 using (SqlCommand cmd = new SqlCommand(query, conn))
@@ -515,58 +353,31 @@ namespace CSA.Lecturer
                     if (reader.Read())
                     {
                         hfEditID.Value = id;
-                        litFormTitle.Text = $"Edit {tab}";
+                        litFormTitle.Text = "Edit Chapter";
                         lbCancelEdit.Visible = true;
-                        btnSave.Text = $"Update {tab}";
+                        btnSave.Text = "Update Chapter";
 
-                        // Common fields
                         ddlCourse.SelectedValue = reader["CourseID"].ToString();
                         tbTitle.Text = reader["Title"].ToString();
+                        tbChapterBody.Text = reader["Content"].ToString();
+                        tbObjectives.Text = "";
+                        tbChapterNum.Text = reader["SortOrder"].ToString();
+                        cbPublishChapter.Checked = Convert.ToBoolean(reader["IsPublished"]);
 
-                        // Tab-specific
-                        if (tab == "Chapter")
-                        {
-                            string content = reader["Content"].ToString();
-                            // For simplicity, we put full content in body; objectives are not separated.
-                            tbChapterBody.Text = content;
-                            tbObjectives.Text = "";
-                            tbChapterNum.Text = reader["SortOrder"].ToString();
-                            cbPublishChapter.Checked = Convert.ToBoolean(reader["IsPublished"]);
-                            ActivateTab("Chapter");
-                        }
-                        else if (tab == "Article")
-                        {
-                            tbArticleBody.Text = reader["Body"].ToString();
-                            tbArticleTag.Text = reader["Tag"].ToString();
-                            tbArticleUrl.Text = reader["Url"].ToString();
-                            cbPublishArticle.Checked = Convert.ToBoolean(reader["IsPublished"]);
-                            ActivateTab("Article");
-                        }
-                        else if (tab == "Media")
-                        {
-                            tbMediaDesc.Text = reader["Description"].ToString();
-                            ddlMediaType.SelectedValue = reader["MediaType"].ToString();
-                            // FileName is stored but we don't display it in edit; we could show it.
-                            ActivateTab("Media");
-                        }
+                        reader.Close();
+                        // Switching to an existing chapter abandons anything staged for
+                        // the new-chapter form, so it is not silently attached here.
+                        PendingAttachmentService.Clear(AttachBucket);
+                        LoadAttachments(id);
                     }
-                    reader.Close();
                 }
             }
             else if (e.CommandName == "Delete")
             {
-                // Delete content
-                string userId = Session["UserID"].ToString();
-                string table = "";
-                string idColumn = "";
-                switch (tab)
-                {
-                    case "Chapter": table = "Chapters"; idColumn = "ChapterID"; break;
-                    case "Article": table = "Articles"; idColumn = "ArticleID"; break;
-                    case "Media": table = "Media"; idColumn = "MediaID"; break;
-                }
+                // Attachments reference the chapter, so they must go first.
+                AttachmentService.DeleteByParent("Chapter", id, userId);
 
-                string deleteQuery = $"DELETE FROM {table} WHERE {idColumn} = @ID AND CreatedByID = @UserID";
+                string deleteQuery = "DELETE FROM Chapters WHERE ChapterID = @ID AND CreatedByID = @UserID";
                 using (SqlConnection conn = new SqlConnection(GetConnectionString()))
                 using (SqlCommand cmd = new SqlCommand(deleteQuery, conn))
                 {
@@ -575,7 +386,8 @@ namespace CSA.Lecturer
                     conn.Open();
                     cmd.ExecuteNonQuery();
                 }
-                ShowSuccess("Content deleted.");
+                ShowSuccess("Chapter deleted.");
+                if (hfEditID.Value == id) ResetForm();
                 LoadContentList();
             }
         }
@@ -591,19 +403,17 @@ namespace CSA.Lecturer
             tbTitle.Text = "";
             tbChapterBody.Text = "";
             tbObjectives.Text = "";
-            tbArticleBody.Text = "";
-            tbArticleTag.Text = "";
-            tbArticleUrl.Text = "";
-            tbMediaDesc.Text = "";
             tbChapterNum.Text = "";
-            hfEditID.Value = "0";
-            litFormTitle.Text = $"New {hfActiveTab.Value}";
+            hfEditID.Value = "";
+            litFormTitle.Text = "New Chapter";
             lbCancelEdit.Visible = false;
-            btnSave.Text = $"Save {hfActiveTab.Value}";
+            btnSave.Text = "Save Chapter";
             pnlSuccess.Visible = false;
             pnlError.Visible = false;
-            // Clear file upload if any
-            fuMedia.Attributes.Clear();
+
+            // Abandoning the form drops anything staged for it.
+            PendingAttachmentService.Clear(AttachBucket);
+            LoadAttachments("");
         }
 
         private void ShowSuccess(string msg)
@@ -611,18 +421,6 @@ namespace CSA.Lecturer
 
         private void ShowError(string msg)
         { pnlError.Visible = true; litError.Text = Server.HtmlEncode(msg); pnlSuccess.Visible = false; }
-
-        /// <summary>
-        /// Generates a short ID that fits in NVARCHAR(10).
-        /// Prefix (2 chars) + 6 random alphanumeric characters = 8 chars total.
-        /// </summary>
-        private string GenerateId(string prefix)
-        {
-            const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-            var random = new Random();
-            var randomPart = new string(Enumerable.Repeat(chars, 6).Select(s => s[random.Next(s.Length)]).ToArray());
-            return prefix + randomPart; // e.g., "CH" + "A1B2C3" = "CHA1B2C3" (8 chars)
-        }
 
         protected void lbLogout_Click(object sender, EventArgs e)
         { Session.Clear(); Session.Abandon(); Response.Redirect("~/Login.aspx?msg=loggedout"); }
@@ -634,7 +432,6 @@ namespace CSA.Lecturer
         {
             public string ContentID { get; set; }
             public string Title { get; set; }
-            public string Subtitle { get; set; }
             public string CourseName { get; set; }
             public bool IsPublished { get; set; }
             public DateTime UpdatedAt { get; set; }

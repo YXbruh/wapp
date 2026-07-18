@@ -1,15 +1,14 @@
-﻿using System;
-using System.Configuration;
+using System;
 using System.Data;
-using System.Data.SqlClient;
-using System.Security.Cryptography;
-using System.Text;
 using System.Web.UI;
+using CSA.Services;
 
 namespace CSA.Student
 {
     public partial class Student_Profile : Page
     {
+        private string CurrentUserId => Session["UserID"]?.ToString() ?? "";
+
         protected void Page_Load(object sender, EventArgs e)
         {
             if (Session["UserID"] == null)
@@ -18,375 +17,113 @@ namespace CSA.Student
                 return;
             }
 
-            if (!IsPostBack)
-            {
-                LoadProfile();
-            }
-        }
+            // Required for the profile picture picker to transmit file bytes.
+            Form.Enctype = "multipart/form-data";
 
-        private string CurrentUserId
-        {
-            get
-            {
-                return Convert.ToString(
-                    Session["UserID"]);
-            }
+            if (!IsPostBack) LoadProfile();
         }
 
         private void LoadProfile()
         {
-            string connectionString =
-                ConfigurationManager
-                    .ConnectionStrings["CSAConnection"]
-                    .ConnectionString;
+            DataRow row = ProfileService.Get(CurrentUserId);
+            if (row == null) { ShowError("Could not load your profile."); return; }
 
-            using (SqlConnection con =
-                   new SqlConnection(connectionString))
-            using (SqlCommand cmd = new SqlCommand(
-                @"SELECT
-                      FullName,
-                      Email,
-                      CreatedAt
-                  FROM Users
-                  WHERE UserID = @UserID", con))
-            {
-                cmd.Parameters.Add(
-                    "@UserID",
-                    SqlDbType.NVarChar,
-                    10
-                ).Value = CurrentUserId;
+            string name = Convert.ToString(row["FullName"]);
+            string email = Convert.ToString(row["Email"]);
 
-                con.Open();
+            tbFullName.Text = name;
+            tbEmail.Text = email;
+            tbBio.Text = Convert.ToString(Session["Bio"]);
 
-                using (SqlDataReader dr =
-                       cmd.ExecuteReader())
-                {
-                    string name = "";
-                    string email = "";
-                    string joined = "—";
+            litDisplayName.Text = name;
+            litJoined.Text = row["CreatedAt"] == DBNull.Value
+                ? "—"
+                : Convert.ToDateTime(row["CreatedAt"]).ToString("MMMM yyyy");
 
-                    if (dr.Read())
-                    {
-                        name =
-                            Convert.ToString(
-                                dr["FullName"]);
+            ShowAvatar(row["ProfilePicture"] == DBNull.Value ? "" : Convert.ToString(row["ProfilePicture"]), name);
 
-                        email =
-                            Convert.ToString(
-                                dr["Email"]);
-
-                        if (dr["CreatedAt"] !=
-                            DBNull.Value)
-                        {
-                            joined =
-                                Convert.ToDateTime(
-                                    dr["CreatedAt"]
-                                ).ToString(
-                                    "MMMM yyyy"
-                                );
-                        }
-                    }
-
-                    Session["FullName"] = name;
-                    Session["Email"] = email;
-
-                    tbFullName.Text = name;
-                    tbEmail.Text = email;
-
-                    tbBio.Text =
-                        Convert.ToString(
-                            Session["Bio"]);
-
-                    litDisplayName.Text = name;
-                    litJoined.Text = joined;
-
-                    litAvatarInitials.Text =
-                        MakeInitials(name);
-                }
-            }
+            Session["FullName"] = name;
+            Session["Email"] = email;
         }
 
-        protected void btnSaveInfo_Click(
-            object sender,
-            EventArgs e)
+        /// <summary>Shows the uploaded picture when present, otherwise initials.</summary>
+        private void ShowAvatar(string picturePath, string name)
         {
-            if (!Page.IsValid)
-            {
-                return;
-            }
+            bool hasPicture = !string.IsNullOrEmpty(picturePath);
+            pnlPicture.Visible = hasPicture;
+            pnlInitials.Visible = !hasPicture;
+            btnRemovePicture.Visible = hasPicture;
 
-            string newName =
-                tbFullName.Text.Trim();
+            if (hasPicture) imgAvatar.ImageUrl = picturePath;
+            else litAvatarInitials.Text = ProfileService.MakeInitials(name);
+        }
 
-            string newEmail =
-                tbEmail.Text.Trim();
+        protected void btnSaveInfo_Click(object sender, EventArgs e)
+        {
+            if (!Page.IsValid) return;
 
-            string connectionString =
-                ConfigurationManager
-                    .ConnectionStrings["CSAConnection"]
-                    .ConnectionString;
+            bool ok = ProfileService.UpdateDetails(
+                CurrentUserId,
+                tbFullName.Text.Trim(),
+                tbEmail.Text.Trim(),
+                null, null,
+                out string error);
 
-            using (SqlConnection con =
-                   new SqlConnection(connectionString))
-            {
-                con.Open();
+            if (!ok) { ShowError(error); return; }
 
-                using (SqlCommand checkCmd =
-                       new SqlCommand(
-                    @"SELECT COUNT(*)
-                      FROM Users
-                      WHERE Email = @Email
-                        AND UserID <> @UserID",
-                    con))
-                {
-                    checkCmd.Parameters.Add(
-                        "@Email",
-                        SqlDbType.NVarChar,
-                        255
-                    ).Value = newEmail;
-
-                    checkCmd.Parameters.Add(
-                        "@UserID",
-                        SqlDbType.NVarChar,
-                        10
-                    ).Value = CurrentUserId;
-
-                    int emailCount =
-                        Convert.ToInt32(
-                            checkCmd.ExecuteScalar()
-                        );
-
-                    if (emailCount > 0)
-                    {
-                        pnlError.Visible = true;
-                        pnlSuccess.Visible = false;
-
-                        litError.Text =
-                            "That email address is already in use by another account.";
-
-                        return;
-                    }
-                }
-
-                using (SqlCommand updateCmd =
-                       new SqlCommand(
-                    @"UPDATE Users
-                      SET FullName = @FullName,
-                          Email = @Email
-                      WHERE UserID = @UserID",
-                    con))
-                {
-                    updateCmd.Parameters.Add(
-                        "@FullName",
-                        SqlDbType.NVarChar,
-                        150
-                    ).Value = newName;
-
-                    updateCmd.Parameters.Add(
-                        "@Email",
-                        SqlDbType.NVarChar,
-                        255
-                    ).Value = newEmail;
-
-                    updateCmd.Parameters.Add(
-                        "@UserID",
-                        SqlDbType.NVarChar,
-                        10
-                    ).Value = CurrentUserId;
-
-                    updateCmd.ExecuteNonQuery();
-                }
-            }
-
-            Session["Bio"] =
-                tbBio.Text.Trim();
-
-            Session["FullName"] = newName;
-            Session["Email"] = newEmail;
-
-            pnlSuccess.Visible = true;
-            pnlError.Visible = false;
-
-            litSuccess.Text =
-                "Profile updated successfully.";
-
+            Session["Bio"] = tbBio.Text.Trim();
+            ShowSuccess("Profile updated successfully.");
             LoadProfile();
         }
 
-        protected void btnChangePwd_Click(
-            object sender,
-            EventArgs e)
+        protected void btnChangePwd_Click(object sender, EventArgs e)
         {
-            if (!Page.IsValid)
-            {
-                return;
-            }
+            if (!Page.IsValid) return;
 
-            bool success = false;
-            string errorMessage = "";
+            bool ok = ProfileService.ChangePassword(
+                CurrentUserId, tbCurrentPwd.Text, tbNewPwd.Text, out string error);
 
-            string connectionString =
-                ConfigurationManager
-                    .ConnectionStrings["CSAConnection"]
-                    .ConnectionString;
+            if (!ok) { ShowError(error); return; }
 
-            using (SqlConnection con =
-                   new SqlConnection(connectionString))
-            {
-                con.Open();
-
-                object storedHash;
-
-                using (SqlCommand cmd =
-                       new SqlCommand(
-                    @"SELECT PasswordHash
-                      FROM Users
-                      WHERE UserID = @UserID",
-                    con))
-                {
-                    cmd.Parameters.Add(
-                        "@UserID",
-                        SqlDbType.NVarChar,
-                        10
-                    ).Value = CurrentUserId;
-
-                    storedHash =
-                        cmd.ExecuteScalar();
-                }
-
-                if (storedHash == null ||
-                    storedHash == DBNull.Value)
-                {
-                    errorMessage =
-                        "Could not find your account. Please log in again.";
-                }
-                else if (
-                    HashPasswordTemp(
-                        tbCurrentPwd.Text
-                    ) != storedHash.ToString())
-                {
-                    errorMessage =
-                        "Current password is incorrect.";
-                }
-                else
-                {
-                    using (SqlCommand updateCmd =
-                           new SqlCommand(
-                        @"UPDATE Users
-                          SET PasswordHash =
-                              @PasswordHash
-                          WHERE UserID = @UserID",
-                        con))
-                    {
-                        updateCmd.Parameters.Add(
-                            "@PasswordHash",
-                            SqlDbType.NVarChar,
-                            512
-                        ).Value =
-                            HashPasswordTemp(
-                                tbNewPwd.Text
-                            );
-
-                        updateCmd.Parameters.Add(
-                            "@UserID",
-                            SqlDbType.NVarChar,
-                            10
-                        ).Value = CurrentUserId;
-
-                        updateCmd.ExecuteNonQuery();
-                    }
-
-                    success = true;
-                }
-            }
-
-            if (success)
-            {
-                pnlSuccess.Visible = true;
-                pnlError.Visible = false;
-
-                litSuccess.Text =
-                    "Password changed successfully.";
-
-                tbCurrentPwd.Text = "";
-                tbNewPwd.Text = "";
-                tbConfirmPwd.Text = "";
-            }
-            else
-            {
-                pnlError.Visible = true;
-                pnlSuccess.Visible = false;
-
-                litError.Text = errorMessage;
-            }
+            tbCurrentPwd.Text = tbNewPwd.Text = tbConfirmPwd.Text = "";
+            ShowSuccess("Password changed successfully.");
         }
 
-        private static string MakeInitials(
-            string name)
+        protected void btnUploadPicture_Click(object sender, EventArgs e)
         {
-            string[] parts =
-                (name ?? "").Split(
-                    new[] { ' ' },
-                    StringSplitOptions
-                        .RemoveEmptyEntries
-                );
+            string path = ProfileService.SavePicture(fuPicture.PostedFile, CurrentUserId, out string error);
 
-            if (parts.Length >= 2)
-            {
-                return
-                    parts[0].Substring(0, 1) +
-                    parts[parts.Length - 1]
-                        .Substring(0, 1);
-            }
+            if (path == null) { ShowError(error); LoadProfile(); return; }
 
-            if (parts.Length == 1)
-            {
-                return parts[0].Substring(
-                    0,
-                    Math.Min(
-                        2,
-                        parts[0].Length
-                    )
-                );
-            }
-
-            return "CS";
+            ShowSuccess("Profile picture updated.");
+            LoadProfile();
         }
 
-        private static string HashPasswordTemp(
-            string plainPassword)
+        protected void btnRemovePicture_Click(object sender, EventArgs e)
         {
-            using (SHA256 sha256 =
-                   SHA256.Create())
-            {
-                byte[] bytes =
-                    sha256.ComputeHash(
-                        Encoding.UTF8.GetBytes(
-                            plainPassword ?? ""
-                        )
-                    );
-
-                StringBuilder result =
-                    new StringBuilder();
-
-                foreach (byte b in bytes)
-                {
-                    result.Append(
-                        b.ToString("x2")
-                    );
-                }
-
-                return result.ToString();
-            }
+            ProfileService.RemovePicture(CurrentUserId);
+            ShowSuccess("Profile picture removed.");
+            LoadProfile();
         }
 
-        protected void lbLogout_Click(
-            object sender,
-            EventArgs e)
+        private void ShowSuccess(string msg)
+        {
+            pnlError.Visible = false;
+            pnlSuccess.Visible = true;
+            litSuccess.Text = msg;
+        }
+
+        private void ShowError(string msg)
+        {
+            pnlSuccess.Visible = false;
+            pnlError.Visible = true;
+            litError.Text = Server.HtmlEncode(msg);
+        }
+
+        protected void lbLogout_Click(object sender, EventArgs e)
         {
             Session.Clear();
             Session.Abandon();
-
             Response.Redirect("~/Login.aspx");
         }
     }

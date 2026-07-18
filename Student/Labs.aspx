@@ -1,6 +1,6 @@
 ﻿<%@ Page Title="Virtual Labs – CyberShield Academy" Language="C#"
     MasterPageFile="~/Site.Master" AutoEventWireup="true"
-    CodeFile="Labs.aspx.cs" Inherits="CSA.Student.Student_Labs" %>
+    CodeBehind="Labs.aspx.cs" Inherits="CSA.Student.Student_Labs" %>
 
 <asp:Content ID="cMain" ContentPlaceHolderID="MainContent" runat="server">
 <div class="dash-layout">

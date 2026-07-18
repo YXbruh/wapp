@@ -16,6 +16,9 @@ namespace CSA.Admin
 
             _userId = Session["UserID"].ToString();
 
+            // Required for the profile picture picker to transmit file bytes.
+            Form.Enctype = "multipart/form-data";
+
             if (!IsPostBack)
                 LoadProfile();
         }
@@ -39,10 +42,49 @@ namespace CSA.Admin
             litDisplayName.Text = name;
             litJoined.Text = createdAt.ToString("MMMM yyyy");
 
-            string[] parts = name.Split(' ');
-            litAvatarInitials.Text = parts.Length >= 2
-                ? $"{parts[0][0]}{parts[parts.Length - 1][0]}"
-                : name.Substring(0, Math.Min(2, name.Length));
+            string picturePath = !dt.Columns.Contains("ProfilePicture") || row["ProfilePicture"] == DBNull.Value
+                ? ""
+                : Convert.ToString(row["ProfilePicture"]);
+
+            bool hasPicture = !string.IsNullOrEmpty(picturePath);
+            pnlPicture.Visible = hasPicture;
+            pnlInitials.Visible = !hasPicture;
+            btnRemovePicture.Visible = hasPicture;
+
+            if (hasPicture) imgAvatar.ImageUrl = picturePath;
+            else litAvatarInitials.Text = ProfileService.MakeInitials(name);
+        }
+
+        protected void btnUploadPicture_Click(object sender, EventArgs e)
+        {
+            string path = ProfileService.SavePicture(fuPicture.PostedFile, _userId, out string error);
+
+            if (path == null)
+            {
+                pnlSuccess.Visible = false;
+                pnlError.Visible = true;
+                litError.Text = Server.HtmlEncode(error);
+                LoadProfile();
+                return;
+            }
+
+            AdminService.LogAudit(_userId, "UPDATE_PROFILE", "Users", _userId, "", "Profile picture updated");
+
+            pnlError.Visible = false;
+            pnlSuccess.Visible = true;
+            litSuccess.Text = "Profile picture updated.";
+            LoadProfile();
+        }
+
+        protected void btnRemovePicture_Click(object sender, EventArgs e)
+        {
+            ProfileService.RemovePicture(_userId);
+            AdminService.LogAudit(_userId, "UPDATE_PROFILE", "Users", _userId, "", "Profile picture removed");
+
+            pnlError.Visible = false;
+            pnlSuccess.Visible = true;
+            litSuccess.Text = "Profile picture removed.";
+            LoadProfile();
         }
 
         protected void btnSaveInfo_Click(object sender, EventArgs e)
