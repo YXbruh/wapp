@@ -21,6 +21,10 @@ namespace CSA
         public string TermFlag { get; private set; } = "CSA{explore_the_box}";
         public string TermMotd { get; private set; } = "CyberShield practice shell";
 
+        // Key under which the browser stores this user's saved machine state
+        // (IndexedDB, client-side). Per user and per lab so sessions don't mix.
+        public string TermSaveKey { get; private set; } = "";
+
         protected void Page_Load(object sender, EventArgs e)
         {
             // Only signed-in users may open the lab.
@@ -45,6 +49,8 @@ namespace CSA
             TermUser = handle.Length > 0 ? handle : "student";
 
             string labId = Request.QueryString["id"];
+            TermSaveKey = ("u" + Session["UserID"] + "-" +
+                (string.IsNullOrWhiteSpace(labId) ? "free" : labId)).ToLowerInvariant();
             if (string.IsNullOrWhiteSpace(labId)) return;
 
             DataRow lab = LabService.GetById(labId);

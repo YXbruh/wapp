@@ -47,7 +47,11 @@
             <span><i class="ti ti-terminal-2" style="margin-right:6px" aria-hidden="true"></i>Browser Terminal</span>
             <span>
                 <span class="text-muted text-small">runs entirely in your browser</span>
-                <button type="button" class="btn-sm secondary" style="margin-left:8px" onclick="csaTerm.clear()">
+                <button type="button" class="btn-sm secondary" style="margin-left:8px" onclick="csaTerm.reload()"
+                        title="Save, then reboot the terminal — your files are kept">
+                    <i class="ti ti-refresh"></i> Reload
+                </button>
+                <button type="button" class="btn-sm secondary" style="margin-left:4px" onclick="csaTerm.clear()">
                     <i class="ti ti-eraser"></i> Clear
                 </button>
             </span>
@@ -57,20 +61,23 @@
              data-user="<%= Server.HtmlEncode(TermUser) %>"
              data-host="<%= Server.HtmlEncode(TermHost) %>"
              data-flag="<%= Server.HtmlEncode(TermFlag) %>"
-             data-motd="<%= Server.HtmlEncode(TermMotd) %>">
-            <div class="term-screen" id="termScreen" tabindex="0"></div>
-            <div class="term-input-row">
-                <span class="term-prompt" id="termPrompt">$</span>
-                <input type="text" id="termInput" class="term-input" autocomplete="off" spellcheck="false"
-                       placeholder="type a command — try: help" />
-            </div>
+             data-motd="<%= Server.HtmlEncode(TermMotd) %>"
+             data-savekey="<%= Server.HtmlEncode(TermSaveKey) %>"
+             data-stateurl="<%= ResolveUrl("~/TerminalState.ashx") %>"
+             data-v86base="<%= ResolveUrl("~/Scripts/v86/") %>">
+            <div class="wasm-term" id="termScreen" tabindex="0"></div>
         </div>
 
         <div class="val-hint" style="margin-top:10px">
             <i class="ti ti-info-circle" aria-hidden="true"></i>
-            A self-contained practice shell with its own virtual filesystem. Nothing you type leaves your
-            browser. It is not a full Linux kernel, so real tools (nmap, apt) and interactive programs are
-            not present — use <span class="term-code">help</span> to see what is.
+            A real Linux system (Buildroot) booted inside your browser with the v86 WebAssembly
+            emulator. Nothing you type leaves your browser and nothing runs on the server. The
+            image downloads once (~10 MB) and boots in a few seconds; standard GNU/BusyBox tools
+            (<span class="term-code">ls</span>, <span class="term-code">grep</span>,
+            <span class="term-code">vi</span>, pipes, redirection) all work for real.
+            Your session auto-saves to your account every minute, and is restored the next time you
+            sign in and open this lab — even from a different browser or after clearing browser
+            data, the files you created will still be there.
         </div>
     </div>
 
@@ -78,8 +85,13 @@
 </asp:Content>
 
 <asp:Content ID="cScripts" ContentPlaceHolderID="Scripts" runat="server">
+<link rel="stylesheet" href='<%= ResolveUrl("~/Scripts/v86/xterm.css") %>' />
 <style>
 .lab-scenario{white-space:pre-wrap;font-size:13px;line-height:1.6;color:var(--text2);background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:14px}
+.wasm-term{background:#0a0f0e;border:1px solid var(--border);border-radius:10px;padding:10px;min-height:380px}
+.wasm-term .xterm{height:100%}
 </style>
-<script src='<%= ResolveUrl("~/Scripts/browser-terminal.js") %>'></script>
+<script src='<%= ResolveUrl("~/Scripts/v86/xterm.js") %>'></script>
+<script src='<%= ResolveUrl("~/Scripts/v86/libv86.js") %>'></script>
+<script src='<%= ResolveUrl("~/Scripts/linux-wasm-terminal.js") %>'></script>
 </asp:Content>

@@ -389,6 +389,9 @@ function updatePreview() {
     function handleTermInput(e) {
         var input = document.getElementById('termInput');
         if (e.key === 'Enter') {
+            // Stop WebForms from treating Enter as a form submit (postback),
+            // which reloads the page and wipes the preview terminal.
+            e.preventDefault();
             var cmd = input.value.trim();
             if (!cmd) return;
             termHistory.push(cmd);

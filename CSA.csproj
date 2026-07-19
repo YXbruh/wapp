@@ -161,8 +161,17 @@
     <Content Include="Lecturer\Labpreview.aspx" />
     <Content Include="Login.aspx" />
     <Content Include="StartLab.aspx" />
+    <Content Include="TerminalState.ashx" />
     <Content Include="Register.aspx" />
     <Content Include="Scripts\browser-terminal.js" />
+    <Content Include="Scripts\linux-wasm-terminal.js" />
+    <Content Include="Scripts\v86\libv86.js" />
+    <Content Include="Scripts\v86\v86.wasm" />
+    <Content Include="Scripts\v86\seabios.bin" />
+    <Content Include="Scripts\v86\vgabios.bin" />
+    <Content Include="Scripts\v86\buildroot-bzimage.bin" />
+    <Content Include="Scripts\v86\xterm.js" />
+    <Content Include="Scripts\v86\xterm.css" />
     <Content Include="Scripts\bootstrap.bundle.js" />
     <Content Include="Scripts\bootstrap.bundle.min.js" />
     <Content Include="Scripts\bootstrap.esm.js" />

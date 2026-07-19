@@ -17,6 +17,10 @@ namespace CSA.Lecturer
         public string TermFlag { get; private set; } = "CSA{preview}";
         public string TermMotd { get; private set; } = "Lab preview shell";
 
+        // Key under which this lecturer's preview machine is saved on the server
+        // (per lecturer and per lab, distinct from the student session keys).
+        public string TermSaveKey { get; private set; } = "";
+
         protected void Page_Load(object sender, EventArgs e)
         {
             if (Session["UserID"] == null || Session["Role"] as string != "Lecturer")
@@ -29,6 +33,8 @@ namespace CSA.Lecturer
             DataRow lab = LabService.GetById(LabId);
             if (lab == null || !OwnsLab())
             { Response.Redirect("~/Lecturer/TerminalSandbox.aspx?err=access"); return; }
+
+            TermSaveKey = ("u" + Session["UserID"] + "-preview-" + LabId).ToLowerInvariant();
 
             if (!IsPostBack) BindLab(lab);
         }

@@ -129,7 +129,11 @@
                 <span><i class="ti ti-terminal-2" style="margin-right:6px" aria-hidden="true"></i>Browser Terminal</span>
                 <span>
                     <span class="text-muted text-small">runs entirely in your browser</span>
-                    <button type="button" class="btn-sm secondary" style="margin-left:8px" onclick="csaTerm.clear()">
+                    <button type="button" class="btn-sm secondary" style="margin-left:8px" onclick="csaTerm.reload()"
+                            title="Save, then reboot the terminal — your files are kept">
+                        <i class="ti ti-refresh"></i> Reload
+                    </button>
+                    <button type="button" class="btn-sm secondary" style="margin-left:4px" onclick="csaTerm.clear()">
                         <i class="ti ti-eraser"></i> Clear
                     </button>
                 </span>
@@ -139,19 +143,20 @@
                  data-user="<%= Server.HtmlEncode(TermUser) %>"
                  data-host="<%= Server.HtmlEncode(TermHost) %>"
                  data-flag="<%= Server.HtmlEncode(TermFlag) %>"
-                 data-motd="<%= Server.HtmlEncode(TermMotd) %>">
-                <div class="term-screen" id="termScreen" tabindex="0"></div>
-                <div class="term-input-row">
-                    <span class="term-prompt" id="termPrompt">$</span>
-                    <input type="text" id="termInput" class="term-input" autocomplete="off" spellcheck="false"
-                           placeholder="type a command — try: help" />
-                </div>
+                 data-motd="<%= Server.HtmlEncode(TermMotd) %>"
+                 data-savekey="<%= Server.HtmlEncode(TermSaveKey) %>"
+                 data-stateurl="<%= ResolveUrl("~/TerminalState.ashx") %>"
+                 data-v86base="<%= ResolveUrl("~/Scripts/v86/") %>">
+                <div class="wasm-term" id="termScreen" tabindex="0"></div>
             </div>
 
             <div class="val-hint mt-8">
                 <i class="ti ti-info-circle" aria-hidden="true"></i>
-                A free-play shell that runs entirely in your browser. It does not check the answer key — it is
-                for trying Linux commands. The Student Terminal above is what validates against your key.
+                A real Linux system booted in your browser via the v86 WebAssembly emulator (image
+                downloads once, ~10 MB). It does not check the answer key — it is for trying Linux
+                commands. The Student Terminal above is what validates against your key. Your
+                session auto-saves to your account every minute and is restored the next time you
+                open this preview.
             </div>
         </div>
     </main>
@@ -172,7 +177,12 @@
 .term-line{display:flex;align-items:flex-start;gap:6px;margin-bottom:4px}
 .term-output{color:#B0E4CC}
 .result-box{padding:12px 14px;border-radius:8px;border:1px solid var(--border);background:var(--bg2)}
+.wasm-term{background:#0a0f0e;border:1px solid var(--border);border-radius:10px;padding:10px;min-height:380px}
+.wasm-term .xterm{height:100%}
 @media(max-width:900px){.sandbox-layout{grid-template-columns:1fr}}
 </style>
-<script src='<%= ResolveUrl("~/Scripts/browser-terminal.js") %>'></script>
+<link rel="stylesheet" href='<%= ResolveUrl("~/Scripts/v86/xterm.css") %>' />
+<script src='<%= ResolveUrl("~/Scripts/v86/xterm.js") %>'></script>
+<script src='<%= ResolveUrl("~/Scripts/v86/libv86.js") %>'></script>
+<script src='<%= ResolveUrl("~/Scripts/linux-wasm-terminal.js") %>'></script>
 </asp:Content>
