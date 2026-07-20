@@ -2,6 +2,7 @@
 using System.Configuration;
 using System.Data;
 using System.Data.SqlClient;
+using System.Web;
 using System.Web.UI;
 using System.Web.UI.WebControls;
 using CSA.Services;
@@ -24,8 +25,7 @@ namespace CSA.Student
         {
             get
             {
-                return Convert.ToString(
-                    Session["UserID"]);
+                return Convert.ToString(Session["UserID"]);
             }
         }
 
@@ -38,8 +38,7 @@ namespace CSA.Student
             }
             set
             {
-                ViewState["SelectedCourseId"] =
-                    value;
+                ViewState["SelectedCourseId"] = value;
             }
         }
 
@@ -71,8 +70,7 @@ namespace CSA.Student
         private DataTable GetCourses(
             bool enrolled)
         {
-            DataTable dt =
-                new DataTable();
+            DataTable dt = new DataTable();
 
             string sql = enrolled
                 ? @"SELECT
@@ -173,8 +171,7 @@ namespace CSA.Student
             foreach (DataRow row in dt.Rows)
             {
                 string level =
-                    Convert.ToString(
-                        row["Level"]);
+                    Convert.ToString(row["Level"]);
 
                 row["LevelClass"] =
                     level == "Advanced"
@@ -184,8 +181,7 @@ namespace CSA.Student
                             : "badge-green";
 
                 string status =
-                    Convert.ToString(
-                        row["Status"]);
+                    Convert.ToString(row["Status"]);
 
                 row["StatusClass"] =
                     status == "Completed"
@@ -198,8 +194,7 @@ namespace CSA.Student
 
         private void LoadEnrolledCourses()
         {
-            DataTable dt =
-                GetCourses(true);
+            DataTable dt = GetCourses(true);
 
             rptCourses.DataSource = dt;
             rptCourses.DataBind();
@@ -210,8 +205,7 @@ namespace CSA.Student
 
         private void LoadAvailableCourses()
         {
-            DataTable dt =
-                GetCourses(false);
+            DataTable dt = GetCourses(false);
 
             rptAvailable.DataSource = dt;
             rptAvailable.DataBind();
@@ -230,8 +224,7 @@ namespace CSA.Student
             }
 
             string courseId =
-                Convert.ToString(
-                    e.CommandArgument);
+                Convert.ToString(e.CommandArgument);
 
             if (string.IsNullOrWhiteSpace(courseId))
             {
@@ -325,8 +318,7 @@ namespace CSA.Student
                       )
                       SELECT
                           @StudentID,
-                          'Enrolled in course: '
-                              + CourseName,
+                          'Enrolled in course: ' + CourseName,
                           'Course Enrolment',
                           GETDATE()
                       FROM Courses
@@ -360,8 +352,7 @@ namespace CSA.Student
             }
 
             SelectedCourseId =
-                Convert.ToString(
-                    e.CommandArgument);
+                Convert.ToString(e.CommandArgument);
 
             LoadCourseDetails();
         }
@@ -435,8 +426,7 @@ namespace CSA.Student
 
         private void LoadChapters()
         {
-            DataTable dt =
-                new DataTable();
+            DataTable dt = new DataTable();
 
             using (SqlConnection con =
                    new SqlConnection(ConnectionString))
@@ -446,7 +436,6 @@ namespace CSA.Student
                       ch.ChapterID,
                       ch.ChapterTitle,
                       ch.Content,
-                      ch.FilePath,
                       ch.SortOrder,
                       CAST(
                           ISNULL(cp.IsCompleted, 0)
@@ -485,6 +474,44 @@ namespace CSA.Student
                 dt.Rows.Count == 0;
         }
 
+        protected void rptChapters_ItemDataBound(
+            object sender,
+            RepeaterItemEventArgs e)
+        {
+            if (e.Item.ItemType !=
+                    ListItemType.Item &&
+                e.Item.ItemType !=
+                    ListItemType.AlternatingItem)
+            {
+                return;
+            }
+
+            DataRowView chapter =
+                (DataRowView)e.Item.DataItem;
+
+            string chapterId =
+                Convert.ToString(
+                    chapter["ChapterID"]);
+
+            DataTable resources =
+                AttachmentService.GetByChapter(
+                    chapterId);
+
+            Repeater rptResources =
+                (Repeater)e.Item.FindControl(
+                    "rptResources");
+
+            Panel pnlResources =
+                (Panel)e.Item.FindControl(
+                    "pnlResources");
+
+            rptResources.DataSource = resources;
+            rptResources.DataBind();
+
+            pnlResources.Visible =
+                resources.Rows.Count > 0;
+        }
+
         protected void rptChapters_ItemCommand(
             object source,
             RepeaterCommandEventArgs e)
@@ -495,8 +522,12 @@ namespace CSA.Student
             }
 
             string chapterId =
-                Convert.ToString(
-                    e.CommandArgument);
+                Convert.ToString(e.CommandArgument);
+
+            if (string.IsNullOrWhiteSpace(chapterId))
+            {
+                return;
+            }
 
             MarkChapterComplete(chapterId);
             UpdateCourseProgress();
@@ -521,21 +552,19 @@ namespace CSA.Student
                       UPDATE ChapterProgress
                       SET
                           IsCompleted = 1,
-                          CompletedAt = GETDATE()
+                          CompletedAt =
+                              CASE
+                                  WHEN IsCompleted = 1
+                                      THEN CompletedAt
+                                  ELSE GETDATE()
+                              END
                       WHERE StudentID = @StudentID
                         AND ChapterID = @ChapterID
                   END
                   ELSE
                   BEGIN
-                      DECLARE @ProgressID INT;
-
-                      SELECT @ProgressID =
-                          ISNULL(MAX(ProgressID), 0) + 1
-                      FROM ChapterProgress;
-
                       INSERT INTO ChapterProgress
                       (
-                          ProgressID,
                           StudentID,
                           ChapterID,
                           IsCompleted,
@@ -543,7 +572,6 @@ namespace CSA.Student
                       )
                       VALUES
                       (
-                          @ProgressID,
                           @StudentID,
                           @ChapterID,
                           1,
@@ -597,8 +625,7 @@ namespace CSA.Student
                       CASE
                           WHEN @Total = 0 THEN 0
                           ELSE CAST(
-                              @Completed * 100.0 /
-                              @Total
+                              @Completed * 100.0 / @Total
                               AS DECIMAL(5,2))
                       END;
 
@@ -616,7 +643,10 @@ namespace CSA.Student
                       CompletedAt =
                           CASE
                               WHEN @Progress >= 100
+                                   AND CompletedAt IS NULL
                                   THEN GETDATE()
+                              WHEN @Progress >= 100
+                                  THEN CompletedAt
                               ELSE NULL
                           END
                   WHERE StudentID = @StudentID
@@ -638,6 +668,66 @@ namespace CSA.Student
                 con.Open();
                 cmd.ExecuteNonQuery();
             }
+        }
+
+        public string FormatChapterContent(
+            object value)
+        {
+            string content =
+                Convert.ToString(value).Trim();
+
+            if (content == "")
+            {
+                return "";
+            }
+
+            return Server.HtmlEncode(content)
+                .Replace("\r\n", "<br />")
+                .Replace("\n", "<br />");
+        }
+
+        public string GetResourceUrl(
+            object attachmentType,
+            object filePath,
+            object linkUrl)
+        {
+            if (Convert.ToString(
+                attachmentType) == "Link")
+            {
+                return HttpUtility.HtmlAttributeEncode(
+                    Convert.ToString(linkUrl));
+            }
+
+            string path =
+                Convert.ToString(filePath);
+
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                return "#";
+            }
+
+            return HttpUtility.HtmlAttributeEncode(
+                ResolveUrl(path));
+        }
+
+        public string GetResourceIcon(
+            object attachmentType)
+        {
+            string type =
+                Convert.ToString(
+                    attachmentType);
+
+            if (type == "Link")
+            {
+                return "ti-link";
+            }
+
+            if (type == "Image")
+            {
+                return "ti-photo";
+            }
+
+            return "ti-file";
         }
 
         public bool IsCompleted(
@@ -662,21 +752,11 @@ namespace CSA.Student
                 : "Not completed";
         }
 
-        public bool HasAttachment(
-            object value)
-        {
-            return value != null &&
-                   value != DBNull.Value &&
-                   !string.IsNullOrWhiteSpace(
-                       Convert.ToString(value));
-        }
-
         protected void btnBack_Click(
             object sender,
             EventArgs e)
         {
             SelectedCourseId = "";
-
             LoadCoursePage();
         }
 
@@ -687,7 +767,8 @@ namespace CSA.Student
             Session.Clear();
             Session.Abandon();
 
-            Response.Redirect("~/Login.aspx");
+            Response.Redirect(
+                "~/Login.aspx?msg=loggedout");
         }
     }
 }

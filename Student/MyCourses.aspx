@@ -5,49 +5,95 @@
     CodeBehind="MyCourses.aspx.cs"
     Inherits="CSA.Student.Student_MyCourses" %>
 
-<asp:Content ID="cMain"
+<asp:Content
+    ID="cMain"
     ContentPlaceHolderID="MainContent"
     runat="server">
 
 <style>
     .section-title {
         display:flex;
-        justify-content:space-between;
         align-items:center;
+        justify-content:space-between;
         margin:28px 0 14px;
     }
 
     .chapter-card {
+        margin-bottom:12px;
+        padding:16px;
+        background:var(--surface);
         border:1px solid var(--border);
         border-radius:10px;
-        padding:16px;
-        margin-bottom:12px;
-        background:var(--surface);
     }
 
     .chapter-top {
         display:flex;
-        justify-content:space-between;
         align-items:center;
+        justify-content:space-between;
         gap:12px;
+    }
+
+    .chapter-actions {
+        display:flex;
+        align-items:center;
+        gap:8px;
     }
 
     .chapter-content {
         display:none;
-        border-top:1px solid var(--border);
         margin-top:14px;
         padding-top:14px;
-        white-space:pre-line;
-        line-height:1.7;
         color:var(--text2);
+        border-top:1px solid var(--border);
+        line-height:1.7;
+    }
+
+    .chapter-text {
+        margin:0;
+    }
+
+    .resource-list {
+        margin-top:12px;
+        padding-top:12px;
+        border-top:1px solid var(--border);
+    }
+
+    .resource-item {
+        display:flex;
+        align-items:center;
+        gap:9px;
+        margin-top:8px;
+        padding:9px 11px;
+        color:var(--text2);
+        text-decoration:none;
+        background:var(--bg3);
+        border:1px solid var(--border);
+        border-radius:7px;
+    }
+
+    .resource-item:hover {
+        color:var(--accent3);
+        border-color:var(--accent2);
     }
 
     .message-success {
-        padding:12px 15px;
-        border:1px solid var(--success);
-        color:var(--success);
-        border-radius:8px;
         margin-bottom:16px;
+        padding:12px 15px;
+        color:var(--success);
+        border:1px solid var(--success);
+        border-radius:8px;
+    }
+
+    @media (max-width:650px) {
+        .chapter-top {
+            align-items:flex-start;
+            flex-direction:column;
+        }
+
+        .chapter-actions {
+            width:100%;
+            flex-wrap:wrap;
+        }
     }
 </style>
 
@@ -57,54 +103,46 @@
 
         <div class="sidebar-section">Main</div>
 
-        <a href="Student_Dashboard.aspx"
-            class="sidebar-link">
+        <a href="Student_Dashboard.aspx" class="sidebar-link">
             <i class="ti ti-layout-dashboard"></i>
             Dashboard
         </a>
 
-        <a href="MyCourses.aspx"
-            class="sidebar-link active">
+        <a href="MyCourses.aspx" class="sidebar-link active">
             <i class="ti ti-books"></i>
             My Courses
         </a>
 
-        <a href="Labs.aspx"
-            class="sidebar-link">
+        <a href="Labs.aspx" class="sidebar-link">
             <i class="ti ti-terminal-2"></i>
             Virtual Labs
         </a>
 
-        <a href="Challenges.aspx"
-            class="sidebar-link">
+        <a href="Challenges.aspx" class="sidebar-link">
             <i class="ti ti-trophy"></i>
             Challenges
         </a>
 
         <div class="sidebar-section">Progress</div>
 
-        <a href="Analytics.aspx"
-            class="sidebar-link">
+        <a href="Analytics.aspx" class="sidebar-link">
             <i class="ti ti-chart-bar"></i>
             Analytics
         </a>
 
-        <a href="Certificates.aspx"
-            class="sidebar-link">
+        <a href="Certificates.aspx" class="sidebar-link">
             <i class="ti ti-certificate"></i>
             Certificates
         </a>
 
-        <a href="Achievements.aspx"
-            class="sidebar-link">
+        <a href="Achievements.aspx" class="sidebar-link">
             <i class="ti ti-star"></i>
             Achievements
         </a>
 
         <div class="sidebar-section">Account</div>
 
-        <a href="Profile.aspx"
-            class="sidebar-link">
+        <a href="Profile.aspx" class="sidebar-link">
             <i class="ti ti-user"></i>
             Profile
         </a>
@@ -130,18 +168,21 @@
             runat="server">
 
             <div class="dash-header">
+
                 <h2>My Courses</h2>
+
                 <p>
-                    Continue enrolled courses or enrol
-                    in another available course.
+                    View your enrolled courses and discover available
+                    learning content.
                 </p>
+
             </div>
 
             <asp:Panel
                 ID="pnlMessage"
                 runat="server"
-                Visible="false"
-                CssClass="message-success">
+                CssClass="message-success"
+                Visible="false">
 
                 <asp:Literal
                     ID="litMessage"
@@ -166,7 +207,7 @@
 
                             <div class="course-thumb">
 
-                                <i class="ti ti-shield-lock"></i>
+                                <i class="ti ti-book"></i>
 
                                 <span class="course-level badge <%# Eval("LevelClass") %>">
                                     <%# Eval("Level") %>
@@ -184,47 +225,45 @@
                                     <%# Eval("Description") %>
                                 </p>
 
-                                <div style="margin-bottom:10px">
+                                <div class="course-meta">
 
-                                    <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px">
+                                    <span>
+                                        <%# Eval("ChapterCount") %> chapters
+                                    </span>
 
-                                        <span>Progress</span>
+                                    <span>
+                                        <%# Eval("LabCount") %> labs
+                                    </span>
 
-                                        <span>
+                                </div>
+
+                                <div style="margin-top:14px">
+
+                                    <div style="display:flex;justify-content:space-between">
+
+                                        <span class="text-muted text-small">
+                                            Progress
+                                        </span>
+
+                                        <span class="text-muted text-small">
                                             <%# Eval("Progress", "{0:0}") %>%
                                         </span>
 
                                     </div>
 
-                                    <div class="progress-bar">
+                                    <div class="progress-bar" style="margin-top:5px">
 
-                                        <div class="progress-fill"
+                                        <div
+                                            class="progress-fill"
                                             style='<%#
                                                 "width:" +
-                                                Eval("Progress", "{0:0}") +
+                                                Convert.ToDecimal(Eval("Progress"))
+                                                    .ToString("0") +
                                                 "%"
                                             %>'>
                                         </div>
 
                                     </div>
-
-                                </div>
-
-                                <div class="course-meta">
-
-                                    <span>
-                                        <%# Eval("ChapterCount") %>
-                                        chapters
-                                    </span>
-
-                                    <span>
-                                        <%# Eval("LabCount") %>
-                                        labs
-                                    </span>
-
-                                    <span class="badge <%# Eval("StatusClass") %>">
-                                        <%# Eval("Status") %>
-                                    </span>
 
                                 </div>
 
@@ -307,13 +346,11 @@
                                 <div class="course-meta">
 
                                     <span>
-                                        <%# Eval("ChapterCount") %>
-                                        chapters
+                                        <%# Eval("ChapterCount") %> chapters
                                     </span>
 
                                     <span>
-                                        <%# Eval("LabCount") %>
-                                        labs
+                                        <%# Eval("LabCount") %> labs
                                     </span>
 
                                 </div>
@@ -378,8 +415,7 @@
 
             </asp:LinkButton>
 
-            <div class="card"
-                style="margin-top:16px">
+            <div class="card" style="margin-top:16px">
 
                 <h2>
                     <asp:Literal
@@ -407,8 +443,7 @@
 
                     </div>
 
-                    <div class="progress-bar"
-                        style="margin-top:6px">
+                    <div class="progress-bar" style="margin-top:6px">
 
                         <div
                             ID="progressFill"
@@ -425,7 +460,8 @@
                 <asp:Repeater
                     ID="rptChapters"
                     runat="server"
-                    OnItemCommand="rptChapters_ItemCommand">
+                    OnItemCommand="rptChapters_ItemCommand"
+                    OnItemDataBound="rptChapters_ItemDataBound">
 
                     <ItemTemplate>
 
@@ -436,19 +472,17 @@
                                 <div>
 
                                     <strong>
-                                        Chapter
-                                        <%# Eval("SortOrder") %>:
+                                        Chapter <%# Eval("SortOrder") %>:
                                         <%# Eval("ChapterTitle") %>
                                     </strong>
 
                                     <div class="text-muted text-small">
-                                        <%# GetChapterStatus(
-                                            Eval("IsCompleted")) %>
+                                        <%# GetChapterStatus(Eval("IsCompleted")) %>
                                     </div>
 
                                 </div>
 
-                                <div>
+                                <div class="chapter-actions">
 
                                     <button
                                         type="button"
@@ -490,16 +524,53 @@
                                 id='chapter_<%# Eval("ChapterID") %>'
                                 class="chapter-content">
 
-                                <%# Eval("Content") %>
+                                <div class="chapter-text">
+                                    <%# FormatChapterContent(Eval("Content")) %>
+                                </div>
 
-                                <asp:HyperLink
-                                    ID="hlAttachment"
+                                <asp:Panel
+                                    ID="pnlResources"
                                     runat="server"
-                                    NavigateUrl='<%# Eval("FilePath") %>'
-                                    Text="Open attachment"
-                                    Target="_blank"
-                                    Visible='<%# HasAttachment(
-                                        Eval("FilePath")) %>' />
+                                    CssClass="resource-list"
+                                    Visible="false">
+
+                                    <strong>
+                                        <i class="ti ti-paperclip"></i>
+                                        Resources
+                                    </strong>
+
+                                    <asp:Repeater
+                                        ID="rptResources"
+                                        runat="server">
+
+                                        <ItemTemplate>
+
+                                            <a
+                                                class="resource-item"
+                                                href='<%# GetResourceUrl(
+                                                    Eval("AttachmentType"),
+                                                    Eval("FilePath"),
+                                                    Eval("LinkUrl")) %>'
+                                                target="_blank"
+                                                rel="noopener noreferrer">
+
+                                                <i class='ti <%# GetResourceIcon(
+                                                    Eval("AttachmentType")) %>'>
+                                                </i>
+
+                                                <span>
+                                                    <%# Server.HtmlEncode(
+                                                        Convert.ToString(
+                                                            Eval("Title"))) %>
+                                                </span>
+
+                                            </a>
+
+                                        </ItemTemplate>
+
+                                    </asp:Repeater>
+
+                                </asp:Panel>
 
                             </div>
 
@@ -537,26 +608,22 @@
 
 <script>
     function toggleChapter(button) {
-        var id =
-            button.getAttribute('data-chapter');
-
-        var content =
-            document.getElementById(
-                'chapter_' + id
-            );
+        var id = button.getAttribute("data-chapter");
+        var content = document.getElementById("chapter_" + id);
 
         if (!content) {
             return;
         }
 
-        if (content.style.display === 'block') {
-            content.style.display = 'none';
-            button.innerText = 'View';
-        }
-        else {
-            content.style.display = 'block';
-            button.innerText = 'Hide';
-        }
+        var isOpen = content.style.display === "block";
+
+        content.style.display = isOpen
+            ? "none"
+            : "block";
+
+        button.innerText = isOpen
+            ? "View"
+            : "Hide";
     }
 </script>
 

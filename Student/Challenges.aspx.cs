@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Configuration;
 using System.Data;
 using System.Data.SqlClient;
+using System.Linq;
 using System.Text.RegularExpressions;
 using System.Web.UI;
 using System.Web.UI.WebControls;
@@ -23,30 +25,16 @@ namespace CSA.Student
 
         private string UserId
         {
-            get
-            {
-                return Convert.ToString(
-                    Session["UserID"]);
-            }
+            get { return Convert.ToString(Session["UserID"]); }
         }
 
-        private string SelectedChallengeId
+        private string QuizId
         {
-            get
-            {
-                return Convert.ToString(
-                    ViewState["ChallengeID"]);
-            }
-            set
-            {
-                ViewState["ChallengeID"] =
-                    value;
-            }
+            get { return Convert.ToString(ViewState["QuizID"]); }
+            set { ViewState["QuizID"] = value; }
         }
 
-        protected void Page_Load(
-            object sender,
-            EventArgs e)
+        protected void Page_Load(object sender, EventArgs e)
         {
             if (Session["UserID"] == null)
             {
@@ -55,143 +43,54 @@ namespace CSA.Student
             }
 
             if (!IsPostBack)
-            {
                 LoadChallenges();
-            }
         }
 
         private void LoadChallenges()
         {
-            DataTable dt =
-                new DataTable();
+            DataTable dt = new DataTable();
 
-            using (SqlConnection con =
-                   new SqlConnection(ConnectionString))
-            using (SqlCommand cmd =
-                   new SqlCommand(
-                @"SELECT
-                      vl.LabID AS ChallengeID,
-                      vl.LabTitle AS ChallengeName,
-                      c.CourseName,
-                      vl.Difficulty,
-                      vl.PointsReward AS XPReward,
-                      ISNULL(
-                          (
-                              SELECT TOP 1
-                                  ls.Result
-                              FROM LabSubmissions ls
-                              WHERE ls.LabID = vl.LabID
-                                AND ls.StudentID = @UserID
-                              ORDER BY ls.SubmittedAt DESC
-                          ),
-                          ''
-                      ) AS LastResult,
-                      (
-                          SELECT COUNT(*)
-                          FROM LabSubmissions ls
-                          WHERE ls.LabID = vl.LabID
-                            AND ls.StudentID = @UserID
-                      ) AS AttemptCount
-                  FROM VirtualLabs vl
-                  INNER JOIN Courses c
-                      ON c.CourseID = vl.CourseID
-                  INNER JOIN Enrollments e
-                      ON e.CourseID = vl.CourseID
-                     AND e.StudentID = @UserID
-                  WHERE vl.IsPublished = 1
-                  ORDER BY vl.LabTitle",
-                con))
-            using (SqlDataAdapter da =
-                   new SqlDataAdapter(cmd))
+            using (SqlConnection con = new SqlConnection(ConnectionString))
+            using (SqlCommand cmd = new SqlCommand(@"
+                SELECT q.QuizID, q.Title, q.PassMark, q.MaxAttempts,
+                       q.DurationMinutes, c.CourseName,
+                       COUNT(DISTINCT qq.QuestionID) AS QuestionCount,
+                       COUNT(DISTINCT qa.AttemptID) AS AttemptCount,
+                       CAST(CASE WHEN MAX(CAST(qa.IsPassed AS INT)) = 1
+                            THEN 1 ELSE 0 END AS BIT) AS HasPassed
+                FROM Quizzes q
+                INNER JOIN Courses c ON q.CourseID = c.CourseID
+                INNER JOIN Enrollments e
+                    ON q.CourseID = e.CourseID
+                   AND e.StudentID = @StudentID
+                LEFT JOIN QuizQuestions qq ON q.QuizID = qq.QuizID
+                LEFT JOIN QuizAttempts qa
+                    ON q.QuizID = qa.QuizID
+                   AND qa.StudentID = @StudentID
+                WHERE q.IsPublished = 1
+                GROUP BY q.QuizID, q.Title, q.PassMark, q.MaxAttempts,
+                         q.DurationMinutes, c.CourseName
+                ORDER BY q.Title", con))
+            using (SqlDataAdapter da = new SqlDataAdapter(cmd))
             {
-                cmd.Parameters.Add(
-                    "@UserID",
-                    SqlDbType.NVarChar,
-                    10
-                ).Value = UserId;
+                cmd.Parameters.Add("@StudentID", SqlDbType.NVarChar, 10)
+                    .Value = UserId;
 
                 da.Fill(dt);
             }
 
-            dt.Columns.Add(
-                "StatusClass",
-                typeof(string));
+            litTotal.Text = dt.Rows.Count.ToString();
+            litPassed.Text = dt.AsEnumerable()
+                .Count(r => Convert.ToBoolean(r["HasPassed"]))
+                .ToString();
 
-            dt.Columns.Add(
-                "StatusLabel",
-                typeof(string));
-
-            dt.Columns.Add(
-                "ActionText",
-                typeof(string));
-
-            int completed = 0;
-            int xp = 0;
-
-            foreach (DataRow row in dt.Rows)
-            {
-                string result =
-                    Convert.ToString(
-                        row["LastResult"]);
-
-                int attempts =
-                    Convert.ToInt32(
-                        row["AttemptCount"]);
-
-                if (result == "Passed")
-                {
-                    row["StatusClass"] =
-                        "badge-green";
-
-                    row["StatusLabel"] =
-                        "Completed";
-
-                    row["ActionText"] =
-                        "Review";
-
-                    completed++;
-
-                    xp += Convert.ToInt32(
-                        row["XPReward"]);
-                }
-                else if (attempts > 0)
-                {
-                    row["StatusClass"] =
-                        "badge-blue";
-
-                    row["StatusLabel"] =
-                        "In Progress";
-
-                    row["ActionText"] =
-                        "Continue";
-                }
-                else
-                {
-                    row["StatusClass"] =
-                        "badge-amber";
-
-                    row["StatusLabel"] =
-                        "Not Started";
-
-                    row["ActionText"] =
-                        "Attempt";
-                }
-            }
-
-            litTotal.Text =
-                dt.Rows.Count.ToString();
-
-            litDone.Text =
-                completed.ToString();
-
-            litXP.Text =
-                xp.ToString();
+            litAttempts.Text = dt.AsEnumerable()
+                .Sum(r => Convert.ToInt32(r["AttemptCount"]))
+                .ToString();
 
             rptChallenges.DataSource = dt;
             rptChallenges.DataBind();
-
-            pnlEmpty.Visible =
-                dt.Rows.Count == 0;
+            pnlEmpty.Visible = dt.Rows.Count == 0;
         }
 
         protected void rptChallenges_ItemCommand(
@@ -199,408 +98,270 @@ namespace CSA.Student
             RepeaterCommandEventArgs e)
         {
             if (e.CommandName != "Open")
-            {
                 return;
-            }
 
-            SelectedChallengeId =
-                Convert.ToString(
-                    e.CommandArgument);
-
-            LoadWorkspace();
+            QuizId = Convert.ToString(e.CommandArgument);
+            LoadQuiz();
         }
 
-        private void LoadWorkspace()
+        private void LoadQuiz()
         {
-            using (SqlConnection con =
-                   new SqlConnection(ConnectionString))
-            using (SqlCommand cmd =
-                   new SqlCommand(
-                @"SELECT
-                      vl.LabTitle,
-                      vl.Scenario,
-                      vl.HintText,
-                      vl.Difficulty,
-                      vl.PointsReward
-                  FROM VirtualLabs vl
-                  INNER JOIN Enrollments e
-                      ON e.CourseID = vl.CourseID
-                     AND e.StudentID = @StudentID
-                  WHERE vl.LabID = @LabID
-                    AND vl.IsPublished = 1",
-                con))
-            {
-                cmd.Parameters.Add(
-                    "@StudentID",
-                    SqlDbType.NVarChar,
-                    10
-                ).Value = UserId;
+            DataTable quiz = Query(@"
+                SELECT q.Title, q.Description, q.PassMark, q.MaxAttempts,
+                       q.StartDate, q.EndDate, c.CourseName
+                FROM Quizzes q
+                INNER JOIN Courses c ON q.CourseID = c.CourseID
+                INNER JOIN Enrollments e
+                    ON q.CourseID = e.CourseID
+                   AND e.StudentID = @StudentID
+                WHERE q.QuizID = @QuizID
+                  AND q.IsPublished = 1",
+                new SqlParameter("@QuizID", QuizId),
+                new SqlParameter("@StudentID", UserId));
 
-                cmd.Parameters.Add(
-                    "@LabID",
-                    SqlDbType.NVarChar,
-                    10
-                ).Value = SelectedChallengeId;
+            if (quiz.Rows.Count == 0)
+                return;
 
-                con.Open();
+            DataRow row = quiz.Rows[0];
+            int attempts = GetAttemptCount();
+            int maximum = Convert.ToInt32(row["MaxAttempts"]);
+            bool passed = HasPassed();
 
-                using (SqlDataReader reader =
-                       cmd.ExecuteReader())
-                {
-                    if (!reader.Read())
-                    {
-                        return;
-                    }
+            litQuizTitle.Text = Server.HtmlEncode(
+                Convert.ToString(row["Title"]));
 
-                    litChallengeTitle.Text =
-                        Server.HtmlEncode(
-                            Convert.ToString(
-                                reader["LabTitle"]));
+            litQuizDescription.Text = Server.HtmlEncode(
+                Convert.ToString(row["Description"]));
 
-                    litScenario.Text =
-                        Server.HtmlEncode(
-                            Convert.ToString(
-                                reader["Scenario"]));
+            litCourseName.Text = Server.HtmlEncode(
+                Convert.ToString(row["CourseName"]));
 
-                    string hint =
-                        Convert.ToString(
-                            reader["HintText"]);
+            litPassMark.Text = Convert.ToDecimal(
+                row["PassMark"]).ToString("0.##");
 
-                    litHint.Text =
-                        Server.HtmlEncode(hint);
+            litAttemptUsage.Text = attempts + " / " + maximum + " attempts";
 
-                    pnlHint.Visible =
-                        !string.IsNullOrWhiteSpace(hint);
+            string message = GetUnavailableMessage(row, attempts, passed);
+            pnlNotice.Visible = message != "";
+            litNotice.Text = Server.HtmlEncode(message);
+            btnSubmit.Enabled = message == "";
 
-                    litDifficulty.Text =
-                        Server.HtmlEncode(
-                            Convert.ToString(
-                                reader["Difficulty"]));
-
-                    litReward.Text =
-                        Convert.ToString(
-                            reader["PointsReward"]);
-                }
-            }
-
+            BindQuestions();
             LoadAttempts();
 
+            pnlResult.Visible = false;
             pnlChallengeList.Visible = false;
             pnlWorkspace.Visible = true;
-            pnlResult.Visible = false;
-            tbCommand.Text = "";
         }
 
-        protected void btnSubmit_Click(
-            object sender,
-            EventArgs e)
+        private void BindQuestions()
         {
-            Page.Validate("ChallengeGroup");
+            DataTable dt = Query(@"
+                SELECT QuestionID, QuestionText, QuestionType,
+                       OptionA, OptionB, OptionC, OptionD, Points
+                FROM QuizQuestions
+                WHERE QuizID = @QuizID
+                ORDER BY SortOrder, QuestionID",
+                new SqlParameter("@QuizID", QuizId));
 
-            if (!Page.IsValid ||
-                string.IsNullOrWhiteSpace(
-                    SelectedChallengeId))
+            rptQuestions.DataSource = dt;
+            rptQuestions.DataBind();
+        }
+
+        protected void rptQuestions_ItemDataBound(
+            object sender,
+            RepeaterItemEventArgs e)
+        {
+            if (e.Item.ItemType != ListItemType.Item &&
+                e.Item.ItemType != ListItemType.AlternatingItem)
+                return;
+
+            DataRowView row = (DataRowView)e.Item.DataItem;
+            string type = Convert.ToString(row["QuestionType"]);
+
+            Panel mcq = (Panel)e.Item.FindControl("pnlMCQ");
+            RadioButtonList tf = (RadioButtonList)e.Item.FindControl("rblTrueFalse");
+            TextBox structure = (TextBox)e.Item.FindControl("tbStructure");
+
+            mcq.Visible = type == "MCQ";
+            tf.Visible = type == "TrueFalse";
+            structure.Visible = type == "Structure";
+
+            if (type == "MCQ")
             {
+                SetOption(e.Item, "cbA", "lblA", "A", row["OptionA"]);
+                SetOption(e.Item, "cbB", "lblB", "B", row["OptionB"]);
+                SetOption(e.Item, "cbC", "lblC", "C", row["OptionC"]);
+                SetOption(e.Item, "cbD", "lblD", "D", row["OptionD"]);
+            }
+        }
+
+        private static void SetOption(
+            RepeaterItem item,
+            string checkBoxId,
+            string labelId,
+            string letter,
+            object value)
+        {
+            CheckBox box = (CheckBox)item.FindControl(checkBoxId);
+            Label label = (Label)item.FindControl(labelId);
+            string text = Convert.ToString(value);
+
+            box.Visible = text != "";
+            label.Visible = text != "";
+            label.Text = letter + ". " + text;
+        }
+
+        protected void btnSubmit_Click(object sender, EventArgs e)
+        {
+            DataTable quiz = Query(@"
+                SELECT PassMark, MaxAttempts, StartDate, EndDate,
+                       ISNULL(TotalMarks,
+                       (SELECT ISNULL(SUM(Points), 0)
+                        FROM QuizQuestions
+                        WHERE QuizID = @QuizID)) AS TotalMarks
+                FROM Quizzes
+                WHERE QuizID = @QuizID
+                  AND IsPublished = 1",
+                new SqlParameter("@QuizID", QuizId));
+
+            if (quiz.Rows.Count == 0)
+                return;
+
+            DataRow quizRow = quiz.Rows[0];
+            string unavailable = GetUnavailableMessage(
+                quizRow, GetAttemptCount(), HasPassed());
+
+            if (unavailable != "")
+            {
+                ShowResult(false, unavailable);
                 return;
             }
 
-            string expectedCommand;
-            string validationType;
-            int pointsReward;
+            DataTable questions = Query(@"
+                SELECT QuestionID, QuestionType, CorrectAnswer,
+                       MatchStrategy, Points
+                FROM QuizQuestions
+                WHERE QuizID = @QuizID
+                ORDER BY SortOrder, QuestionID",
+                new SqlParameter("@QuizID", QuizId));
 
-            using (SqlConnection con =
-                   new SqlConnection(ConnectionString))
-            using (SqlCommand cmd =
-                   new SqlCommand(
-                @"SELECT
-                      ExpectedCommand,
-                      ValidationType,
-                      PointsReward
-                  FROM VirtualLabs
-                  WHERE LabID = @LabID
-                    AND IsPublished = 1",
-                con))
+            Dictionary<string, string> submitted = ReadAnswers();
+            int obtained = 0;
+
+            foreach (DataRow question in questions.Rows)
             {
-                cmd.Parameters.Add(
-                    "@LabID",
-                    SqlDbType.NVarChar,
-                    10
-                ).Value = SelectedChallengeId;
+                string id = Convert.ToString(question["QuestionID"]);
+                string answer = submitted.ContainsKey(id) ? submitted[id] : "";
 
-                con.Open();
-
-                using (SqlDataReader reader =
-                       cmd.ExecuteReader())
-                {
-                    if (!reader.Read())
-                    {
-                        return;
-                    }
-
-                    expectedCommand =
-                        Convert.ToString(
-                            reader["ExpectedCommand"]);
-
-                    validationType =
-                        Convert.ToString(
-                            reader["ValidationType"]);
-
-                    pointsReward =
-                        Convert.ToInt32(
-                            reader["PointsReward"]);
-                }
+                if (IsCorrect(question, answer))
+                    obtained += Convert.ToInt32(question["Points"]);
             }
 
-            string submitted =
-                tbCommand.Text.Trim();
+            int total = Convert.ToInt32(quizRow["TotalMarks"]);
+            decimal score = total == 0
+                ? 0
+                : Math.Round(obtained * 100m / total, 2);
 
-            bool correct =
-                ValidateCommand(
-                    submitted,
-                    expectedCommand,
-                    validationType);
+            bool passed = score >= Convert.ToDecimal(quizRow["PassMark"]);
+            SaveAttempt(questions, submitted, obtained, total, score, passed);
 
-            string submissionId =
-                IdGenerator.NewId("SUB");
+            ShowResult(
+                passed,
+                "You scored " + obtained + " / " + total +
+                " marks (" + score.ToString("0.##") + "%). " +
+                (passed ? "Challenge passed." : "Challenge not passed."));
 
-            using (SqlConnection con =
-                   new SqlConnection(ConnectionString))
-            {
-                con.Open();
-
-                using (SqlCommand cmd =
-                       new SqlCommand(
-                    @"INSERT INTO LabSubmissions
-                      (
-                          SubmissionID,
-                          LabID,
-                          StudentID,
-                          CommandSubmitted,
-                          IsCorrect,
-                          Result,
-                          Feedback,
-                          PointsEarned,
-                          SubmittedAt
-                      )
-                      VALUES
-                      (
-                          @SubmissionID,
-                          @LabID,
-                          @StudentID,
-                          @Command,
-                          @IsCorrect,
-                          @Result,
-                          @Feedback,
-                          @Points,
-                          GETDATE()
-                      )",
-                    con))
-                {
-                    cmd.Parameters.Add(
-                        "@SubmissionID",
-                        SqlDbType.NVarChar,
-                        10
-                    ).Value = submissionId;
-
-                    cmd.Parameters.Add(
-                        "@LabID",
-                        SqlDbType.NVarChar,
-                        10
-                    ).Value =
-                        SelectedChallengeId;
-
-                    cmd.Parameters.Add(
-                        "@StudentID",
-                        SqlDbType.NVarChar,
-                        10
-                    ).Value = UserId;
-
-                    cmd.Parameters.Add(
-                        "@Command",
-                        SqlDbType.NVarChar,
-                        2000
-                    ).Value = submitted;
-
-                    cmd.Parameters.Add(
-                        "@IsCorrect",
-                        SqlDbType.Bit
-                    ).Value = correct;
-
-                    cmd.Parameters.Add(
-                        "@Result",
-                        SqlDbType.NVarChar,
-                        20
-                    ).Value =
-                        correct
-                            ? "Passed"
-                            : "Incomplete";
-
-                    cmd.Parameters.Add(
-                        "@Feedback",
-                        SqlDbType.NVarChar,
-                        500
-                    ).Value =
-                        correct
-                            ? "Correct command."
-                            : "The command did not match the expected answer.";
-
-                    cmd.Parameters.Add(
-                        "@Points",
-                        SqlDbType.Int
-                    ).Value =
-                        correct
-                            ? pointsReward
-                            : 0;
-
-                    cmd.ExecuteNonQuery();
-                }
-
-                if (correct &&
-                    !PreviouslyPassed(
-                        con,
-                        submissionId))
-                {
-                    using (SqlCommand cmd =
-                           new SqlCommand(
-                        @"UPDATE Users
-                          SET TotalPoints =
-                              TotalPoints + @Points
-                          WHERE UserID = @StudentID",
-                        con))
-                    {
-                        cmd.Parameters.Add(
-                            "@Points",
-                            SqlDbType.Int
-                        ).Value = pointsReward;
-
-                        cmd.Parameters.Add(
-                            "@StudentID",
-                            SqlDbType.NVarChar,
-                            10
-                        ).Value = UserId;
-
-                        cmd.ExecuteNonQuery();
-                    }
-                }
-
-                using (SqlCommand cmd =
-       new SqlCommand(
-    @"DECLARE @ActivityID INT;
-
-      SELECT @ActivityID =
-          ISNULL(MAX(ActivityID), 0) + 1
-      FROM ActivityLog;
-
-      INSERT INTO ActivityLog
-      (
-          ActivityID,
-          UserID,
-          Description,
-          ActivityType,
-          CreatedAt
-      )
-      SELECT
-          @ActivityID,
-          @StudentID,
-          @Description + LabTitle,
-          'Challenge',
-          GETDATE()
-      FROM VirtualLabs
-      WHERE LabID = @LabID",
-    con))
-                {
-                    cmd.Parameters.Add(
-                        "@StudentID",
-                        SqlDbType.NVarChar,
-                        10
-                    ).Value = UserId;
-
-                    cmd.Parameters.Add(
-                        "@LabID",
-                        SqlDbType.NVarChar,
-                        10
-                    ).Value = SelectedChallengeId;
-
-                    cmd.Parameters.Add(
-                        "@Description",
-                        SqlDbType.NVarChar,
-                        100
-                    ).Value =
-                        correct
-                            ? "Completed challenge: "
-                            : "Attempted challenge: ";
-
-                    cmd.ExecuteNonQuery();
-                }
-            }
-
-            pnlResult.Visible = true;
-
-            pnlResult.CssClass =
-                correct
-                    ? "result-success"
-                    : "result-error";
-
-            litResult.Text =
-                correct
-                    ? "Correct. You earned " +
-                      pointsReward + " XP."
-                    : "Incorrect command. Review the hint and try again.";
+            btnSubmit.Enabled = !passed &&
+                GetAttemptCount() < Convert.ToInt32(quizRow["MaxAttempts"]);
 
             LoadAttempts();
         }
 
-        private bool PreviouslyPassed(
-            SqlConnection con,
-            string currentSubmissionId)
+        private Dictionary<string, string> ReadAnswers()
         {
-            using (SqlCommand cmd =
-                   new SqlCommand(
-                @"SELECT COUNT(*)
-                  FROM LabSubmissions
-                  WHERE LabID = @LabID
-                    AND StudentID = @StudentID
-                    AND Result = 'Passed'
-                    AND SubmissionID <> @SubmissionID",
-                con))
+            Dictionary<string, string> answers =
+                new Dictionary<string, string>();
+
+            foreach (RepeaterItem item in rptQuestions.Items)
             {
-                cmd.Parameters.Add(
-                    "@LabID",
-                    SqlDbType.NVarChar,
-                    10
-                ).Value = SelectedChallengeId;
+                string id = ((HiddenField)item.FindControl(
+                    "hfQuestionID")).Value;
 
-                cmd.Parameters.Add(
-                    "@StudentID",
-                    SqlDbType.NVarChar,
-                    10
-                ).Value = UserId;
+                string type = ((HiddenField)item.FindControl(
+                    "hfQuestionType")).Value;
 
-                cmd.Parameters.Add(
-                    "@SubmissionID",
-                    SqlDbType.NVarChar,
-                    10
-                ).Value = currentSubmissionId;
+                string answer = "";
 
-                return Convert.ToInt32(
-                    cmd.ExecuteScalar()) > 0;
+                if (type == "MCQ")
+                {
+                    List<string> selected = new List<string>();
+
+                    AddChecked(item, "cbA", "A", selected);
+                    AddChecked(item, "cbB", "B", selected);
+                    AddChecked(item, "cbC", "C", selected);
+                    AddChecked(item, "cbD", "D", selected);
+
+                    answer = string.Join(",", selected);
+                }
+                else if (type == "TrueFalse")
+                {
+                    answer = ((RadioButtonList)item.FindControl(
+                        "rblTrueFalse")).SelectedValue;
+                }
+                else
+                {
+                    answer = ((TextBox)item.FindControl(
+                        "tbStructure")).Text.Trim();
+                }
+
+                answers[id] = answer;
             }
+
+            return answers;
         }
 
-        private static bool ValidateCommand(
-            string submitted,
-            string expected,
-            string validationType)
+        private static void AddChecked(
+            RepeaterItem item,
+            string controlId,
+            string value,
+            List<string> selected)
         {
-            if (validationType == "Contains")
+            CheckBox box = (CheckBox)item.FindControl(controlId);
+
+            if (box.Visible && box.Checked)
+                selected.Add(value);
+        }
+
+        private static bool IsCorrect(DataRow row, string submitted)
+        {
+            string type = Convert.ToString(row["QuestionType"]);
+            string expected = Convert.ToString(row["CorrectAnswer"]);
+
+            if (type == "MCQ")
+            {
+                return NormaliseOptions(submitted) ==
+                       NormaliseOptions(expected);
+            }
+
+            if (type == "TrueFalse")
+            {
+                return string.Equals(
+                    submitted.Trim(),
+                    expected.Trim(),
+                    StringComparison.OrdinalIgnoreCase);
+            }
+
+            string strategy = Convert.ToString(row["MatchStrategy"]);
+
+            if (strategy == "Contains")
             {
                 return submitted.IndexOf(
                     expected,
-                    StringComparison.OrdinalIgnoreCase
-                ) >= 0;
+                    StringComparison.OrdinalIgnoreCase) >= 0;
             }
 
-            if (validationType == "Regex")
+            if (strategy == "Regex")
             {
                 try
                 {
@@ -616,74 +377,229 @@ namespace CSA.Student
             }
 
             return string.Equals(
-                submitted,
-                expected,
+                submitted.Trim(),
+                expected.Trim(),
                 StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static string NormaliseOptions(string answer)
+        {
+            return string.Join(",",
+                (answer ?? "")
+                .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(x => x.Trim().ToUpper())
+                .OrderBy(x => x));
+        }
+
+        private void SaveAttempt(
+            DataTable questions,
+            Dictionary<string, string> answers,
+            int obtained,
+            int total,
+            decimal score,
+            bool passed)
+        {
+            string attemptId = IdGenerator.NewId("ATT");
+
+            using (SqlConnection con = new SqlConnection(ConnectionString))
+            {
+                con.Open();
+
+                using (SqlTransaction transaction = con.BeginTransaction())
+                {
+                    try
+                    {
+                        using (SqlCommand cmd = new SqlCommand(@"
+                            INSERT INTO QuizAttempts
+                            (
+                                AttemptID, QuizID, StudentID, Score,
+                                TotalMarks, ObtainedMarks, IsPassed
+                            )
+                            VALUES
+                            (
+                                @AttemptID, @QuizID, @StudentID, @Score,
+                                @Total, @Obtained, @Passed
+                            )", con, transaction))
+                        {
+                            cmd.Parameters.AddWithValue("@AttemptID", attemptId);
+                            cmd.Parameters.AddWithValue("@QuizID", QuizId);
+                            cmd.Parameters.AddWithValue("@StudentID", UserId);
+                            cmd.Parameters.AddWithValue("@Score", score);
+                            cmd.Parameters.AddWithValue("@Total", total);
+                            cmd.Parameters.AddWithValue("@Obtained", obtained);
+                            cmd.Parameters.AddWithValue("@Passed", passed);
+                            cmd.ExecuteNonQuery();
+                        }
+
+                        foreach (DataRow question in questions.Rows)
+                        {
+                            string questionId = Convert.ToString(
+                                question["QuestionID"]);
+
+                            string answer = answers.ContainsKey(questionId)
+                                ? answers[questionId]
+                                : "";
+
+                            using (SqlCommand cmd = new SqlCommand(@"
+                                INSERT INTO QuizAnswers
+                                (
+                                    AttemptID, QuestionID,
+                                    StudentAnswer, IsCorrect
+                                )
+                                VALUES
+                                (
+                                    @AttemptID, @QuestionID,
+                                    @Answer, @Correct
+                                )", con, transaction))
+                            {
+                                cmd.Parameters.AddWithValue(
+                                    "@AttemptID", attemptId);
+
+                                cmd.Parameters.AddWithValue(
+                                    "@QuestionID", questionId);
+
+                                cmd.Parameters.AddWithValue(
+                                    "@Answer",
+                                    answer == ""
+                                        ? (object)DBNull.Value
+                                        : answer);
+
+                                cmd.Parameters.AddWithValue(
+                                    "@Correct",
+                                    IsCorrect(question, answer));
+
+                                cmd.ExecuteNonQuery();
+                            }
+                        }
+
+                        transaction.Commit();
+                    }
+                    catch
+                    {
+                        transaction.Rollback();
+                        throw;
+                    }
+                }
+            }
+        }
+
+        private string GetUnavailableMessage(
+            DataRow quiz,
+            int attempts,
+            bool passed)
+        {
+            if (passed)
+                return "You have already passed this challenge.";
+
+            if (attempts >= Convert.ToInt32(quiz["MaxAttempts"]))
+                return "You have used all available attempts.";
+
+            DateTime now = DateTime.Now;
+
+            if (quiz["StartDate"] != DBNull.Value &&
+                now < Convert.ToDateTime(quiz["StartDate"]))
+                return "This challenge has not opened yet.";
+
+            if (quiz["EndDate"] != DBNull.Value &&
+                now > Convert.ToDateTime(quiz["EndDate"]))
+                return "This challenge has already closed.";
+
+            return "";
+        }
+
+        private int GetAttemptCount()
+        {
+            object result = Scalar(@"
+                SELECT COUNT(*)
+                FROM QuizAttempts
+                WHERE QuizID = @QuizID
+                  AND StudentID = @StudentID",
+                new SqlParameter("@QuizID", QuizId),
+                new SqlParameter("@StudentID", UserId));
+
+            return Convert.ToInt32(result);
+        }
+
+        private bool HasPassed()
+        {
+            object result = Scalar(@"
+                SELECT COUNT(*)
+                FROM QuizAttempts
+                WHERE QuizID = @QuizID
+                  AND StudentID = @StudentID
+                  AND IsPassed = 1",
+                new SqlParameter("@QuizID", QuizId),
+                new SqlParameter("@StudentID", UserId));
+
+            return Convert.ToInt32(result) > 0;
         }
 
         private void LoadAttempts()
         {
-            DataTable dt =
-                new DataTable();
-
-            using (SqlConnection con =
-                   new SqlConnection(ConnectionString))
-            using (SqlCommand cmd =
-                   new SqlCommand(
-                @"SELECT
-                      CommandSubmitted,
-                      Result,
-                      PointsEarned,
-                      SubmittedAt
-                  FROM LabSubmissions
-                  WHERE LabID = @LabID
-                    AND StudentID = @StudentID
-                  ORDER BY SubmittedAt DESC",
-                con))
-            using (SqlDataAdapter da =
-                   new SqlDataAdapter(cmd))
-            {
-                cmd.Parameters.Add(
-                    "@LabID",
-                    SqlDbType.NVarChar,
-                    10
-                ).Value =
-                    SelectedChallengeId;
-
-                cmd.Parameters.Add(
-                    "@StudentID",
-                    SqlDbType.NVarChar,
-                    10
-                ).Value = UserId;
-
-                da.Fill(dt);
-            }
+            DataTable dt = Query(@"
+                SELECT ObtainedMarks, TotalMarks, Score,
+                       IsPassed, AttemptedAt
+                FROM QuizAttempts
+                WHERE QuizID = @QuizID
+                  AND StudentID = @StudentID
+                ORDER BY AttemptedAt DESC",
+                new SqlParameter("@QuizID", QuizId),
+                new SqlParameter("@StudentID", UserId));
 
             gvAttempts.DataSource = dt;
             gvAttempts.DataBind();
-
-            pnlAttempts.Visible =
-                dt.Rows.Count > 0;
+            pnlAttempts.Visible = dt.Rows.Count > 0;
         }
 
-        protected void btnBack_Click(
-            object sender,
-            EventArgs e)
+        private DataTable Query(string sql, params SqlParameter[] parameters)
         {
+            DataTable dt = new DataTable();
+
+            using (SqlConnection con = new SqlConnection(ConnectionString))
+            using (SqlCommand cmd = new SqlCommand(sql, con))
+            using (SqlDataAdapter da = new SqlDataAdapter(cmd))
+            {
+                cmd.Parameters.AddRange(parameters);
+                da.Fill(dt);
+            }
+
+            return dt;
+        }
+
+        private object Scalar(string sql, params SqlParameter[] parameters)
+        {
+            using (SqlConnection con = new SqlConnection(ConnectionString))
+            using (SqlCommand cmd = new SqlCommand(sql, con))
+            {
+                cmd.Parameters.AddRange(parameters);
+                con.Open();
+                return cmd.ExecuteScalar();
+            }
+        }
+
+        private void ShowResult(bool success, string message)
+        {
+            pnlResult.Visible = true;
+            pnlResult.CssClass = success
+                ? "result-success"
+                : "result-error";
+
+            litResult.Text = Server.HtmlEncode(message);
+        }
+
+        protected void btnBack_Click(object sender, EventArgs e)
+        {
+            QuizId = "";
             pnlWorkspace.Visible = false;
             pnlChallengeList.Visible = true;
-
             LoadChallenges();
         }
 
-        protected void lbLogout_Click(
-            object sender,
-            EventArgs e)
+        protected void lbLogout_Click(object sender, EventArgs e)
         {
             Session.Clear();
             Session.Abandon();
-
-            Response.Redirect("~/Login.aspx");
+            Response.Redirect("~/Login.aspx?msg=loggedout");
         }
     }
 }
