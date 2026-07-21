@@ -1,6 +1,6 @@
 ﻿<%@ Page Title="Database Backup – CyberShield Academy" Language="C#"
     MasterPageFile="~/Site.Master" AutoEventWireup="true"
-    CodeBehind="Backup.aspx.cs" Inherits="CSA.Admin.Backup" %>
+    CodeFile="Backup.aspx.cs" Inherits="CSA.Admin.Backup" %>
 
 <asp:Content ID="cMain" ContentPlaceHolderID="MainContent" runat="server">
 <div class="dash-layout">
@@ -99,10 +99,11 @@
                     Do not close the browser during backup.
                 </div>
 
-                <asp:Button ID="btnBackup" runat="server" CssClass="btn-primary"
+                <asp:LinkButton ID="btnBackup" runat="server" CssClass="btn-primary"
                     OnClick="btnBackup_Click"
-                    OnClientClick="return showConfirmAction(this, 'Start a full database backup? This may take a few minutes.', 'Start Backup');"
-                    Text="Start Backup" />
+                    OnClientClick="return showConfirmAction(this, 'Start a full database backup now?', 'ti-database', 'Start Backup');">
+                    <i class="ti ti-database" aria-hidden="true"></i> Start Backup
+                </asp:LinkButton>
             </div>
 
             <!-- Backup history -->
@@ -138,7 +139,7 @@
                                                 </asp:LinkButton>
                                                 <asp:LinkButton runat="server" CssClass="btn-danger"
                                                     CommandName="Delete" CommandArgument='<%# Eval("BackupID") %>'
-                                                    OnClientClick="return showConfirmAction(this, 'Delete this backup? This cannot be undone.', 'Delete');">
+                                                    OnClientClick="return showDeleteConfirm(this);">
                                                     <i class="ti ti-trash"></i>
                                                 </asp:LinkButton>
                                             </div>

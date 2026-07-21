@@ -85,25 +85,34 @@ namespace CSA.Admin
             if (!string.IsNullOrWhiteSpace(tbExpiry.Text))
                 expiry = DateTime.Parse(tbExpiry.Text);
 
-            if (editId == 0)
+            try
             {
-                AdminService.CreateAnnouncement(
-                    tbTitle.Text.Trim(), tbMessage.Text.Trim(),
-                    ddlAudience.SelectedValue, ddlPriority.SelectedValue,
-                    expiry, adminId);
-                pnlSuccess.Visible = true;
-                litSuccess.Text = "Announcement published successfully.";
+                if (editId == 0)
+                {
+                    AdminService.CreateAnnouncement(
+                        tbTitle.Text.Trim(), tbMessage.Text.Trim(),
+                        ddlAudience.SelectedValue, ddlPriority.SelectedValue,
+                        expiry, adminId);
+                    pnlSuccess.Visible = true;
+                    litSuccess.Text = "Announcement published successfully.";
+                }
+                else
+                {
+                    AdminService.UpdateAnnouncement(editId,
+                        tbTitle.Text.Trim(), tbMessage.Text.Trim(),
+                        ddlAudience.SelectedValue, ddlPriority.SelectedValue, expiry);
+                    pnlSuccess.Visible = true;
+                    litSuccess.Text = "Announcement updated.";
+                    ResetForm();
+                }
+                LoadAnnouncements();
             }
-            else
+            catch (Exception ex)
             {
-                AdminService.UpdateAnnouncement(editId,
-                    tbTitle.Text.Trim(), tbMessage.Text.Trim(),
-                    ddlAudience.SelectedValue, ddlPriority.SelectedValue, expiry);
-                pnlSuccess.Visible = true;
-                litSuccess.Text = "Announcement updated.";
-                ResetForm();
+                pnlError.Visible = true;
+                litError.Text = "Error saving announcement: " + ex.Message;
+                pnlSuccess.Visible = false;
             }
-            LoadAnnouncements();
         }
 
         protected void rptAnnouncements_ItemCommand(object source, RepeaterCommandEventArgs e)
@@ -127,10 +136,19 @@ namespace CSA.Admin
             }
             else if (e.CommandName == "Delete")
             {
-                AdminService.DeleteAnnouncement(id);
-                pnlSuccess.Visible = true;
-                litSuccess.Text = "Announcement deleted.";
-                LoadAnnouncements();
+                try
+                {
+                    AdminService.DeleteAnnouncement(id);
+                    pnlSuccess.Visible = true;
+                    litSuccess.Text = "Announcement deleted.";
+                    LoadAnnouncements();
+                }
+                catch (Exception ex)
+                {
+                    pnlError.Visible = true;
+                    litError.Text = "Error deleting announcement: " + ex.Message;
+                    pnlSuccess.Visible = false;
+                }
             }
         }
 

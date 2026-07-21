@@ -203,30 +203,36 @@ namespace CSA.Services
         public static DataTable GetLogs(string keyword, string severity,
             string dateFrom, string dateTo, int page, int pageSize, out int total)
         {
+            string sevExpr = @"CASE WHEN al.Action LIKE '%DELETE%' OR al.Action LIKE '%ERROR%' THEN 'Critical'
+                               WHEN al.Action LIKE '%UPDATE%' OR al.Action LIKE '%CREATE%' THEN 'Warning'
+                               ELSE 'Info' END";
+
             string where = "1=1";
             if (!string.IsNullOrEmpty(keyword))
-                where += " AND (al.Action LIKE @Keyword OR al.IPAddress LIKE @Keyword OR u.FullName LIKE @Keyword)";
+                where += " AND (al.Action LIKE @Keyword OR u.FullName LIKE @Keyword)";
             if (!string.IsNullOrEmpty(severity))
-                where += " AND al.Action LIKE @SevPattern";
+                where += $" AND {sevExpr} = @Severity";
             if (!string.IsNullOrEmpty(dateFrom))
                 where += " AND al.OccurredAt >= @DateFrom";
             if (!string.IsNullOrEmpty(dateTo))
                 where += " AND al.OccurredAt < DATEADD(DAY, 1, @DateTo)";
 
             string countSql = "SELECT COUNT(*) FROM AuditLog al JOIN Users u ON al.PerformedByID = u.UserID WHERE " + where;
-            total = Convert.ToInt32(DBHelper.ExecuteScalar(countSql,
-                new SqlParameter("@Keyword", "%" + keyword + "%"),
-                new SqlParameter("@SevPattern", "%" + severity + "%"),
-                new SqlParameter("@DateFrom", (object)dateFrom ?? DBNull.Value),
-                new SqlParameter("@DateTo", (object)dateTo ?? DBNull.Value)));
+            var countPars = new System.Collections.Generic.List<SqlParameter>
+            {
+                new SqlParameter("@Keyword", "%" + (keyword ?? "") + "%"),
+                new SqlParameter("@Severity", severity ?? "")
+            };
+            if (!string.IsNullOrEmpty(dateFrom))
+                countPars.Add(new SqlParameter("@DateFrom", (object)dateFrom));
+            if (!string.IsNullOrEmpty(dateTo))
+                countPars.Add(new SqlParameter("@DateTo", (object)dateTo));
+            total = Convert.ToInt32(DBHelper.ExecuteScalar(countSql, countPars.ToArray()));
 
             string sql = $@"
-                SELECT al.AuditID, al.Action, al.TableAffected, al.RecordID, al.IPAddress, al.OccurredAt,
+                SELECT al.AuditID, al.Action, al.TableAffected, al.RecordID, al.OccurredAt,
                        u.FullName AS UserName, u.Email AS UserEmail,
-                       CASE WHEN al.Action LIKE '%DELETE%' OR al.Action LIKE '%ERROR%' THEN 'Critical'
-                            WHEN al.Action LIKE '%UPDATE%' OR al.Action LIKE '%CREATE%' THEN 'Warning'
-                            ELSE 'Info'
-                       END AS Severity,
+                       {sevExpr} AS Severity,
                        al.Action AS Details
                 FROM AuditLog al
                 JOIN Users u ON al.PerformedByID = u.UserID
@@ -234,23 +240,29 @@ namespace CSA.Services
                 ORDER BY al.OccurredAt DESC
                 OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
 
-            return DBHelper.ExecuteQuery(sql,
-                new SqlParameter("@Keyword", "%" + keyword + "%"),
-                new SqlParameter("@SevPattern", "%" + severity + "%"),
-                new SqlParameter("@DateFrom", (object)dateFrom ?? DBNull.Value),
-                new SqlParameter("@DateTo", (object)dateTo ?? DBNull.Value),
-                new SqlParameter("@Offset", (page - 1) * pageSize),
-                new SqlParameter("@PageSize", pageSize));
+            var pars = new System.Collections.Generic.List<SqlParameter>
+            {
+                new SqlParameter("@Keyword", "%" + (keyword ?? "") + "%"),
+                new SqlParameter("@Severity", severity ?? "")
+            };
+            if (!string.IsNullOrEmpty(dateFrom))
+                pars.Add(new SqlParameter("@DateFrom", (object)dateFrom));
+            if (!string.IsNullOrEmpty(dateTo))
+                pars.Add(new SqlParameter("@DateTo", (object)dateTo));
+            pars.Add(new SqlParameter("@Offset", (page - 1) * pageSize));
+            pars.Add(new SqlParameter("@PageSize", pageSize));
+
+            return DBHelper.ExecuteQuery(sql, pars.ToArray());
         }
 
         public static int CountBySeverity(string severity)
         {
-            string pattern = severity == "Info" ? "%CREATE%LOGIN%"
-                : severity == "Warning" ? "%UPDATE%"
-                : "%DELETE%ERROR%";
+            string sevExpr = @"CASE WHEN Action LIKE '%DELETE%' OR Action LIKE '%ERROR%' THEN 'Critical'
+                               WHEN Action LIKE '%UPDATE%' OR Action LIKE '%CREATE%' THEN 'Warning'
+                               ELSE 'Info' END";
             object r = DBHelper.ExecuteScalar(
-                "SELECT COUNT(*) FROM AuditLog WHERE Action LIKE @Pattern AND CAST(OccurredAt AS DATE) = CAST(GETDATE() AS DATE)",
-                new SqlParameter("@Pattern", pattern));
+                $"SELECT COUNT(*) FROM AuditLog WHERE {sevExpr} = @Severity AND CAST(OccurredAt AS DATE) = CAST(GETDATE() AS DATE)",
+                new SqlParameter("@Severity", severity));
             return r != null ? Convert.ToInt32(r) : 0;
         }
 
@@ -290,10 +302,12 @@ namespace CSA.Services
             error = "";
             try
             {
-                string dbName = "CyberShieldAcademy";
+                object nameResult = DBHelper.ExecuteScalar("SELECT DB_NAME()");
+                string dbName = nameResult != null ? nameResult.ToString() : "CyberShieldAcademy";
+
                 string backupDir = @"C:\Users\ivanc\source\repos\wapp\App_Data\Backups\";
                 System.IO.Directory.CreateDirectory(backupDir);
-                string fileName = $"{dbName}_{DateTime.Now:yyyyMMdd_HHmmss}.bak";
+                string fileName = $"CyberShieldAcademy_{DateTime.Now:yyyyMMdd_HHmmss}.bak";
                 string filePath = backupDir + fileName;
 
                 string sql = $@"BACKUP DATABASE [{dbName}] TO DISK = @Path WITH FORMAT, MEDIANAME = 'CSABackup', NAME = @Label; SELECT 1 AS Result";
@@ -355,7 +369,7 @@ namespace CSA.Services
             int offset = Math.Max(0, (page - 1) * pageSize);
 
             string sql = $@"
-                SELECT sa.AlertID, sa.AlertType, sa.Description, sa.Severity, sa.IPAddress,
+                SELECT sa.AlertID, sa.AlertType, sa.Description, sa.Severity,
                        sa.AlertStatus, sa.DetectedAt,
                        u.FullName AS AffectedUser, u.Email AS AffectedEmail,
                        FORMAT(sa.DetectedAt, 'dd MMM yyyy HH:mm') AS DetectedDisplay
@@ -424,6 +438,22 @@ namespace CSA.Services
             return r != null ? Convert.ToInt32(r) : 0;
         }
 
+        public static int GetAlertCountByStatus(string status)
+        {
+            object r = DBHelper.ExecuteScalar(
+                "SELECT COUNT(*) FROM SecurityAlerts WHERE AlertStatus = @Status",
+                new SqlParameter("@Status", status));
+            return r != null ? Convert.ToInt32(r) : 0;
+        }
+
+        public static int GetAlertCountBySeverity(string severity)
+        {
+            object r = DBHelper.ExecuteScalar(
+                "SELECT COUNT(*) FROM SecurityAlerts WHERE Severity = @Severity",
+                new SqlParameter("@Severity", severity));
+            return r != null ? Convert.ToInt32(r) : 0;
+        }
+
         // ========================================================================
         // ERROR LOGS
         // ========================================================================
@@ -471,6 +501,12 @@ namespace CSA.Services
             object r = DBHelper.ExecuteScalar(
                 "SELECT COUNT(*) FROM ErrorLogs WHERE Severity = @Sev AND CAST(OccurredAt AS DATE) = CAST(GETDATE() AS DATE)",
                 new SqlParameter("@Sev", severity));
+            return r != null ? Convert.ToInt32(r) : 0;
+        }
+
+        public static int GetErrorLogUnresolvedCount()
+        {
+            object r = DBHelper.ExecuteScalar("SELECT COUNT(*) FROM ErrorLogs WHERE IsResolved = 0");
             return r != null ? Convert.ToInt32(r) : 0;
         }
 

@@ -1,6 +1,6 @@
 ﻿<%@ Page Title="Security Alerts – CyberShield Academy" Language="C#"
     MasterPageFile="~/Site.Master" AutoEventWireup="true"
-    CodeBehind="SecurityAlerts.aspx.cs" Inherits="CSA.Admin.SecurityAlerts" %>
+    CodeFile="SecurityAlerts.aspx.cs" Inherits="CSA.Admin.SecurityAlerts" %>
 
 <asp:Content ID="cMain" ContentPlaceHolderID="MainContent" runat="server">
 <div class="dash-layout">
@@ -107,7 +107,6 @@
                             <th scope="col">Alert</th>
                             <th scope="col">Severity</th>
                             <th scope="col">Affected User</th>
-                            <th scope="col">IP Address</th>
                             <th scope="col">Status</th>
                             <th scope="col">Detected</th>
                             <th scope="col">Actions</th>
@@ -127,7 +126,6 @@
                                         <div style="color:var(--text)"><%# Eval("AffectedUser") %></div>
                                         <div class="text-small text-muted"><%# Eval("AffectedEmail") %></div>
                                     </td>
-                                    <td class="text-muted" style="font-family:monospace;font-size:12px"><%# Eval("IPAddress") %></td>
                                     <td><span class="badge <%# GetAlertStatusBadge(Eval("AlertStatus").ToString()) %>"><%# Eval("AlertStatus") %></span></td>
                                     <td class="text-muted text-small"><%# Eval("DetectedDisplay") %></td>
                                     <td>
@@ -140,12 +138,12 @@
                                             <asp:LinkButton runat="server" CssClass="btn-sm"
                                                 CommandName="Resolve" CommandArgument='<%# Eval("AlertID") %>'
                                                 Visible='<%# Eval("AlertStatus").ToString() != "Resolved" %>'
-                                                OnClientClick="return showConfirmAction(this, 'Mark this security alert as resolved?', 'Resolve');">
+                                                OnClientClick="return showConfirmAction(this, 'Mark this alert as resolved?', 'ti-circle-check', 'Resolve');">
                                                 <i class="ti ti-circle-check"></i> Resolve
                                             </asp:LinkButton>
                                             <asp:LinkButton runat="server" CssClass="btn-sm secondary"
                                                 CommandName="BlockUser" CommandArgument='<%# Eval("AlertID") %>'
-                                                OnClientClick="return showConfirmAction(this, 'Block this user? They will be immediately signed out and unable to log back in.', 'Block User');">
+                                                OnClientClick="return showConfirmAction(this, 'Are you sure you want to block this user?', 'ti-user-off', 'Block');">
                                                 <i class="ti ti-user-off"></i> Block
                                             </asp:LinkButton>
                                         </div>

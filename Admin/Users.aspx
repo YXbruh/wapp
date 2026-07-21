@@ -1,6 +1,6 @@
 ﻿<%@ Page Title="Manage Users – CyberShield Academy" Language="C#"
     MasterPageFile="~/Site.Master" AutoEventWireup="true"
-    CodeBehind="Users.aspx.cs" Inherits="CSA.Admin.Users" %>
+    CodeFile="Users.aspx.cs" Inherits="CSA.Admin.Users" %>
 
 <asp:Content ID="cMain" ContentPlaceHolderID="MainContent" runat="server">
 <div class="dash-layout">
@@ -56,8 +56,8 @@
                 <div class="metric-val"><asp:Literal ID="litStudents" runat="server" Text="0"/></div>
                 <div class="metric-sub">accounts</div>
             </div>
-            <div class="metric">
-                <div class="metric-label">Instructors</div>
+                <div class="metric">
+                    <div class="metric-label">Lecturers</div>
                 <div class="metric-val"><asp:Literal ID="litInstructors" runat="server" Text="0"/></div>
                 <div class="metric-sub">accounts</div>
             </div>
@@ -84,7 +84,7 @@
                     style="width:140px" AutoPostBack="true" OnSelectedIndexChanged="Search_Changed">
                     <asp:ListItem Value="">All Roles</asp:ListItem>
                     <asp:ListItem Value="Student">Student</asp:ListItem>
-                    <asp:ListItem Value="Instructor">Instructor</asp:ListItem>
+                    <asp:ListItem Value="Lecturer">Lecturer</asp:ListItem>
                     <asp:ListItem Value="Admin">Admin</asp:ListItem>
                 </asp:DropDownList>
 
@@ -139,13 +139,14 @@
                                                 <i class="ti ti-edit"></i> Edit
                                             </asp:LinkButton>
                                             <asp:LinkButton runat="server" CssClass="btn-sm secondary"
-                                                CommandName="ToggleStatus" CommandArgument='<%# Eval("UserID") %>'>
+                                                CommandName="ToggleStatus" CommandArgument='<%# Eval("UserID") %>'
+                                                OnClientClick="return showConfirmAction(this, 'Are you sure you want to toggle this user\\'s active status?', 'ti-user-off', 'Toggle');">
                                                 <i class="ti <%# (bool)Eval("IsActive") ? "ti-user-off" : "ti-user-check" %>"></i>
                                                 <%# (bool)Eval("IsActive") ? "Deactivate" : "Activate" %>
                                             </asp:LinkButton>
                                             <asp:LinkButton runat="server" CssClass="btn-danger"
                                                 CommandName="Delete" CommandArgument='<%# Eval("UserID") %>'
-                                                OnClientClick="return showConfirmAction(this, 'Delete this user? This cannot be undone.', 'Delete');">
+                                                OnClientClick="return showDeleteConfirm(this);">
                                                 <i class="ti ti-trash"></i>
                                             </asp:LinkButton>
                                         </div>

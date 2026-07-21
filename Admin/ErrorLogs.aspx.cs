@@ -8,8 +8,13 @@ namespace CSA.Admin
 {
     public partial class ErrorLogs : Page
     {
-        private int _page = 1;
         private const int PageSize = 25;
+
+        private int CurrentPage
+        {
+            get { return ViewState["Page"] as int? ?? 1; }
+            set { ViewState["Page"] = value; }
+        }
 
         protected void Page_Load(object sender, EventArgs e)
         {
@@ -27,33 +32,29 @@ namespace CSA.Admin
         {
             DataTable logs = AdminService.GetErrorLogs(tbSearch.Text.Trim(),
                 ddlSeverity.SelectedValue, tbDateFrom.Text, tbDateTo.Text,
-                _page, PageSize, out int total);
+                CurrentPage, PageSize, out int total);
 
             litErrors.Text = AdminService.GetErrorLogCountBySeverity("Error").ToString();
             litWarnings.Text = AdminService.GetErrorLogCountBySeverity("Warning").ToString();
             litInfo.Text = AdminService.GetErrorLogCountBySeverity("Info").ToString();
-
-            int unresolved = 0;
-            foreach (DataRow row in logs.Rows)
-                if (!Convert.ToBoolean(row["IsResolved"])) unresolved++;
-            litUnresolved.Text = unresolved.ToString();
+            litUnresolved.Text = AdminService.GetErrorLogUnresolvedCount().ToString();
 
             litShowing.Text = $"{logs.Rows.Count} of {total}";
-            lbPrev.Enabled = _page > 1;
-            lbNext.Enabled = (_page * PageSize) < total;
+            lbPrev.Enabled = CurrentPage > 1;
+            lbNext.Enabled = (CurrentPage * PageSize) < total;
 
             rptErrors.DataSource = logs;
             rptErrors.DataBind();
             pnlEmpty.Visible = logs.Rows.Count == 0;
         }
 
-        protected void Filter_Changed(object sender, EventArgs e) { _page = 1; LoadLogs(); }
+        protected void Filter_Changed(object sender, EventArgs e) { CurrentPage = 1; LoadLogs(); }
 
         protected void lbPrev_Click(object sender, EventArgs e)
-        { if (_page > 1) { _page--; LoadLogs(); } }
+        { if (CurrentPage > 1) { CurrentPage--; LoadLogs(); } }
 
         protected void lbNext_Click(object sender, EventArgs e)
-        { _page++; LoadLogs(); }
+        { CurrentPage++; LoadLogs(); }
 
         protected void rptErrors_ItemCommand(object source, RepeaterCommandEventArgs e)
         {

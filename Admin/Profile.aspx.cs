@@ -120,6 +120,13 @@ namespace CSA.Admin
             try
             {
                 DataTable dt = UserService.GetById(_userId);
+                if (dt.Rows.Count == 0)
+                {
+                    pnlError.Visible = true;
+                    litError.Text = "Account not found. Please log in again.";
+                    pnlSuccess.Visible = false;
+                    return;
+                }
                 string storedHash = dt.Rows[0]["PasswordHash"].ToString();
                 if (!PasswordHelper.Verify(tbCurrentPwd.Text.Trim(), storedHash))
                 {

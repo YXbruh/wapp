@@ -105,10 +105,18 @@ namespace CSA.Admin
                     LoadUsers();
                     break;
                 case "Delete":
-                    UserService.Delete(id);
-                    AdminService.LogAudit(adminId, "DELETE_USER", "Users", id, "", "");
-                    ShowSuccess("User deleted.");
-                    LoadUsers();
+                    try
+                    {
+                        UserService.Delete(id);
+                        AdminService.LogAudit(adminId, "DELETE_USER", "Users", id, "", "");
+                        ShowSuccess("User deleted.");
+                        LoadUsers();
+                    }
+                    catch (Exception)
+                    {
+                        pnlError.Visible = true;
+                        litError.Text = "Cannot delete this user. They may have existing enrollments, activity logs, or other linked records. Remove those first.";
+                    }
                     break;
             }
         }
@@ -120,7 +128,7 @@ namespace CSA.Admin
             Response.ContentType = "text/csv";
             Response.AddHeader("Content-Disposition", "attachment;filename=users.csv");
             Response.Write(csv);
-            Response.End();
+            Context.ApplicationInstance.CompleteRequest();
         }
 
         private void ShowSuccess(string msg)

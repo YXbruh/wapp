@@ -60,39 +60,56 @@ namespace CSA.Admin
             int id = Convert.ToInt32(e.CommandArgument);
             if (e.CommandName == "Download")
             {
-                DataTable dt = DBHelper.ExecuteQuery(
-                    "SELECT FilePath FROM DatabaseBackups WHERE BackupID = @ID",
-                    new System.Data.SqlClient.SqlParameter("@ID", id));
-                if (dt.Rows.Count > 0)
+                try
                 {
-                    string path = dt.Rows[0]["FilePath"].ToString();
-                    if (System.IO.File.Exists(path))
+                    DataTable dt = DBHelper.ExecuteQuery(
+                        "SELECT FilePath FROM DatabaseBackups WHERE BackupID = @ID",
+                        new System.Data.SqlClient.SqlParameter("@ID", id));
+                    if (dt.Rows.Count > 0)
                     {
-                        Response.ContentType = "application/octet-stream";
-                        Response.AddHeader("Content-Disposition",
-                            $"attachment;filename={System.IO.Path.GetFileName(path)}");
-                        Response.WriteFile(path);
-                        Response.End();
+                        string path = dt.Rows[0]["FilePath"].ToString();
+                        if (System.IO.File.Exists(path))
+                        {
+                            Response.ContentType = "application/octet-stream";
+                            Response.AddHeader("Content-Disposition",
+                                $"attachment;filename={System.IO.Path.GetFileName(path)}");
+                            Response.WriteFile(path);
+                            Context.ApplicationInstance.CompleteRequest();
+                        }
                     }
+                }
+                catch (Exception ex)
+                {
+                    pnlError.Visible = true;
+                    litError.Text = "Error downloading backup: " + ex.Message;
                 }
             }
             else if (e.CommandName == "Delete")
             {
-                DataTable dt = DBHelper.ExecuteQuery(
-                    "SELECT FilePath FROM DatabaseBackups WHERE BackupID = @ID",
-                    new System.Data.SqlClient.SqlParameter("@ID", id));
-                if (dt.Rows.Count > 0)
+                try
                 {
-                    string path = dt.Rows[0]["FilePath"].ToString();
-                    if (System.IO.File.Exists(path))
-                        System.IO.File.Delete(path);
+                    DataTable dt = DBHelper.ExecuteQuery(
+                        "SELECT FilePath FROM DatabaseBackups WHERE BackupID = @ID",
+                        new System.Data.SqlClient.SqlParameter("@ID", id));
+                    if (dt.Rows.Count > 0)
+                    {
+                        string path = dt.Rows[0]["FilePath"].ToString();
+                        if (System.IO.File.Exists(path))
+                            System.IO.File.Delete(path);
+                    }
+                    DBHelper.ExecuteNonQuery(
+                        "DELETE FROM DatabaseBackups WHERE BackupID = @ID",
+                        new System.Data.SqlClient.SqlParameter("@ID", id));
+                    pnlSuccess.Visible = true;
+                    litSuccess.Text = "Backup deleted.";
+                    LoadBackups();
                 }
-                DBHelper.ExecuteNonQuery(
-                    "DELETE FROM DatabaseBackups WHERE BackupID = @ID",
-                    new System.Data.SqlClient.SqlParameter("@ID", id));
-                pnlSuccess.Visible = true;
-                litSuccess.Text = "Backup deleted.";
-                LoadBackups();
+                catch (Exception ex)
+                {
+                    pnlError.Visible = true;
+                    litError.Text = "Error deleting backup: " + ex.Message;
+                    pnlSuccess.Visible = false;
+                }
             }
         }
 

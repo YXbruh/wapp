@@ -52,19 +52,9 @@ namespace CSA.Admin
             p.Total = total;
             ViewState["Pager"] = _pager;
 
-            int open = 0, high = 0, investigating = 0;
-            foreach (DataRow row in alerts.Rows)
-            {
-                string status = row["AlertStatus"].ToString();
-                string severity = row["Severity"].ToString();
-                if (status == "Open") open++;
-                if (severity == "High") high++;
-                if (status == "Investigating") investigating++;
-            }
-
-            litOpen.Text = open.ToString();
-            litHigh.Text = high.ToString();
-            litInvestigating.Text = investigating.ToString();
+            litOpen.Text = AdminService.GetAlertCountByStatus("Open").ToString();
+            litHigh.Text = AdminService.GetAlertCountBySeverity("High").ToString();
+            litInvestigating.Text = AdminService.GetAlertCountByStatus("Investigating").ToString();
             litResolved.Text = AdminService.GetResolvedTodayCount().ToString();
 
             rptAlerts.DataSource = alerts;
@@ -114,6 +104,12 @@ namespace CSA.Admin
                     if (alert.Rows.Count > 0)
                     {
                         string affectedUserId = alert.Rows[0]["AffectedUserID"].ToString();
+                        if (affectedUserId == Session["UserID"].ToString())
+                        {
+                            ClientScript.RegisterStartupScript(GetType(), "alert",
+                                "alert('You cannot block your own account.');", true);
+                            break;
+                        }
                         UserService.ToggleActive(affectedUserId);
                         AdminService.SetAlertStatus(id, "Resolved", adminId);
                         pnlSuccess.Visible = true;
@@ -137,7 +133,7 @@ namespace CSA.Admin
             Response.ContentType = "text/csv";
             Response.AddHeader("Content-Disposition", "attachment;filename=security-alerts.csv");
             Response.Write(csv);
-            Response.End();
+            Context.ApplicationInstance.CompleteRequest();
         }
 
         protected void lbLogout_Click(object sender, EventArgs e)

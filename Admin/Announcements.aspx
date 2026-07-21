@@ -1,6 +1,6 @@
 ﻿<%@ Page Title="Announcements – CyberShield Academy" Language="C#"
     MasterPageFile="~/Site.Master" AutoEventWireup="true"
-    CodeBehind="Announcements.aspx.cs" Inherits="CSA.Admin.Announcements" %>
+    CodeFile="Announcements.aspx.cs" Inherits="CSA.Admin.Announcements" %>
 
 <asp:Content ID="cMain" ContentPlaceHolderID="MainContent" runat="server">
 <div class="dash-layout">
@@ -175,7 +175,7 @@
                                                 </asp:LinkButton>
                                                 <asp:LinkButton runat="server" CssClass="btn-danger"
                                                     CommandName="Delete" CommandArgument='<%# Eval("AnnouncementID") %>'
-                                                    OnClientClick="return showConfirmAction(this, 'Delete this announcement? This cannot be undone.', 'Delete');">
+                                                    OnClientClick="return showDeleteConfirm(this);">
                                                     <i class="ti ti-trash"></i>
                                                 </asp:LinkButton>
                                             </div>
