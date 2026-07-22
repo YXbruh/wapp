@@ -11,14 +11,14 @@
 
 <style>
     .question-card {
-        margin-bottom:16px;
-        padding:18px;
+        margin-bottom:14px;
+        padding:16px;
         border:1px solid var(--border);
-        border-radius:10px;
+        border-radius:9px;
     }
 
     .question-text {
-        margin-bottom:14px;
+        margin-bottom:12px;
         color:var(--text);
         font-weight:600;
         line-height:1.6;
@@ -26,15 +26,15 @@
 
     .answer-option {
         display:block;
-        margin:8px 0;
-        padding:9px 12px;
+        margin:7px 0;
+        padding:9px 11px;
         background:var(--bg3);
         border-radius:7px;
     }
 
     .answer-box {
         width:100%;
-        min-height:90px;
+        min-height:85px;
         padding:10px;
         color:var(--text);
         background:var(--bg3);
@@ -43,10 +43,20 @@
         box-sizing:border-box;
     }
 
+    .answer-review {
+        margin-top:12px;
+        padding:10px 12px;
+        color:var(--text2);
+        background:var(--bg3);
+        border-left:3px solid var(--accent2);
+        border-radius:6px;
+        line-height:1.6;
+    }
+
     .result-success,
     .result-error,
     .notice-box {
-        margin-bottom:16px;
+        margin-bottom:15px;
         padding:12px;
         border-radius:8px;
     }
@@ -133,11 +143,7 @@
 
     <main class="dash-content">
 
-        <!-- CHALLENGE LIST -->
-
-        <asp:Panel
-            ID="pnlChallengeList"
-            runat="server">
+        <asp:Panel ID="pnlChallengeList" runat="server">
 
             <div class="dash-header">
                 <h2>Challenges</h2>
@@ -173,7 +179,7 @@
 
             </div>
 
-            <div class="course-grid">
+            <div class="courses-grid">
 
                 <asp:Repeater
                     ID="rptChallenges"
@@ -201,22 +207,18 @@
                                     </span>
 
                                     <span>
-                                        Attempts:
-                                        <%# Eval("AttemptCount") %> /
-                                        <%# Eval("MaxAttempts") %>
+                                        Attempts: <%# Eval("AttemptCount") %> / 3
                                     </span>
 
-                                    <span class="badge <%#
+                                    <span class='badge <%#
                                         Convert.ToBoolean(Eval("HasPassed"))
                                             ? "badge-green"
-                                            : "badge-amber"
-                                    %>">
+                                            : "badge-amber" %>'>
 
                                         <%#
                                             Convert.ToBoolean(Eval("HasPassed"))
                                                 ? "Passed"
-                                                : "Available"
-                                        %>
+                                                : "Available" %>
 
                                     </span>
 
@@ -227,13 +229,10 @@
                             <div class="course-footer">
 
                                 <span class="text-muted text-small">
-
                                     <%#
                                         Eval("DurationMinutes") == DBNull.Value
                                             ? "No time limit"
-                                            : Eval("DurationMinutes") + " minutes"
-                                    %>
-
+                                            : Eval("DurationMinutes") + " minutes" %>
                                 </span>
 
                                 <asp:LinkButton
@@ -242,13 +241,16 @@
                                     CssClass="btn-sm"
                                     CausesValidation="false"
                                     CommandName="Open"
-                                    CommandArgument='<%# Eval("QuizID") %>'>
+                                    CommandArgument='<%# Eval("QuizID") %>'
+                                    Enabled='<%#
+                                        Convert.ToInt32(Eval("AttemptCount")) < 3 %>'>
 
                                     <%#
-                                        Convert.ToBoolean(Eval("HasPassed"))
-                                            ? "Review"
-                                            : "Start"
-                                    %>
+                                        Convert.ToInt32(Eval("AttemptCount")) >= 3
+                                            ? "Attempts Used"
+                                            : Convert.ToBoolean(Eval("HasPassed"))
+                                                ? "Redo"
+                                                : "Start" %>
 
                                 </asp:LinkButton>
 
@@ -262,10 +264,7 @@
 
             </div>
 
-            <asp:Panel
-                ID="pnlEmpty"
-                runat="server"
-                Visible="false">
+            <asp:Panel ID="pnlEmpty" runat="server" Visible="false">
 
                 <div class="card">
                     <p class="text-muted">
@@ -278,12 +277,7 @@
         </asp:Panel>
 
 
-        <!-- QUIZ WORKSPACE -->
-
-        <asp:Panel
-            ID="pnlWorkspace"
-            runat="server"
-            Visible="false">
+        <asp:Panel ID="pnlWorkspace" runat="server" Visible="false">
 
             <asp:LinkButton
                 ID="btnBack"
@@ -300,15 +294,11 @@
             <div class="dash-header mt-16">
 
                 <h2>
-                    <asp:Literal
-                        ID="litQuizTitle"
-                        runat="server" />
+                    <asp:Literal ID="litQuizTitle" runat="server" />
                 </h2>
 
                 <p>
-                    <asp:Literal
-                        ID="litQuizDescription"
-                        runat="server" />
+                    <asp:Literal ID="litQuizDescription" runat="server" />
                 </p>
 
             </div>
@@ -340,13 +330,8 @@
 
             </asp:Panel>
 
-            <asp:Panel
-                ID="pnlResult"
-                runat="server"
-                Visible="false">
-
+            <asp:Panel ID="pnlResult" runat="server" Visible="false">
                 <asp:Literal ID="litResult" runat="server" />
-
             </asp:Panel>
 
             <asp:Repeater
@@ -372,8 +357,7 @@
 
                             <%# Container.ItemIndex + 1 %>.
                             <%# Server.HtmlEncode(
-                                Convert.ToString(Eval("QuestionText")))
-                            %>
+                                Convert.ToString(Eval("QuestionText"))) %>
 
                             <span class="badge badge-blue">
                                 <%# Eval("Points") %> marks
@@ -381,40 +365,29 @@
 
                         </div>
 
-                        <asp:Panel
-                            ID="pnlMCQ"
-                            runat="server"
-                            Visible="false">
+                        <asp:Panel ID="pnlMCQ" runat="server" Visible="false">
 
                             <label class="answer-option">
                                 <asp:CheckBox ID="cbA" runat="server" />
-                                <asp:Label
-                                    ID="lblA"
-                                    runat="server"
+                                <asp:Label ID="lblA" runat="server"
                                     AssociatedControlID="cbA" />
                             </label>
 
                             <label class="answer-option">
                                 <asp:CheckBox ID="cbB" runat="server" />
-                                <asp:Label
-                                    ID="lblB"
-                                    runat="server"
+                                <asp:Label ID="lblB" runat="server"
                                     AssociatedControlID="cbB" />
                             </label>
 
                             <label class="answer-option">
                                 <asp:CheckBox ID="cbC" runat="server" />
-                                <asp:Label
-                                    ID="lblC"
-                                    runat="server"
+                                <asp:Label ID="lblC" runat="server"
                                     AssociatedControlID="cbC" />
                             </label>
 
                             <label class="answer-option">
                                 <asp:CheckBox ID="cbD" runat="server" />
-                                <asp:Label
-                                    ID="lblD"
-                                    runat="server"
+                                <asp:Label ID="lblD" runat="server"
                                     AssociatedControlID="cbD" />
                             </label>
 
@@ -438,6 +411,35 @@
                             MaxLength="500"
                             Visible="false"
                             placeholder="Enter your answer..." />
+
+                        <asp:Panel
+                            ID="pnlAnswerReview"
+                            runat="server"
+                            CssClass="answer-review"
+                            Visible="false">
+
+                            <strong>Correct answer:</strong>
+
+                            <asp:Literal
+                                ID="litCorrectAnswer"
+                                runat="server" />
+
+                            <asp:Panel
+                                ID="pnlExplanation"
+                                runat="server"
+                                Visible="false">
+
+                                <br />
+
+                                <strong>Explanation:</strong>
+
+                                <asp:Literal
+                                    ID="litExplanation"
+                                    runat="server" />
+
+                            </asp:Panel>
+
+                        </asp:Panel>
 
                     </div>
 
