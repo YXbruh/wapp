@@ -26,6 +26,7 @@ namespace CSA.Student
 
         protected global::System.Web.UI.WebControls.Repeater rptQuestions;
         protected global::System.Web.UI.WebControls.Button btnSubmit;
+        protected global::System.Web.UI.WebControls.HyperLink hlQuizFeedback;
 
         protected global::System.Web.UI.WebControls.Panel pnlAttempts;
         protected global::System.Web.UI.WebControls.GridView gvAttempts;

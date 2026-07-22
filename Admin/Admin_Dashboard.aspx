@@ -9,9 +9,7 @@
     <aside class="sidebar" role="navigation" aria-label="Admin menu">
         <div class="sidebar-section">Admin Panel</div>
         <a href="Admin_Dashboard.aspx" class="sidebar-link active"><i class="ti ti-layout-dashboard"></i>Overview</a>
-        <a href="Users.aspx"          class="sidebar-link"><i class="ti ti-users"></i>Users
-            <span class="sidebar-badge"><asp:Literal ID="litPendingUsers" runat="server" Text="0" /></span>
-        </a>
+        <a href="Users.aspx"          class="sidebar-link"><i class="ti ti-users"></i>Users</a>
         <a href="Courses.aspx"        class="sidebar-link"><i class="ti ti-books"></i>Courses</a>
         <a href="Categories.aspx"     class="sidebar-link"><i class="ti ti-category"></i>Categories</a>
         <a href="ContentReview.aspx"  class="sidebar-link"><i class="ti ti-file-check"></i>Content Review</a>
@@ -21,9 +19,7 @@
         <a href="ErrorLogs.aspx"      class="sidebar-link"><i class="ti ti-bug"></i>Error Logs</a>
         <a href="Announcements.aspx"  class="sidebar-link"><i class="ti ti-bell"></i>Announcements</a>
         <a href="Backup.aspx"         class="sidebar-link"><i class="ti ti-database"></i>DB Backup</a>
-        <a href="SecurityAlerts.aspx" class="sidebar-link"><i class="ti ti-alert-triangle"></i>Security Alerts
-            <span class="sidebar-badge"><asp:Literal ID="litAlertCount" runat="server" Text="0" /></span>
-        </a>
+        <a href="SecurityAlerts.aspx" class="sidebar-link"><i class="ti ti-alert-triangle"></i>Security Alerts</a>
 
         <div class="sidebar-section">Account</div>
         <a href="Profile.aspx" class="sidebar-link"><i class="ti ti-user-circle"></i>My Profile</a>
@@ -185,7 +181,7 @@
                                             <asp:LinkButton runat="server" CssClass="btn-danger"
                                                 CommandName="Delete"
                                                 CommandArgument='<%# Eval("UserID") %>'
-                                                OnClientClick="return showConfirmAction(this, 'Delete this user? This cannot be undone.', 'Delete');">
+                                                OnClientClick="return showDeleteConfirm(this);">
                                                 <i class="ti ti-trash"></i> Del
                                             </asp:LinkButton>
                                         </div>

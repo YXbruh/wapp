@@ -30,7 +30,6 @@ namespace CSA.Admin
                 litLabsOnline.Text = row["LabCount"].ToString();
                 int alertCount = Convert.ToInt32(row["AlertCount"]);
                 litAlerts.Text = alertCount.ToString();
-                litAlertCount.Text = alertCount.ToString();
                 litAlertStatus.Text = alertCount > 0 ? "Needs attention" : "All clear";
             }
 
@@ -43,7 +42,7 @@ namespace CSA.Admin
             rptLabChart.DataSource = GetChartPercent("Labs by Status");
             rptLabChart.DataBind();
 
-            DataTable users = UserService.Search("", "", "");
+            DataTable users = UserService.Search("", "", "", 1, 10, out _);
             rptUsers.DataSource = users;
             rptUsers.DataBind();
             pnlNoUsers.Visible = users.Rows.Count == 0;
@@ -71,7 +70,7 @@ namespace CSA.Admin
 
         protected void tbSearch_TextChanged(object sender, EventArgs e)
         {
-            DataTable users = UserService.Search(tbSearch.Text.Trim(), "", "");
+            DataTable users = UserService.Search(tbSearch.Text.Trim(), "", "", 1, 10, out _);
             rptUsers.DataSource = users;
             rptUsers.DataBind();
             pnlNoUsers.Visible = users.Rows.Count == 0;
@@ -84,10 +83,24 @@ namespace CSA.Admin
                 Response.Redirect($"~/Admin/EditUser.aspx?id={userId}");
             else if (e.CommandName == "Delete")
             {
-                UserService.Delete(userId);
-                AdminService.LogAudit(Session["UserID"].ToString(),
-                    "DELETE_USER", "Users", userId, "", "");
-                LoadDashboard();
+                if (userId == Session["UserID"].ToString())
+                {
+                    ClientScript.RegisterStartupScript(GetType(), "alert",
+                        "alert('You cannot delete your own account.');", true);
+                    return;
+                }
+                try
+                {
+                    UserService.Delete(userId);
+                    AdminService.LogAudit(Session["UserID"].ToString(),
+                        "DELETE_USER", "Users", userId, "", "");
+                    LoadDashboard();
+                }
+                catch (Exception)
+                {
+                    ClientScript.RegisterStartupScript(GetType(), "alert",
+                        "alert('Cannot delete this user. They may have existing records (enrollments, activity logs, etc.) in the system.');", true);
+                }
             }
         }
 
@@ -97,7 +110,7 @@ namespace CSA.Admin
             Response.ContentType = "text/csv";
             Response.AddHeader("Content-Disposition", "attachment;filename=users.csv");
             Response.Write(csv);
-            Response.End();
+            Context.ApplicationInstance.CompleteRequest();
         }
 
         public string GetRoleBadge(string role) =>

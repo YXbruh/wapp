@@ -17,7 +17,7 @@
         <a href="Achievements.aspx" class="sidebar-link"><i class="ti ti-star"></i>Achievements</a>
         <div class="sidebar-section">Account</div>
         <a href="Profile.aspx"      class="sidebar-link active"><i class="ti ti-user"></i>Profile</a>
-        <asp:LinkButton ID="lbLogout" runat="server" CssClass="sidebar-link" OnClick="lbLogout_Click">
+        <asp:LinkButton ID="lbLogout" runat="server" CssClass="sidebar-link" CausesValidation="false" OnClientClick="return showLogoutConfirm(this);" OnClick="lbLogout_Click">
             <i class="ti ti-logout"></i>Sign Out
         </asp:LinkButton>
     </aside>

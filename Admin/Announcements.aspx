@@ -175,7 +175,7 @@
                                                 </asp:LinkButton>
                                                 <asp:LinkButton runat="server" CssClass="btn-danger"
                                                     CommandName="Delete" CommandArgument='<%# Eval("AnnouncementID") %>'
-                                                    OnClientClick="return showConfirmAction(this, 'Delete this announcement? This cannot be undone.', 'Delete');">
+                                                    OnClientClick="return showDeleteConfirm(this);">
                                                     <i class="ti ti-trash"></i>
                                                 </asp:LinkButton>
                                             </div>

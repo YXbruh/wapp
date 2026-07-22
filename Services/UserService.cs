@@ -12,6 +12,14 @@ namespace CSA.Services
             return DBHelper.ExecuteQuery("SELECT RoleID, RoleName FROM Roles");
         }
 
+        public static void GetCountsByRole(out int totalStudents, out int totalLecturers)
+        {
+            totalStudents = Convert.ToInt32(DBHelper.ExecuteScalar(
+                @"SELECT COUNT(*) FROM Users u JOIN Roles r ON u.RoleID = r.RoleID WHERE r.RoleName = 'Student'"));
+            totalLecturers = Convert.ToInt32(DBHelper.ExecuteScalar(
+                @"SELECT COUNT(*) FROM Users u JOIN Roles r ON u.RoleID = r.RoleID WHERE r.RoleName = 'Lecturer'"));
+        }
+
         public static string GetRoleIdByName(string roleName)
         {
             object result = DBHelper.ExecuteScalar(

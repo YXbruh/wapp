@@ -52,19 +52,10 @@ namespace CSA.Admin
             p.Total = total;
             ViewState["Pager"] = _pager;
 
-            int published = 0, draft = 0, pending = 0;
-            foreach (DataRow row in list.Rows)
-            {
-                string status = row["Status"].ToString();
-                if (status == "Published") published++;
-                else if (status == "Draft") draft++;
-                else pending++;
-            }
-
-            litTotal.Text = total.ToString();
-            litPublished.Text = published.ToString();
-            litDraft.Text = draft.ToString();
-            litPending.Text = pending.ToString();
+            CourseService.GetCounts(out int totalAll, out int pubAll, out int draftAll);
+            litTotal.Text = totalAll.ToString();
+            litPublished.Text = pubAll.ToString();
+            litDraft.Text = draftAll.ToString();
 
             rptCourses.DataSource = list;
             rptCourses.DataBind();
@@ -100,18 +91,34 @@ namespace CSA.Admin
                     Response.Redirect($"~/Admin/EditCourse.aspx?id={id}");
                     break;
                 case "TogglePublish":
-                    CourseService.TogglePublish(id);
-                    AdminService.LogAudit(adminId, "TOGGLE_COURSE_PUBLISH", "Courses", id, "", "");
-                    pnlSuccess.Visible = true;
-                    litSuccess.Text = "Course status updated.";
-                    LoadCourses();
+                    try
+                    {
+                        CourseService.TogglePublish(id);
+                        AdminService.LogAudit(adminId, "TOGGLE_COURSE_PUBLISH", "Courses", id, "", "");
+                        pnlSuccess.Visible = true;
+                        litSuccess.Text = "Course status updated.";
+                        LoadCourses();
+                    }
+                    catch (Exception)
+                    {
+                        pnlError.Visible = true;
+                        litError.Text = "Error updating course status.";
+                    }
                     break;
                 case "Delete":
-                    CourseService.Delete(id);
-                    AdminService.LogAudit(adminId, "DELETE_COURSE", "Courses", id, "", "");
-                    pnlSuccess.Visible = true;
-                    litSuccess.Text = "Course deleted.";
-                    LoadCourses();
+                    try
+                    {
+                        CourseService.Delete(id);
+                        AdminService.LogAudit(adminId, "DELETE_COURSE", "Courses", id, "", "");
+                        pnlSuccess.Visible = true;
+                        litSuccess.Text = "Course deleted.";
+                        LoadCourses();
+                    }
+                    catch (Exception)
+                    {
+                        pnlError.Visible = true;
+                        litError.Text = "Cannot delete this course. It may have existing chapters, enrollments, labs, or quizzes. Remove those first.";
+                    }
                     break;
             }
         }
@@ -120,7 +127,7 @@ namespace CSA.Admin
             l == "Beginner" ? "badge-blue" : l == "Intermediate" ? "badge-amber" : "badge-red";
 
         public string GetStatusBadge(string s) =>
-            s == "Published" ? "badge-green" : s == "Pending" ? "badge-blue" : "badge-amber";
+            s == "Published" ? "badge-green" : "badge-amber";
 
         protected void lbExport_Click(object sender, EventArgs e)
         {
@@ -129,7 +136,7 @@ namespace CSA.Admin
             Response.ContentType = "text/csv";
             Response.AddHeader("Content-Disposition", "attachment;filename=courses.csv");
             Response.Write(csv);
-            Response.End();
+            Context.ApplicationInstance.CompleteRequest();
         }
 
         protected void lbLogout_Click(object sender, EventArgs e)
