@@ -324,6 +324,7 @@
             runat="server"
             CssClass="sidebar-link"
             CausesValidation="false"
+            OnClientClick="return showLogoutConfirm(this);"
             OnClick="lbLogout_Click">
 
             <i class="ti ti-logout"></i>
@@ -572,6 +573,24 @@
                                     %>
 
                                 </asp:LinkButton>
+
+                                <asp:HyperLink
+                                    ID="hlLabFeedback"
+                                    runat="server"
+                                    CssClass="btn-sm secondary"
+                                    NavigateUrl='<%#
+                                        "Feedback.aspx?type=lab&id=" +
+                                        Server.UrlEncode(
+                                            Convert.ToString(Eval("LabID")))
+                                    %>'
+                                    Visible='<%#
+                                        Convert.ToString(Eval("StatusKey")) == "done"
+                                    %>'>
+
+                                    <i class="ti ti-message-star"></i>
+                                    Feedback
+
+                                </asp:HyperLink>
 
                             </div>
 

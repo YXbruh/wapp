@@ -1,191 +1,551 @@
-<%@ Master Language="C#" AutoEventWireup="true" CodeBehind="Site.Master.cs" Inherits="CSA.Site" %>
+<%@ Master Language="C#" AutoEventWireup="true"
+    CodeBehind="Site.Master.cs" Inherits="CSA.Site" %>
+
 <!DOCTYPE html>
 <html lang="en">
 <head runat="server">
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title><asp:ContentPlaceHolder ID="PageTitle" runat="server">CyberShield Academy</asp:ContentPlaceHolder></title>
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0" />
+
+    <title>
+        <asp:ContentPlaceHolder
+            ID="PageTitle"
+            runat="server">
+            CyberShield Academy
+        </asp:ContentPlaceHolder>
+    </title>
 
     <!-- Tabler Icons CDN -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css" />
+    <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css" />
+
     <!-- Site stylesheet -->
-    <link rel="stylesheet" href="<%= ResolveUrl("~/Styles/Site.css") %>?v=<%= System.IO.File.GetLastWriteTime(Server.MapPath("~/Styles/Site.css")).Ticks %>" />
-    <!-- Theme: apply before paint to avoid flash -->
+    <link rel="stylesheet"
+        href="<%= ResolveUrl("~/Styles/Site.css") %>?v=<%= System.IO.File.GetLastWriteTime(Server.MapPath("~/Styles/Site.css")).Ticks %>" />
+
+    <!-- Apply theme before page renders -->
     <script>
-        (function(){var s=localStorage.getItem('csa_theme');if(s==='light')document.documentElement.classList.add('light-preload');})();
+        (function () {
+            var savedTheme =
+                localStorage.getItem("csa_theme");
+
+            if (savedTheme === "light") {
+                document.documentElement
+                    .classList
+                    .add("light-preload");
+            }
+        })();
     </script>
 
-    <asp:ContentPlaceHolder ID="HeadContent" runat="server" />
+    <asp:ContentPlaceHolder
+        ID="HeadContent"
+        runat="server" />
 </head>
+
 <body id="pageBody" runat="server">
+
     <div class="grid-bg" aria-hidden="true"></div>
 
     <form id="mainForm" runat="server">
 
         <!-- ===== TOP NAVIGATION ===== -->
-        <nav class="site-nav" role="navigation" aria-label="Main navigation">
+
+        <nav class="site-nav"
+            role="navigation"
+            aria-label="Main navigation">
 
             <!-- Logo -->
-            <a class="nav-logo" href="~/Default.aspx" runat="server" title="CyberShield Academy Home">
+
+            <a class="nav-logo"
+                href="~/Default.aspx"
+                runat="server"
+                title="CyberShield Academy Home">
+
                 <div class="nav-logo-img-wrap">
-                    <img src="~/Images/logo.png" alt="CyberShield Academy logo" class="nav-logo-img"
-                         onerror="this.style.display='none'" runat="server" />
+
+                    <img src="~/Images/logo.png"
+                        alt="CyberShield Academy logo"
+                        class="nav-logo-img"
+                        onerror="this.style.display='none'"
+                        runat="server" />
+
                 </div>
-                <span class="nav-brand">CYBER<span>SHIELD</span></span>
+
+                <span class="nav-brand">
+                    CYBER<span>SHIELD</span>
+                </span>
+
             </a>
 
-            <!-- Nav links — shown/hidden by code-behind based on role -->
+            <!-- Navigation links -->
+
             <div class="nav-links">
-                <a href="~/Default.aspx"           runat="server" class="nav-link"><i class="ti ti-home" aria-hidden="true"></i>Home</a>
-                <a href="~/Courses.aspx"           runat="server" class="nav-link"><i class="ti ti-books" aria-hidden="true"></i>Courses</a>
-                <asp:Panel ID="pnlStudentNav" runat="server" CssClass="d-flex" Visible="false">
-                    <a href="~/Student/Student_Dashboard.aspx" runat="server" class="nav-link"><i class="ti ti-layout-dashboard" aria-hidden="true"></i>Dashboard</a>
+
+                <a href="~/Default.aspx"
+                    runat="server"
+                    class="nav-link">
+
+                    <i class="ti ti-home"
+                        aria-hidden="true"></i>
+
+                    Home
+
+                </a>
+
+                <a id="lnkCourses"
+                    runat="server"
+                    class="nav-link">
+
+                    <i class="ti ti-books"
+                        aria-hidden="true"></i>
+
+                    Courses
+
+                </a>
+
+                <asp:Panel
+                    ID="pnlStudentNav"
+                    runat="server"
+                    CssClass="d-flex"
+                    Visible="false">
+
+                    <a href="~/Student/Student_Dashboard.aspx"
+                        runat="server"
+                        class="nav-link">
+
+                        <i class="ti ti-layout-dashboard"
+                            aria-hidden="true"></i>
+
+                        Dashboard
+
+                    </a>
+
                 </asp:Panel>
-                <asp:Panel ID="pnlLecturerNav" runat="server" CssClass="d-flex" Visible="false">
-                    <a href="~/Lecturer/Lecturer_Dashboard.aspx" runat="server" class="nav-link"><i class="ti ti-layout-dashboard" aria-hidden="true"></i>Dashboard</a>
+
+                <asp:Panel
+                    ID="pnlLecturerNav"
+                    runat="server"
+                    CssClass="d-flex"
+                    Visible="false">
+
+                    <a href="~/Lecturer/Lecturer_Dashboard.aspx"
+                        runat="server"
+                        class="nav-link">
+
+                        <i class="ti ti-layout-dashboard"
+                            aria-hidden="true"></i>
+
+                        Dashboard
+
+                    </a>
+
                 </asp:Panel>
-                <asp:Panel ID="pnlAdminNav" runat="server" CssClass="d-flex" Visible="false">
-                    <a href="~/Admin/Admin_Dashboard.aspx" runat="server" class="nav-link"><i class="ti ti-settings" aria-hidden="true"></i>Admin</a>
+
+                <asp:Panel
+                    ID="pnlAdminNav"
+                    runat="server"
+                    CssClass="d-flex"
+                    Visible="false">
+
+                    <a href="~/Admin/Admin_Dashboard.aspx"
+                        runat="server"
+                        class="nav-link">
+
+                        <i class="ti ti-settings"
+                            aria-hidden="true"></i>
+
+                        Admin
+
+                    </a>
+
                 </asp:Panel>
+
             </div>
 
-            <!-- Right side: theme toggle + user avatar -->
+            <!-- Theme toggle and user avatar -->
+
             <div class="nav-right">
-                <!-- Dark / Light toggle -->
-                <button type="button" class="theme-btn" id="themeBtn"
-                        onclick="toggleTheme()" title="Toggle dark/light mode"
-                        aria-label="Toggle colour theme">
-                    <i class="ti ti-sun" aria-hidden="true"></i>
+
+                <button type="button"
+                    class="theme-btn"
+                    id="themeBtn"
+                    onclick="toggleTheme()"
+                    title="Toggle dark/light mode"
+                    aria-label="Toggle colour theme">
+
+                    <i class="ti ti-sun"
+                        aria-hidden="true"></i>
+
                 </button>
 
-                <!-- Guest: Login link | Authenticated: avatar dropdown -->
-                <asp:Panel ID="pnlGuest" runat="server">
-                    <a href="~/Login.aspx" runat="server" class="btn-sm">
-                        <i class="ti ti-login" aria-hidden="true"></i>Sign In
+                <asp:Panel
+                    ID="pnlGuest"
+                    runat="server">
+
+                    <a href="~/Login.aspx"
+                        runat="server"
+                        class="btn-sm">
+
+                        <i class="ti ti-login"
+                            aria-hidden="true"></i>
+
+                        Sign In
+
                     </a>
+
                 </asp:Panel>
-                <asp:Panel ID="pnlUser" runat="server" Visible="false">
-                    <a id="lbProfile" runat="server" class="nav-avatar"
-                       href="~/Student/Profile.aspx"
-                       ToolTip="My profile">CS</a>
+
+                <asp:Panel
+                    ID="pnlUser"
+                    runat="server"
+                    Visible="false">
+
+                    <a id="lbProfile"
+                        runat="server"
+                        class="nav-avatar"
+                        href="~/Student/Profile.aspx"
+                        title="My profile">
+
+                        CS
+
+                    </a>
+
                 </asp:Panel>
+
             </div>
 
         </nav>
 
         <!-- ===== PAGE CONTENT ===== -->
+
         <main id="mainContent" role="main">
-            <asp:ContentPlaceHolder ID="MainContent" runat="server" />
+
+            <asp:ContentPlaceHolder
+                ID="MainContent"
+                runat="server" />
+
         </main>
 
         <!-- Login success modal -->
-        <div id="loginSuccessModal" class="modal-overlay" style="display:none">
+
+        <div id="loginSuccessModal"
+            class="modal-overlay"
+            style="display:none">
+
             <div class="modal-box">
-                <div class="modal-icon"><i class="ti ti-circle-check"></i></div>
-                <p class="modal-text">You have signed in successfully!</p>
-                <div style="display:flex;justify-content:center"><button type="button" class="form-submit" onclick="closeLoginSuccess()" style="width:auto;min-width:200px">Continue</button></div>
+
+                <div class="modal-icon">
+                    <i class="ti ti-circle-check"></i>
+                </div>
+
+                <p class="modal-text">
+                    You have signed in successfully!
+                </p>
+
+                <div style="display:flex;justify-content:center">
+
+                    <button type="button"
+                        class="form-submit"
+                        onclick="closeLoginSuccess()"
+                        style="width:auto;min-width:200px">
+
+                        Continue
+
+                    </button>
+
+                </div>
+
             </div>
+
         </div>
 
         <!-- Logout confirmation modal -->
-        <div id="logoutModal" class="modal-overlay" style="display:none">
+
+        <div id="logoutModal"
+            class="modal-overlay"
+            style="display:none">
+
             <div class="modal-box">
-                <div class="modal-icon" style="color:var(--danger)"><i class="ti ti-logout"></i></div>
-                <p class="modal-text">Are you sure you want to sign out?</p>
-                <div style="display:flex;justify-content:center;gap:12px">
-                    <button type="button" class="form-submit" onclick="cancelLogout()" style="width:auto;min-width:120px;background:var(--bg2);color:var(--text)">Cancel</button>
-                    <button type="button" class="form-submit" onclick="confirmLogout()" style="width:auto;min-width:120px;background:var(--danger);color:#fff">Sign Out</button>
+
+                <div class="modal-icon"
+                    style="color:var(--danger)">
+
+                    <i class="ti ti-logout"></i>
+
                 </div>
+
+                <p class="modal-text">
+                    Are you sure you want to sign out?
+                </p>
+
+                <div style="display:flex;
+                            justify-content:center;
+                            gap:12px">
+
+                    <button type="button"
+                        class="form-submit"
+                        onclick="cancelLogout()"
+                        style="width:auto;
+                               min-width:120px;
+                               background:var(--bg2);
+                               color:var(--text)">
+
+                        Cancel
+
+                    </button>
+
+                    <button type="button"
+                        class="form-submit"
+                        onclick="confirmLogout()"
+                        style="width:auto;
+                               min-width:120px;
+                               background:var(--danger);
+                               color:#fff">
+
+                        Sign Out
+
+                    </button>
+
+                </div>
+
             </div>
+
         </div>
 
-        <!-- Generic action confirmation modal (Delete, Reject, Resolve, etc.) -->
-        <div id="confirmActionModal" class="modal-overlay" style="display:none">
+        <!-- Generic action confirmation modal -->
+
+        <div id="confirmActionModal"
+            class="modal-overlay"
+            style="display:none">
+
             <div class="modal-box">
-                <div class="modal-icon" style="color:var(--danger)"><i class="ti ti-alert-triangle"></i></div>
-                <p class="modal-text" id="confirmActionText">Are you sure?</p>
-                <div style="display:flex;justify-content:center;gap:12px">
-                    <button type="button" class="form-submit" onclick="cancelConfirmAction()" style="width:auto;min-width:120px;background:var(--bg2);color:var(--text)">Cancel</button>
-                    <button type="button" class="form-submit" id="confirmActionBtn" onclick="confirmAction()" style="width:auto;min-width:120px;background:var(--danger);color:#fff">Confirm</button>
+
+                <div class="modal-icon"
+                    style="color:var(--danger)">
+
+                    <i class="ti ti-alert-triangle"></i>
+
                 </div>
+
+                <p class="modal-text"
+                    id="confirmActionText">
+
+                    Are you sure?
+
+                </p>
+
+                <div style="display:flex;
+                            justify-content:center;
+                            gap:12px">
+
+                    <button type="button"
+                        class="form-submit"
+                        onclick="cancelConfirmAction()"
+                        style="width:auto;
+                               min-width:120px;
+                               background:var(--bg2);
+                               color:var(--text)">
+
+                        Cancel
+
+                    </button>
+
+                    <button type="button"
+                        class="form-submit"
+                        id="confirmActionBtn"
+                        onclick="confirmAction()"
+                        style="width:auto;
+                               min-width:120px;
+                               background:var(--danger);
+                               color:#fff">
+
+                        Confirm
+
+                    </button>
+
+                </div>
+
             </div>
+
         </div>
 
-    <!-- Theme script (reads localStorage, sets correct icon) -->
-    <script src="<%= ResolveUrl("~/Scripts/theme.js") %>"></script>
-    <script>
-    var _logoutLink = null;
+        <!-- Theme script -->
 
-    function closeLoginSuccess() {
-        document.getElementById('loginSuccessModal').style.display = 'none';
-        if (window.history.replaceState) {
-            var url = window.location.href.split('?')[0];
-            window.history.replaceState({}, document.title, url);
-        }
-    }
-    (function() {
-        var p = new URLSearchParams(window.location.search);
-        if (p.get('login') === 'success') {
-            var m = document.getElementById('loginSuccessModal');
-            if (m) m.style.display = 'flex';
-        }
-    })();
+        <script src="<%= ResolveUrl("~/Scripts/theme.js") %>"></script>
 
-    function showLogoutConfirm(btn) {
-        _logoutLink = btn;
-        document.getElementById('logoutModal').style.display = 'flex';
-        return false;
-    }
-    function cancelLogout() {
-        document.getElementById('logoutModal').style.display = 'none';
-        _logoutLink = null;
-    }
-    function confirmLogout() {
-        document.getElementById('logoutModal').style.display = 'none';
-        if (_logoutLink) {
-            var href = _logoutLink.getAttribute('href');
-            if (href && href.indexOf('__doPostBack') >= 0) {
-                var m = href.match(/__doPostBack\(([^)]+)\)/);
-                if (m) {
-                    var args = m[1].split(',').map(function(s) { return s.trim().replace(/'/g, ''); });
-                    __doPostBack(args[0], args[1]);
+        <script>
+            var _logoutLink = null;
+
+            function closeLoginSuccess() {
+                document.getElementById(
+                    "loginSuccessModal"
+                ).style.display = "none";
+
+                if (window.history.replaceState) {
+                    var url =
+                        window.location.href.split("?")[0];
+
+                    window.history.replaceState(
+                        {},
+                        document.title,
+                        url
+                    );
                 }
             }
-        }
-        _logoutLink = null;
-    }
 
-    // Generic "are you sure?" confirmation for dangerous actions (Delete, Reject, etc.)
-    // Usage: OnClientClick="return showConfirmAction(this, 'Delete this item? This cannot be undone.');"
-    var _confirmActionLink = null;
-    function showConfirmAction(btn, message, confirmLabel) {
-        _confirmActionLink = btn;
-        document.getElementById('confirmActionText').textContent = message || 'Are you sure?';
-        document.getElementById('confirmActionBtn').textContent = confirmLabel || 'Confirm';
-        document.getElementById('confirmActionModal').style.display = 'flex';
-        return false;
-    }
-    function cancelConfirmAction() {
-        document.getElementById('confirmActionModal').style.display = 'none';
-        _confirmActionLink = null;
-    }
-    function confirmAction() {
-        document.getElementById('confirmActionModal').style.display = 'none';
-        if (_confirmActionLink) {
-            var href = _confirmActionLink.getAttribute('href');
-            if (href && href.indexOf('__doPostBack') >= 0) {
-                var m = href.match(/__doPostBack\(([^)]+)\)/);
-                if (m) {
-                    var args = m[1].split(',').map(function(s) { return s.trim().replace(/'/g, ''); });
-                    __doPostBack(args[0], args[1]);
+            (function () {
+                var parameters =
+                    new URLSearchParams(
+                        window.location.search
+                    );
+
+                if (parameters.get("login") === "success") {
+                    var modal =
+                        document.getElementById(
+                            "loginSuccessModal"
+                        );
+
+                    if (modal) {
+                        modal.style.display = "flex";
+                    }
                 }
+            })();
+
+            function showLogoutConfirm(button) {
+                _logoutLink = button;
+
+                document.getElementById(
+                    "logoutModal"
+                ).style.display = "flex";
+
+                return false;
             }
-        }
-        _confirmActionLink = null;
-    }
-    </script>
-    <asp:ContentPlaceHolder ID="Scripts" runat="server" />
+
+            function cancelLogout() {
+                document.getElementById(
+                    "logoutModal"
+                ).style.display = "none";
+
+                _logoutLink = null;
+            }
+
+            function confirmLogout() {
+                document.getElementById(
+                    "logoutModal"
+                ).style.display = "none";
+
+                if (_logoutLink) {
+                    var href =
+                        _logoutLink.getAttribute("href");
+
+                    if (href &&
+                        href.indexOf("__doPostBack") >= 0) {
+
+                        var match =
+                            href.match(
+                                /__doPostBack\(([^)]+)\)/
+                            );
+
+                        if (match) {
+                            var argumentsList =
+                                match[1]
+                                    .split(",")
+                                    .map(function (value) {
+                                        return value
+                                            .trim()
+                                            .replace(/'/g, "");
+                                    });
+
+                            __doPostBack(
+                                argumentsList[0],
+                                argumentsList[1]
+                            );
+                        }
+                    }
+                }
+
+                _logoutLink = null;
+            }
+
+            var _confirmActionLink = null;
+
+            function showConfirmAction(
+                button,
+                message,
+                confirmLabel) {
+
+                _confirmActionLink = button;
+
+                document.getElementById(
+                    "confirmActionText"
+                ).textContent =
+                    message || "Are you sure?";
+
+                document.getElementById(
+                    "confirmActionBtn"
+                ).textContent =
+                    confirmLabel || "Confirm";
+
+                document.getElementById(
+                    "confirmActionModal"
+                ).style.display = "flex";
+
+                return false;
+            }
+
+            function cancelConfirmAction() {
+                document.getElementById(
+                    "confirmActionModal"
+                ).style.display = "none";
+
+                _confirmActionLink = null;
+            }
+
+            function confirmAction() {
+                document.getElementById(
+                    "confirmActionModal"
+                ).style.display = "none";
+
+                if (_confirmActionLink) {
+                    var href =
+                        _confirmActionLink.getAttribute("href");
+
+                    if (href &&
+                        href.indexOf("__doPostBack") >= 0) {
+
+                        var match =
+                            href.match(
+                                /__doPostBack\(([^)]+)\)/
+                            );
+
+                        if (match) {
+                            var argumentsList =
+                                match[1]
+                                    .split(",")
+                                    .map(function (value) {
+                                        return value
+                                            .trim()
+                                            .replace(/'/g, "");
+                                    });
+
+                            __doPostBack(
+                                argumentsList[0],
+                                argumentsList[1]
+                            );
+                        }
+                    }
+                }
+
+                _confirmActionLink = null;
+            }
+        </script>
+
+        <asp:ContentPlaceHolder
+            ID="Scripts"
+            runat="server" />
 
     </form>
+
 </body>
 </html>

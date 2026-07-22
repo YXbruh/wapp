@@ -5,13 +5,12 @@
     CodeBehind="Certificates.aspx.cs"
     Inherits="CSA.Student.Student_Certificates" %>
 
-<asp:Content ID="cMain"
+<asp:Content
+    ID="cMain"
     ContentPlaceHolderID="MainContent"
     runat="server">
 
 <style>
-    /* Certificate list cards */
-
     .certificate-grid {
         display:grid;
         grid-template-columns:repeat(auto-fill, minmax(300px, 1fr));
@@ -20,19 +19,20 @@
 
     .cert-card {
         overflow:hidden;
-        background:#0d2923;
-        border:1px solid #287c68;
+        color:var(--text);
+        background:var(--surface);
+        border:1px solid var(--border);
         border-radius:12px;
-        box-shadow:0 4px 14px rgba(0, 0, 0, 0.18);
-        transition:transform 0.2s ease,
-                   border-color 0.2s ease,
-                   box-shadow 0.2s ease;
+        box-shadow:0 4px 14px rgba(0, 0, 0, .10);
+        transition:transform .2s ease,
+                   border-color .2s ease,
+                   box-shadow .2s ease;
     }
 
     .cert-card:hover {
         transform:translateY(-3px);
-        border-color:#54b395;
-        box-shadow:0 8px 20px rgba(0, 0, 0, 0.25);
+        border-color:var(--accent2);
+        box-shadow:0 8px 20px rgba(0, 0, 0, .14);
     }
 
     .cert-header {
@@ -41,14 +41,9 @@
         align-items:center;
         justify-content:center;
         height:98px;
-        color:#b7f4dd;
-        background:
-            linear-gradient(
-                135deg,
-                #246f5c,
-                #459a7e
-            );
-        border-bottom:1px solid #297b68;
+        color:#d8fff2;
+        background:linear-gradient(135deg, #246f5c, #459a7e);
+        border-bottom:1px solid var(--border);
     }
 
     .cert-header > i {
@@ -77,7 +72,7 @@
 
     .cert-title {
         margin-bottom:5px;
-        color:#d4f8eb;
+        color:var(--text);
         font-size:14px;
         font-weight:800;
         line-height:1.35;
@@ -85,10 +80,10 @@
 
     .cert-sub {
         margin-bottom:12px;
-        color:#4aa68a;
+        color:var(--accent2);
         font-size:10px;
         font-weight:800;
-        letter-spacing:0.8px;
+        letter-spacing:.8px;
         text-transform:uppercase;
     }
 
@@ -96,7 +91,7 @@
         display:flex;
         flex-direction:column;
         gap:6px;
-        color:#73b9a2;
+        color:var(--text2);
         font-size:11px;
     }
 
@@ -107,7 +102,7 @@
     }
 
     .cert-meta i {
-        color:#439f83;
+        color:var(--accent2);
         font-size:12px;
     }
 
@@ -115,7 +110,8 @@
         display:flex;
         gap:7px;
         padding:9px 11px;
-        border-top:1px solid #245b4e;
+        background:var(--bg2);
+        border-top:1px solid var(--border);
     }
 
     .cert-footer .btn-sm {
@@ -126,58 +122,24 @@
         min-height:30px;
         padding:6px 12px;
         color:#071d17;
-        background:#4ca98d;
-        border:1px solid #62b99e;
+        background:var(--accent2);
+        border:1px solid var(--accent2);
         border-radius:7px;
         font-size:11px;
         font-weight:800;
         text-decoration:none;
         cursor:pointer;
-        transition:filter 0.2s ease,
-                   transform 0.2s ease;
     }
 
     .cert-footer .btn-sm:hover {
         color:#071d17;
-        filter:brightness(1.1);
-        transform:translateY(-1px);
+        filter:brightness(1.08);
     }
 
     .cert-footer .btn-sm.secondary {
-        color:#092019;
-        background:#459d83;
-        border-color:#459d83;
-    }
-
-    .cert-footer .btn-sm i {
-        font-size:12px;
-    }
-
-    /* Certificate preview */
-
-    .certificate-preview {
-        max-width:850px;
-        margin:20px auto;
-        padding:65px 45px;
-        text-align:center;
+        color:var(--text);
         background:var(--surface);
-        border:8px double var(--accent2);
-        border-radius:8px;
-    }
-
-    .certificate-preview h1 {
-        margin:24px 0;
-        font-size:38px;
-    }
-
-    .certificate-preview h2 {
-        margin:18px 0;
-        color:var(--accent2);
-    }
-
-    .certificate-logo {
-        font-weight:800;
-        letter-spacing:3px;
+        border-color:var(--border);
     }
 
     .certificate-preview-actions {
@@ -189,6 +151,49 @@
         gap:12px;
     }
 
+    .certificate-preview {
+        max-width:850px;
+        margin:20px auto;
+        padding:65px 45px;
+        color:var(--text);
+        text-align:center;
+        background:var(--surface);
+        border:8px double var(--accent2);
+        border-radius:8px;
+    }
+
+    .certificate-preview h1 {
+        margin:24px 0;
+        color:var(--text);
+        font-size:38px;
+    }
+
+    .certificate-preview h2 {
+        margin:18px 0;
+        color:var(--accent2);
+    }
+
+    .certificate-logo {
+        color:var(--text);
+        font-weight:800;
+        letter-spacing:3px;
+    }
+
+    .certificate-preview.pdf-mode {
+        color:#d9fff3;
+        background:#071713;
+        border-color:#42b892;
+    }
+
+    .certificate-preview.pdf-mode h1,
+    .certificate-preview.pdf-mode .certificate-logo {
+        color:#d9fff3;
+    }
+
+    .certificate-preview.pdf-mode h2 {
+        color:#63d8b3;
+    }
+
     .certificate-download-button {
         border:none;
         cursor:pointer;
@@ -196,7 +201,7 @@
     }
 
     .certificate-download-button:disabled {
-        opacity:0.65;
+        opacity:.65;
         cursor:not-allowed;
     }
 
@@ -231,54 +236,46 @@
 
         <div class="sidebar-section">Main</div>
 
-        <a href="Student_Dashboard.aspx"
-            class="sidebar-link">
+        <a href="Student_Dashboard.aspx" class="sidebar-link">
             <i class="ti ti-layout-dashboard"></i>
             Dashboard
         </a>
 
-        <a href="MyCourses.aspx"
-            class="sidebar-link">
+        <a href="MyCourses.aspx" class="sidebar-link">
             <i class="ti ti-books"></i>
             My Courses
         </a>
 
-        <a href="Labs.aspx"
-            class="sidebar-link">
+        <a href="Labs.aspx" class="sidebar-link">
             <i class="ti ti-terminal-2"></i>
             Virtual Labs
         </a>
 
-        <a href="Challenges.aspx"
-            class="sidebar-link">
+        <a href="Challenges.aspx" class="sidebar-link">
             <i class="ti ti-trophy"></i>
             Challenges
         </a>
 
         <div class="sidebar-section">Progress</div>
 
-        <a href="Analytics.aspx"
-            class="sidebar-link">
+        <a href="Analytics.aspx" class="sidebar-link">
             <i class="ti ti-chart-bar"></i>
             Analytics
         </a>
 
-        <a href="Certificates.aspx"
-            class="sidebar-link active">
+        <a href="Certificates.aspx" class="sidebar-link active">
             <i class="ti ti-certificate"></i>
             Certificates
         </a>
 
-        <a href="Achievements.aspx"
-            class="sidebar-link">
+        <a href="Achievements.aspx" class="sidebar-link">
             <i class="ti ti-star"></i>
             Achievements
         </a>
 
         <div class="sidebar-section">Account</div>
 
-        <a href="Profile.aspx"
-            class="sidebar-link">
+        <a href="Profile.aspx" class="sidebar-link">
             <i class="ti ti-user"></i>
             Profile
         </a>
@@ -288,6 +285,7 @@
             runat="server"
             CssClass="sidebar-link"
             CausesValidation="false"
+            OnClientClick="return showLogoutConfirm(this);"
             OnClick="lbLogout_Click">
 
             <i class="ti ti-logout"></i>
@@ -304,15 +302,17 @@
             runat="server">
 
             <div class="dash-header">
+
                 <h2>My Certificates</h2>
 
                 <p>
-                    View and download certificates
-                    for completed courses.
+                    View and download certificates for completed courses.
                 </p>
+
             </div>
 
-            <div class="metrics"
+            <div
+                class="metrics"
                 style="grid-template-columns:repeat(2,1fr);
                        max-width:400px;
                        margin-bottom:28px">
@@ -344,7 +344,8 @@
                         Latest
                     </div>
 
-                    <div class="metric-val"
+                    <div
+                        class="metric-val"
                         style="font-size:16px">
 
                         <asp:Literal
@@ -396,17 +397,21 @@
                                 <div class="cert-meta">
 
                                     <span>
+
                                         <i class="ti ti-calendar"></i>
 
                                         Issued:
                                         <%# Eval("IssuedDate") %>
+
                                     </span>
 
                                     <span>
+
                                         <i class="ti ti-id"></i>
 
                                         ID:
                                         <%# Eval("CertificateID") %>
+
                                     </span>
 
                                 </div>
@@ -463,8 +468,7 @@
                     </p>
 
                     <p class="text-muted text-small">
-                        Complete a course to receive
-                        its certificate.
+                        Complete a course to receive its certificate.
                     </p>
 
                 </div>
@@ -518,14 +522,15 @@
                 </h1>
 
                 <p>
-                    This certificate is proudly
-                    presented to
+                    This certificate is proudly presented to
                 </p>
 
                 <h2>
+
                     <asp:Literal
                         ID="litPreviewStudent"
                         runat="server" />
+
                 </h2>
 
                 <p>
@@ -533,20 +538,25 @@
                 </p>
 
                 <h2>
+
                     <asp:Literal
                         ID="litPreviewCourse"
                         runat="server" />
+
                 </h2>
 
                 <p>
+
                     Issued on
 
                     <asp:Literal
                         ID="litPreviewDate"
                         runat="server" />
+
                 </p>
 
                 <p>
+
                     Certificate ID:
 
                     <span id="certificateIdValue">
@@ -556,6 +566,7 @@
                             runat="server" />
 
                     </span>
+
                 </p>
 
             </div>
@@ -567,7 +578,6 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
 
 <script>
@@ -575,68 +585,41 @@
         const certificate =
             document.getElementById("certificateArea");
 
-        const downloadButton =
-            document.getElementById(
-                "btnDownloadCertificatePdf"
-            );
+        const button =
+            document.getElementById("btnDownloadCertificatePdf");
 
-        if (!certificate) {
-            alert("Certificate could not be found.");
-            return;
-        }
-
-        if (!window.html2canvas ||
+        if (!certificate ||
+            !window.html2canvas ||
             !window.jspdf) {
 
-            alert(
-                "PDF tools could not be loaded. " +
-                "Please check your internet connection."
-            );
-
+            alert("PDF tools could not be loaded.");
             return;
         }
 
-        const originalButtonText =
-            downloadButton.innerHTML;
+        const originalText =
+            button.innerHTML;
 
-        downloadButton.disabled = true;
+        button.disabled = true;
 
-        downloadButton.innerHTML =
+        button.innerHTML =
             '<i class="ti ti-loader-2"></i> Generating PDF...';
 
+        certificate.classList.add("pdf-mode");
+
         try {
-            if (document.fonts &&
-                document.fonts.ready) {
-
-                await document.fonts.ready;
-            }
-
             const canvas =
-                await html2canvas(
-                    certificate,
-                    {
-                        scale: 3,
-                        useCORS: true,
-                        logging: false,
-                        backgroundColor: "#102a25"
-                    }
-                );
-
-            const imageData =
-                canvas.toDataURL(
-                    "image/png",
-                    1.0
-                );
-
-            const jsPDF =
-                window.jspdf.jsPDF;
+                await html2canvas(certificate, {
+                    scale: 3,
+                    useCORS: true,
+                    logging: false,
+                    backgroundColor: "#071713"
+                });
 
             const pdf =
-                new jsPDF({
+                new window.jspdf.jsPDF({
                     orientation: "landscape",
                     unit: "mm",
-                    format: "a4",
-                    compress: true
+                    format: "a4"
                 });
 
             const pageWidth =
@@ -647,90 +630,45 @@
 
             const margin = 8;
 
-            const availableWidth =
+            const maxWidth =
                 pageWidth - margin * 2;
 
-            const availableHeight =
+            const maxHeight =
                 pageHeight - margin * 2;
 
-            const imageRatio =
+            const ratio =
                 canvas.width / canvas.height;
 
-            const pageRatio =
-                availableWidth /
-                availableHeight;
+            let width = maxWidth;
+            let height = width / ratio;
 
-            let imageWidth;
-            let imageHeight;
-
-            if (imageRatio > pageRatio) {
-                imageWidth = availableWidth;
-
-                imageHeight =
-                    availableWidth / imageRatio;
+            if (height > maxHeight) {
+                height = maxHeight;
+                width = height * ratio;
             }
-            else {
-                imageHeight = availableHeight;
-
-                imageWidth =
-                    availableHeight * imageRatio;
-            }
-
-            const imageX =
-                (pageWidth - imageWidth) / 2;
-
-            const imageY =
-                (pageHeight - imageHeight) / 2;
-
-            pdf.setFillColor(
-                16,
-                42,
-                37
-            );
-
-            pdf.rect(
-                0,
-                0,
-                pageWidth,
-                pageHeight,
-                "F"
-            );
 
             pdf.addImage(
-                imageData,
+                canvas.toDataURL("image/png"),
                 "PNG",
-                imageX,
-                imageY,
-                imageWidth,
-                imageHeight,
-                undefined,
-                "FAST"
+                (pageWidth - width) / 2,
+                (pageHeight - height) / 2,
+                width,
+                height
             );
 
-            const certificateIdElement =
-                document.getElementById(
-                    "certificateIdValue"
-                );
-
-            let certificateId =
-                "Certificate";
-
-            if (certificateIdElement) {
-                certificateId =
-                    certificateIdElement
-                        .textContent
-                        .trim();
-            }
-
-            certificateId =
-                certificateId.replace(
-                    /[^a-zA-Z0-9_-]/g,
-                    "_"
-                );
+            const id =
+                document
+                    .getElementById("certificateIdValue")
+                    .textContent
+                    .trim()
+                    .replace(
+                        /[^a-zA-Z0-9_-]/g,
+                        "_"
+                    );
 
             pdf.save(
                 "CyberShield_Certificate_" +
-                certificateId +
+                id +
                 ".pdf"
             );
         }
@@ -742,10 +680,10 @@
             );
         }
         finally {
-            downloadButton.disabled = false;
+            certificate.classList.remove("pdf-mode");
 
-            downloadButton.innerHTML =
-                originalButtonText;
+            button.disabled = false;
+            button.innerHTML = originalText;
         }
     }
 </script>

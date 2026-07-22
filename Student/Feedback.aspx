@@ -1,4 +1,4 @@
-﻿<%@ Page Title="Feedback – CyberShield Academy"
+﻿<%@ Page Title="Feedback - CyberShield Academy"
     Language="C#"
     MasterPageFile="~/Site.Master"
     AutoEventWireup="true"
@@ -83,12 +83,6 @@
         background:var(--bg3);
         border-radius:8px;
         line-height:1.8;
-    }
-
-    .feedback-actions {
-        display:flex;
-        gap:10px;
-        margin-top:18px;
     }
 </style>
 
@@ -262,7 +256,7 @@
                             runat="server"
                             ControlToValidate="ddlRating"
                             InitialValue=""
-                            ValidationGroup="Feedback"
+                            ValidationGroup="FeedbackGroup"
                             ErrorMessage="Please select a rating."
                             CssClass="text-danger text-small"
                             Display="Dynamic" />
@@ -290,7 +284,7 @@
                         runat="server"
                         CssClass="btn-primary"
                         Text="Submit Feedback"
-                        ValidationGroup="Feedback"
+                        ValidationGroup="FeedbackGroup"
                         OnClick="btnSubmit_Click" />
 
                 </asp:Panel>

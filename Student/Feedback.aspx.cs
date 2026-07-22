@@ -22,8 +22,7 @@ namespace CSA.Student
         {
             get
             {
-                return Convert.ToString(
-                    Session["UserID"]);
+                return Convert.ToString(Session["UserID"]);
             }
         }
 
@@ -66,10 +65,11 @@ namespace CSA.Student
 
         private void LoadFeedbackPage()
         {
-            if (ItemId == "" ||
-                (FeedbackType != "course" &&
-                 FeedbackType != "lab" &&
-                 FeedbackType != "quiz"))
+            pnlMessage.Visible = false;
+            pnlFeedback.Visible = false;
+
+            if (string.IsNullOrWhiteSpace(ItemId) ||
+                !IsValidFeedbackType())
             {
                 ShowError(
                     "The selected feedback item is invalid.");
@@ -81,50 +81,59 @@ namespace CSA.Student
 
             if (!CanSubmitFeedback(out itemName))
             {
-                string message;
-
-                if (FeedbackType == "course")
-                {
-                    message =
-                        "Course feedback is available after completing the course.";
-                }
-                else if (FeedbackType == "lab")
-                {
-                    message =
-                        "Lab feedback is available after passing the lab.";
-                }
-                else
-                {
-                    message =
-                        "Quiz feedback is available after submitting at least one attempt.";
-                }
-
-                ShowError(message);
+                ShowError(GetEligibilityMessage());
                 return;
             }
 
             litItemName.Text =
                 Server.HtmlEncode(itemName);
 
-            if (FeedbackType == "course")
-            {
-                litItemType.Text =
-                    "Overall course feedback";
-            }
-            else if (FeedbackType == "lab")
-            {
-                litItemType.Text =
-                    "Virtual lab feedback";
-            }
-            else
-            {
-                litItemType.Text =
-                    "Post-quiz feedback";
-            }
+            litItemType.Text =
+                GetFeedbackDescription();
 
             pnlFeedback.Visible = true;
 
             LoadExistingFeedback();
+        }
+
+        private bool IsValidFeedbackType()
+        {
+            return FeedbackType == "course" ||
+                   FeedbackType == "lab" ||
+                   FeedbackType == "quiz";
+        }
+
+        private string GetFeedbackDescription()
+        {
+            if (FeedbackType == "course")
+            {
+                return "Overall course feedback";
+            }
+
+            if (FeedbackType == "lab")
+            {
+                return "Virtual lab feedback";
+            }
+
+            return "Post-quiz feedback";
+        }
+
+        private string GetEligibilityMessage()
+        {
+            if (FeedbackType == "course")
+            {
+                return
+                    "Course feedback is available after completing the course.";
+            }
+
+            if (FeedbackType == "lab")
+            {
+                return
+                    "Lab feedback is available after passing the lab.";
+            }
+
+            return
+                "Quiz feedback is available after submitting at least one attempt.";
         }
 
         private bool CanSubmitFeedback(
@@ -141,8 +150,8 @@ namespace CSA.Student
                     FROM Courses c
                     INNER JOIN Enrollments e
                         ON e.CourseID = c.CourseID
+                       AND e.StudentID = @StudentID
                     WHERE c.CourseID = @ItemID
-                      AND e.StudentID = @StudentID
                       AND e.Progress >= 100";
             }
             else if (FeedbackType == "lab")
@@ -160,7 +169,11 @@ namespace CSA.Student
                           FROM LabSubmissions ls
                           WHERE ls.LabID = vl.LabID
                             AND ls.StudentID = @StudentID
-                            AND ls.Result = 'Passed'
+                            AND
+                            (
+                                ls.IsCorrect = 1
+                                OR ls.Result = 'Passed'
+                            )
                       )";
             }
             else
@@ -233,22 +246,23 @@ namespace CSA.Student
 
         private void LoadExistingFeedback()
         {
-            string column =
+            string targetColumn =
                 GetTargetColumn();
 
-            using (SqlConnection con =
-                   new SqlConnection(ConnectionString))
-            using (SqlCommand cmd =
-                   new SqlCommand(
+            string sql =
                 @"SELECT TOP 1
                       StarRating,
                       Comment,
                       SubmittedAt
                   FROM Feedback
                   WHERE StudentID = @StudentID
-                    AND " + column + @" = @ItemID
-                  ORDER BY SubmittedAt DESC",
-                con))
+                    AND " + targetColumn + @" = @ItemID
+                  ORDER BY SubmittedAt DESC";
+
+            using (SqlConnection con =
+                   new SqlConnection(ConnectionString))
+            using (SqlCommand cmd =
+                   new SqlCommand(sql, con))
             {
                 cmd.Parameters.Add(
                     "@StudentID",
@@ -271,7 +285,6 @@ namespace CSA.Student
                     {
                         pnlForm.Visible = true;
                         pnlSaved.Visible = false;
-
                         return;
                     }
 
@@ -287,8 +300,7 @@ namespace CSA.Student
                             reader["Comment"]);
 
                     pnlComment.Visible =
-                        !string.IsNullOrWhiteSpace(
-                            comment);
+                        !string.IsNullOrWhiteSpace(comment);
 
                     litComment.Text =
                         Server.HtmlEncode(comment);
@@ -306,10 +318,19 @@ namespace CSA.Student
             object sender,
             EventArgs e)
         {
-            Page.Validate("Feedback");
+            Page.Validate("FeedbackGroup");
 
             if (!Page.IsValid)
             {
+                return;
+            }
+
+            if (!IsValidFeedbackType() ||
+                string.IsNullOrWhiteSpace(ItemId))
+            {
+                ShowError(
+                    "The selected feedback item is invalid.");
+
                 return;
             }
 
@@ -317,38 +338,43 @@ namespace CSA.Student
 
             if (!CanSubmitFeedback(out itemName))
             {
+                ShowError(GetEligibilityMessage());
+                return;
+            }
+
+            int rating;
+
+            if (!int.TryParse(
+                ddlRating.SelectedValue,
+                out rating) ||
+                rating < 1 ||
+                rating > 5)
+            {
                 ShowError(
-                    "You are not eligible to submit feedback for this item.");
+                    "Please select a rating from 1 to 5.");
 
                 return;
             }
 
-            int rating =
-                Convert.ToInt32(
-                    ddlRating.SelectedValue);
-
             string comment =
                 tbComment.Text.Trim();
 
-            string column =
+            string targetColumn =
                 GetTargetColumn();
 
-            using (SqlConnection con =
-                   new SqlConnection(ConnectionString))
-            using (SqlCommand cmd =
-                   new SqlCommand(
+            string sql =
                 @"IF NOT EXISTS
                   (
                       SELECT 1
                       FROM Feedback
                       WHERE StudentID = @StudentID
-                        AND " + column + @" = @ItemID
+                        AND " + targetColumn + @" = @ItemID
                   )
                   BEGIN
                       INSERT INTO Feedback
                       (
                           StudentID,
-                          " + column + @",
+                          " + targetColumn + @",
                           StarRating,
                           Comment,
                           SubmittedAt
@@ -361,8 +387,12 @@ namespace CSA.Student
                           @Comment,
                           GETDATE()
                       )
-                  END",
-                con))
+                  END";
+
+            using (SqlConnection con =
+                   new SqlConnection(ConnectionString))
+            using (SqlCommand cmd =
+                   new SqlCommand(sql, con))
             {
                 cmd.Parameters.Add(
                     "@StudentID",
@@ -386,13 +416,20 @@ namespace CSA.Student
                     SqlDbType.NVarChar,
                     2000
                 ).Value =
-                    comment == ""
+                    string.IsNullOrWhiteSpace(comment)
                         ? (object)DBNull.Value
                         : comment;
 
                 con.Open();
                 cmd.ExecuteNonQuery();
             }
+
+            pnlMessage.Visible = true;
+            pnlMessage.CssClass =
+                "feedback-message feedback-success";
+
+            litMessage.Text =
+                "Feedback submitted successfully.";
 
             LoadExistingFeedback();
         }
@@ -418,17 +455,20 @@ namespace CSA.Student
             {
                 Response.Redirect(
                     "~/Student/Labs.aspx");
+
+                return;
             }
-            else if (FeedbackType == "quiz")
+
+            if (FeedbackType == "quiz")
             {
                 Response.Redirect(
                     "~/Student/Challenges.aspx");
+
+                return;
             }
-            else
-            {
-                Response.Redirect(
-                    "~/Student/MyCourses.aspx");
-            }
+
+            Response.Redirect(
+                "~/Student/MyCourses.aspx");
         }
 
         protected void lbLogout_Click(
