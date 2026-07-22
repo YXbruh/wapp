@@ -66,11 +66,11 @@
             </div>
             <div class="form-group" style="display:flex;gap:8px">
                 <asp:LinkButton ID="btnApprove" runat="server" CssClass="btn-primary" OnClick="btnApprove_Click"
-                    OnClientClick="return showConfirmAction(this, 'Are you sure you want to remove this content?', 'ti-circle-check', 'Approve');">
+                    OnClientClick="return showConfirmAction(this, 'Are you sure you want to remove this content?', 'Approve');">
                     <i class="ti ti-circle-check" aria-hidden="true"></i> Approve (Remove Content)
                 </asp:LinkButton>
                 <asp:LinkButton ID="btnReject" runat="server" CssClass="btn-sm" OnClick="btnReject_Click"
-                    OnClientClick="return showConfirmAction(this, 'Are you sure you want to dismiss this flag?', 'ti-circle-x', 'Dismiss');">
+                    OnClientClick="return showConfirmAction(this, 'Are you sure you want to dismiss this flag?', 'Dismiss');">
                     <i class="ti ti-circle-x" aria-hidden="true"></i> Dismiss Flag
                 </asp:LinkButton>
             </div>

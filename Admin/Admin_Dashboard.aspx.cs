@@ -42,7 +42,7 @@ namespace CSA.Admin
             rptLabChart.DataSource = GetChartPercent("Labs by Status");
             rptLabChart.DataBind();
 
-            DataTable users = UserService.Search("", "", "");
+            DataTable users = UserService.Search("", "", "", 1, 10, out _);
             rptUsers.DataSource = users;
             rptUsers.DataBind();
             pnlNoUsers.Visible = users.Rows.Count == 0;
@@ -70,7 +70,7 @@ namespace CSA.Admin
 
         protected void tbSearch_TextChanged(object sender, EventArgs e)
         {
-            DataTable users = UserService.Search(tbSearch.Text.Trim(), "", "");
+            DataTable users = UserService.Search(tbSearch.Text.Trim(), "", "", 1, 10, out _);
             rptUsers.DataSource = users;
             rptUsers.DataBind();
             pnlNoUsers.Visible = users.Rows.Count == 0;

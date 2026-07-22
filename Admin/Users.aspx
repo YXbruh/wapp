@@ -1,6 +1,6 @@
 ﻿<%@ Page Title="Manage Users – CyberShield Academy" Language="C#"
     MasterPageFile="~/Site.Master" AutoEventWireup="true"
-    CodeFile="Users.aspx.cs" Inherits="CSA.Admin.Users" %>
+    CodeBehind="Users.aspx.cs" Inherits="CSA.Admin.Users" %>
 
 <asp:Content ID="cMain" ContentPlaceHolderID="MainContent" runat="server">
 <div class="dash-layout">
@@ -140,7 +140,7 @@
                                             </asp:LinkButton>
                                             <asp:LinkButton runat="server" CssClass="btn-sm secondary"
                                                 CommandName="ToggleStatus" CommandArgument='<%# Eval("UserID") %>'
-                                                OnClientClick="return showConfirmAction(this, 'Are you sure you want to toggle this user\\'s active status?', 'ti-user-off', 'Toggle');">
+                                                OnClientClick="return showConfirmAction(this, 'Are you sure you want to toggle this user\\'s active status?', 'Toggle');">
                                                 <i class="ti <%# (bool)Eval("IsActive") ? "ti-user-off" : "ti-user-check" %>"></i>
                                                 <%# (bool)Eval("IsActive") ? "Deactivate" : "Activate" %>
                                             </asp:LinkButton>

@@ -60,12 +60,20 @@ namespace CSA.Admin
         {
             if (e.CommandName == "Resolve")
             {
-                int errorId = Convert.ToInt32(e.CommandArgument);
+                if (!int.TryParse(e.CommandArgument.ToString(), out int errorId)) return;
                 string adminId = Session["UserID"].ToString();
-                AdminService.MarkErrorResolved(errorId, adminId);
-                pnlSuccess.Visible = true;
-                litSuccess.Text = "Error marked as resolved.";
-                LoadLogs();
+                try
+                {
+                    AdminService.MarkErrorResolved(errorId, adminId);
+                    pnlSuccess.Visible = true;
+                    litSuccess.Text = "Error marked as resolved.";
+                    LoadLogs();
+                }
+                catch (Exception)
+                {
+                    pnlError.Visible = true;
+                    litError.Text = "Error marking as resolved.";
+                }
             }
         }
 

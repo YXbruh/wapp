@@ -52,14 +52,6 @@ namespace CSA.Admin
             p.Total = total;
             ViewState["Pager"] = _pager;
 
-            int published = 0, draft = 0;
-            foreach (DataRow row in list.Rows)
-            {
-                string status = row["Status"].ToString();
-                if (status == "Published") published++;
-                else draft++;
-            }
-
             CourseService.GetCounts(out int totalAll, out int pubAll, out int draftAll);
             litTotal.Text = totalAll.ToString();
             litPublished.Text = pubAll.ToString();
@@ -99,11 +91,19 @@ namespace CSA.Admin
                     Response.Redirect($"~/Admin/EditCourse.aspx?id={id}");
                     break;
                 case "TogglePublish":
-                    CourseService.TogglePublish(id);
-                    AdminService.LogAudit(adminId, "TOGGLE_COURSE_PUBLISH", "Courses", id, "", "");
-                    pnlSuccess.Visible = true;
-                    litSuccess.Text = "Course status updated.";
-                    LoadCourses();
+                    try
+                    {
+                        CourseService.TogglePublish(id);
+                        AdminService.LogAudit(adminId, "TOGGLE_COURSE_PUBLISH", "Courses", id, "", "");
+                        pnlSuccess.Visible = true;
+                        litSuccess.Text = "Course status updated.";
+                        LoadCourses();
+                    }
+                    catch (Exception)
+                    {
+                        pnlError.Visible = true;
+                        litError.Text = "Error updating course status.";
+                    }
                     break;
                 case "Delete":
                     try

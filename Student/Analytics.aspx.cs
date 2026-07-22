@@ -12,7 +12,7 @@ namespace CSA.Student
         {
             if (Session["UserID"] == null)
             {
-                Response.Redirect("~/Login.aspx");
+            Response.Redirect("~/Login.aspx?msg=loggedout");
                 return;
             }
 

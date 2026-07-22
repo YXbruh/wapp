@@ -1,6 +1,6 @@
 ﻿<%@ Page Title="Manage Courses – CyberShield Academy" Language="C#"
     MasterPageFile="~/Site.Master" AutoEventWireup="true"
-    CodeFile="Courses.aspx.cs" Inherits="CSA.Admin.Courses" %>
+    CodeBehind="Courses.aspx.cs" Inherits="CSA.Admin.Courses" %>
 
 <asp:Content ID="cMain" ContentPlaceHolderID="MainContent" runat="server">
 <div class="dash-layout">
@@ -132,7 +132,7 @@
                                             </asp:LinkButton>
                                             <asp:LinkButton runat="server" CssClass="btn-sm secondary"
                                                 CommandName="TogglePublish" CommandArgument='<%# Eval("CourseID") %>'
-                                                OnClientClick="return showConfirmAction(this, 'Are you sure you want to change this course\\'s publish status?', 'ti-eye', 'Toggle');">
+                                                OnClientClick="return showConfirmAction(this, 'Are you sure you want to change this course\\'s publish status?', 'Toggle');">
                                                 <i class="ti <%# Eval("Status").ToString()=="Published" ? "ti-eye-off" : "ti-eye" %>"></i>
                                                 <%# Eval("Status").ToString()=="Published" ? "Unpublish" : "Publish" %>
                                             </asp:LinkButton>

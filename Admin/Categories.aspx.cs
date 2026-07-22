@@ -9,7 +9,7 @@ namespace CSA.Admin
     {
         protected void Page_Load(object sender, EventArgs e)
         {
-            if (Session["UserID"] == null || Session["Role"] == null || Session["Role"].ToString() != "Admin")
+            if (Session["UserID"] == null || Session["Role"] as string != "Admin")
             { Response.Redirect("~/Login.aspx"); return; }
 
             if (!IsPostBack)

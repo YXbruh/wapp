@@ -1,6 +1,6 @@
 ﻿<%@ Page Title="Edit User – CyberShield Academy" Language="C#"
     MasterPageFile="~/Site.Master" AutoEventWireup="true"
-    CodeFile="EditUser.aspx.cs" Inherits="CSA.Admin.EditUser" %>
+    CodeBehind="EditUser.aspx.cs" Inherits="CSA.Admin.EditUser" %>
 
 <asp:Content ID="cMain" ContentPlaceHolderID="MainContent" runat="server">
 <div class="dash-layout">

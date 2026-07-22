@@ -1,6 +1,6 @@
 ﻿<%@ Page Title="Database Backup – CyberShield Academy" Language="C#"
     MasterPageFile="~/Site.Master" AutoEventWireup="true"
-    CodeFile="Backup.aspx.cs" Inherits="CSA.Admin.Backup" %>
+    CodeBehind="Backup.aspx.cs" Inherits="CSA.Admin.Backup" %>
 
 <asp:Content ID="cMain" ContentPlaceHolderID="MainContent" runat="server">
 <div class="dash-layout">
@@ -101,7 +101,7 @@
 
                 <asp:LinkButton ID="btnBackup" runat="server" CssClass="btn-primary"
                     OnClick="btnBackup_Click"
-                    OnClientClick="return showConfirmAction(this, 'Start a full database backup now?', 'ti-database', 'Start Backup');">
+                    OnClientClick="return showConfirmAction(this, 'Start a full database backup now?', 'Start Backup');">
                     <i class="ti ti-database" aria-hidden="true"></i> Start Backup
                 </asp:LinkButton>
             </div>

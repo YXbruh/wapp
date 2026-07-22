@@ -1,6 +1,6 @@
 ﻿<%@ Page Title="Admin Dashboard – CyberShield Academy" Language="C#"
     MasterPageFile="~/Site.Master" AutoEventWireup="true"
-    CodeFile="Admin_Dashboard.aspx.cs" Inherits="CSA.Admin.Admin_Dashboard" %>
+    CodeBehind="Admin_Dashboard.aspx.cs" Inherits="CSA.Admin.Admin_Dashboard" %>
 
 <asp:Content ID="cMain" ContentPlaceHolderID="MainContent" runat="server">
 <div class="dash-layout">

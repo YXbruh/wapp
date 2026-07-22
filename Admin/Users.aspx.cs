@@ -52,17 +52,10 @@ namespace CSA.Admin
             p.Total = total;
             ViewState["Pager"] = _pager;
 
-            int students = 0, instructors = 0;
-            foreach (DataRow row in users.Rows)
-            {
-                string role = row["Role"].ToString();
-                if (role == "Student") students++;
-                else if (role == "Lecturer") instructors++;
-            }
-
             litTotal.Text = total.ToString();
-            litStudents.Text = students.ToString();
-            litInstructors.Text = instructors.ToString();
+            UserService.GetCountsByRole(out int totalStudents, out int totalLecturers);
+            litStudents.Text = totalStudents.ToString();
+            litInstructors.Text = totalLecturers.ToString();
             litActiveToday.Text = UserService.GetActiveTodayCount().ToString();
 
             rptUsers.DataSource = users;
@@ -99,10 +92,18 @@ namespace CSA.Admin
                     Response.Redirect($"~/Admin/EditUser.aspx?id={id}");
                     break;
                 case "ToggleStatus":
-                    UserService.ToggleActive(id);
-                    AdminService.LogAudit(adminId, "TOGGLE_USER_STATUS", "Users", id, "", "");
-                    ShowSuccess("User status updated.");
-                    LoadUsers();
+                    try
+                    {
+                        UserService.ToggleActive(id);
+                        AdminService.LogAudit(adminId, "TOGGLE_USER_STATUS", "Users", id, "", "");
+                        ShowSuccess("User status updated.");
+                        LoadUsers();
+                    }
+                    catch (Exception)
+                    {
+                        pnlError.Visible = true;
+                        litError.Text = "Error updating user status.";
+                    }
                     break;
                 case "Delete":
                     try

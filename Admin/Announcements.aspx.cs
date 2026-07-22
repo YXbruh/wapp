@@ -79,11 +79,16 @@ namespace CSA.Admin
         {
             if (!Page.IsValid) return;
             string adminId = Session["UserID"].ToString();
-            int editId = Convert.ToInt32(hfEditID.Value);
+            if (!int.TryParse(hfEditID.Value, out int editId)) editId = 0;
 
             DateTime? expiry = null;
             if (!string.IsNullOrWhiteSpace(tbExpiry.Text))
-                expiry = DateTime.Parse(tbExpiry.Text);
+            {
+                if (DateTime.TryParseExact(tbExpiry.Text, "yyyy-MM-dd",
+                    System.Globalization.CultureInfo.InvariantCulture,
+                    System.Globalization.DateTimeStyles.None, out DateTime exp))
+                    expiry = exp;
+            }
 
             try
             {
@@ -117,7 +122,7 @@ namespace CSA.Admin
 
         protected void rptAnnouncements_ItemCommand(object source, RepeaterCommandEventArgs e)
         {
-            int id = Convert.ToInt32(e.CommandArgument);
+            if (!int.TryParse(e.CommandArgument.ToString(), out int id)) return;
             if (e.CommandName == "Edit")
             {
                 DataTable dt = AdminService.GetAnnouncementById(id);

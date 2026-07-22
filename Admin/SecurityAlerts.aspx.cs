@@ -83,40 +83,48 @@ namespace CSA.Admin
 
         protected void rptAlerts_ItemCommand(object source, RepeaterCommandEventArgs e)
         {
-            int id = Convert.ToInt32(e.CommandArgument);
+            if (!int.TryParse(e.CommandArgument.ToString(), out int id)) return;
             string adminId = Session["UserID"].ToString();
-            switch (e.CommandName)
+            try
             {
-                case "Investigate":
-                    AdminService.SetAlertStatus(id, "Investigating", adminId);
-                    pnlSuccess.Visible = true;
-                    litSuccess.Text = "Alert marked as under investigation.";
-                    LoadAlerts();
-                    break;
-                case "Resolve":
-                    AdminService.SetAlertStatus(id, "Resolved", adminId);
-                    pnlSuccess.Visible = true;
-                    litSuccess.Text = "Alert resolved successfully.";
-                    LoadAlerts();
-                    break;
-                case "BlockUser":
-                    DataTable alert = AdminService.GetAlertById(id);
-                    if (alert.Rows.Count > 0)
-                    {
-                        string affectedUserId = alert.Rows[0]["AffectedUserID"].ToString();
-                        if (affectedUserId == Session["UserID"].ToString())
-                        {
-                            ClientScript.RegisterStartupScript(GetType(), "alert",
-                                "alert('You cannot block your own account.');", true);
-                            break;
-                        }
-                        UserService.ToggleActive(affectedUserId);
+                switch (e.CommandName)
+                {
+                    case "Investigate":
+                        AdminService.SetAlertStatus(id, "Investigating", adminId);
+                        pnlSuccess.Visible = true;
+                        litSuccess.Text = "Alert marked as under investigation.";
+                        LoadAlerts();
+                        break;
+                    case "Resolve":
                         AdminService.SetAlertStatus(id, "Resolved", adminId);
                         pnlSuccess.Visible = true;
-                        litSuccess.Text = "User blocked and alert resolved.";
-                    }
-                    LoadAlerts();
-                    break;
+                        litSuccess.Text = "Alert resolved successfully.";
+                        LoadAlerts();
+                        break;
+                    case "BlockUser":
+                        DataTable alert = AdminService.GetAlertById(id);
+                        if (alert.Rows.Count > 0)
+                        {
+                            string affectedUserId = alert.Rows[0]["AffectedUserID"].ToString();
+                            if (affectedUserId == Session["UserID"].ToString())
+                            {
+                                ClientScript.RegisterStartupScript(GetType(), "alert",
+                                    "alert('You cannot block your own account.');", true);
+                                break;
+                            }
+                            UserService.ToggleActive(affectedUserId);
+                            AdminService.SetAlertStatus(id, "Resolved", adminId);
+                            pnlSuccess.Visible = true;
+                            litSuccess.Text = "User blocked and alert resolved.";
+                        }
+                        LoadAlerts();
+                        break;
+                }
+            }
+            catch (Exception)
+            {
+                pnlError.Visible = true;
+                litError.Text = "Error processing alert action.";
             }
         }
 

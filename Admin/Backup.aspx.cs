@@ -57,7 +57,7 @@ namespace CSA.Admin
 
         protected void rptBackups_ItemCommand(object source, RepeaterCommandEventArgs e)
         {
-            int id = Convert.ToInt32(e.CommandArgument);
+            if (!int.TryParse(e.CommandArgument.ToString(), out int id)) return;
             if (e.CommandName == "Download")
             {
                 try

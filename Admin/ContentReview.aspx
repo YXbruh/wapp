@@ -1,6 +1,6 @@
 ﻿<%@ Page Title="Content Review – CyberShield Academy" Language="C#"
     MasterPageFile="~/Site.Master" AutoEventWireup="true"
-    CodeFile="ContentReview.aspx.cs" Inherits="CSA.Admin.ContentReview" %>
+    CodeBehind="ContentReview.aspx.cs" Inherits="CSA.Admin.ContentReview" %>
 
 <asp:Content ID="cMain" ContentPlaceHolderID="MainContent" runat="server">
 <div class="dash-layout">
@@ -105,17 +105,17 @@
                                     <td>
                                         <div class="action-btns">
                                             <asp:LinkButton runat="server" CssClass="btn-sm secondary"
-                                                CommandName="Preview" CommandArgument='<%# Eval("ContentID") %>'>
+                                                CommandName="Preview" CommandArgument='<%# Eval("FlagID") %>'>
                                                 <i class="ti ti-eye"></i> Preview
                                             </asp:LinkButton>
                                             <asp:LinkButton runat="server" CssClass="btn-sm"
-                                                CommandName="Approve" CommandArgument='<%# Eval("ContentID") %>'
-                                                OnClientClick="return showConfirmAction(this, 'Are you sure you want to remove this content?', 'ti-circle-check', 'Approve');">
+                                                CommandName="Approve" CommandArgument='<%# Eval("FlagID") %>'
+                                                OnClientClick="return showConfirmAction(this, 'Are you sure you want to remove this content?', 'Approve');">
                                                 <i class="ti ti-circle-check"></i> Approve
                                             </asp:LinkButton>
                                             <asp:LinkButton runat="server" CssClass="btn-danger"
-                                                CommandName="Reject" CommandArgument='<%# Eval("ContentID") %>'
-                                                OnClientClick="return showConfirmAction(this, 'Are you sure you want to reject this content?', 'ti-circle-x', 'Reject');">
+                                                CommandName="Reject" CommandArgument='<%# Eval("FlagID") %>'
+                                                OnClientClick="return showConfirmAction(this, 'Are you sure you want to reject this content?', 'Reject');">
                                                 <i class="ti ti-circle-x"></i> Reject
                                             </asp:LinkButton>
                                         </div>

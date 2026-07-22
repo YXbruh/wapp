@@ -90,7 +90,7 @@ namespace CSA.Admin
 
         protected void rptContent_ItemCommand(object source, RepeaterCommandEventArgs e)
         {
-            int id = Convert.ToInt32(e.CommandArgument);
+            if (!int.TryParse(e.CommandArgument.ToString(), out int id)) return;
             string adminId = Session["UserID"].ToString();
             switch (e.CommandName)
             {

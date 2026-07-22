@@ -1,6 +1,6 @@
 ﻿<%@ Page Title="Error Logs – CyberShield Academy" Language="C#"
     MasterPageFile="~/Site.Master" AutoEventWireup="true"
-    CodeFile="ErrorLogs.aspx.cs" Inherits="CSA.Admin.ErrorLogs" %>
+    CodeBehind="ErrorLogs.aspx.cs" Inherits="CSA.Admin.ErrorLogs" %>
 
 <asp:Content ID="cMain" ContentPlaceHolderID="MainContent" runat="server">
 <div class="dash-layout">
@@ -35,6 +35,13 @@
             <div class="alert-success mb-16">
                 <i class="ti ti-circle-check" aria-hidden="true"></i>
                 <asp:Literal ID="litSuccess" runat="server" />
+            </div>
+        </asp:Panel>
+
+        <asp:Panel ID="pnlError" runat="server" Visible="false">
+            <div class="alert-danger mb-16">
+                <i class="ti ti-alert-circle" aria-hidden="true"></i>
+                <asp:Literal ID="litError" runat="server" />
             </div>
         </asp:Panel>
 
@@ -125,7 +132,7 @@
                                         <asp:LinkButton runat="server" CssClass="btn-sm secondary"
                                             CommandName="Resolve" CommandArgument='<%# Eval("ErrorID") %>'
                                             Visible='<%# !Convert.ToBoolean(Eval("IsResolved")) %>'
-                                            OnClientClick="return showConfirmAction(this, 'Mark this error as resolved?', 'ti-circle-check', 'Resolve');">
+                                            OnClientClick="return showConfirmAction(this, 'Mark this error as resolved?', 'Resolve');">
                                             <i class="ti ti-circle-check"></i> Resolve
                                         </asp:LinkButton>
                                     </td>
