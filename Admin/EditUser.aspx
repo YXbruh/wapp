@@ -86,7 +86,7 @@
                         style="flex:1;max-width:260px" />
                     <asp:Button ID="btnGeneratePw" runat="server" CssClass="btn-sm secondary"
                         Text="Generate" OnClick="btnGeneratePw_Click"
-                        OnClientClick="return confirm('Generate a new random password?');"
+                        OnClientClick="return showConfirmAction(this, 'Generate a new random password? This will overwrite anything typed above.', 'Generate');"
                         style="white-space:nowrap" />
                 </div>
                 <asp:RegularExpressionValidator ID="revPassword" runat="server"

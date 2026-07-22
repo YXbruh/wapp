@@ -57,59 +57,42 @@ namespace CSA.Admin
 
         protected void rptBackups_ItemCommand(object source, RepeaterCommandEventArgs e)
         {
-            if (!int.TryParse(e.CommandArgument.ToString(), out int id)) return;
+            int id = Convert.ToInt32(e.CommandArgument);
             if (e.CommandName == "Download")
             {
-                try
+                DataTable dt = DBHelper.ExecuteQuery(
+                    "SELECT FilePath FROM DatabaseBackups WHERE BackupID = @ID",
+                    new System.Data.SqlClient.SqlParameter("@ID", id));
+                if (dt.Rows.Count > 0)
                 {
-                    DataTable dt = DBHelper.ExecuteQuery(
-                        "SELECT FilePath FROM DatabaseBackups WHERE BackupID = @ID",
-                        new System.Data.SqlClient.SqlParameter("@ID", id));
-                    if (dt.Rows.Count > 0)
+                    string path = dt.Rows[0]["FilePath"].ToString();
+                    if (System.IO.File.Exists(path))
                     {
-                        string path = dt.Rows[0]["FilePath"].ToString();
-                        if (System.IO.File.Exists(path))
-                        {
-                            Response.ContentType = "application/octet-stream";
-                            Response.AddHeader("Content-Disposition",
-                                $"attachment;filename={System.IO.Path.GetFileName(path)}");
-                            Response.WriteFile(path);
-                            Context.ApplicationInstance.CompleteRequest();
-                        }
+                        Response.ContentType = "application/octet-stream";
+                        Response.AddHeader("Content-Disposition",
+                            $"attachment;filename={System.IO.Path.GetFileName(path)}");
+                        Response.WriteFile(path);
+                        Response.End();
                     }
-                }
-                catch (Exception ex)
-                {
-                    pnlError.Visible = true;
-                    litError.Text = "Error downloading backup: " + ex.Message;
                 }
             }
             else if (e.CommandName == "Delete")
             {
-                try
+                DataTable dt = DBHelper.ExecuteQuery(
+                    "SELECT FilePath FROM DatabaseBackups WHERE BackupID = @ID",
+                    new System.Data.SqlClient.SqlParameter("@ID", id));
+                if (dt.Rows.Count > 0)
                 {
-                    DataTable dt = DBHelper.ExecuteQuery(
-                        "SELECT FilePath FROM DatabaseBackups WHERE BackupID = @ID",
-                        new System.Data.SqlClient.SqlParameter("@ID", id));
-                    if (dt.Rows.Count > 0)
-                    {
-                        string path = dt.Rows[0]["FilePath"].ToString();
-                        if (System.IO.File.Exists(path))
-                            System.IO.File.Delete(path);
-                    }
-                    DBHelper.ExecuteNonQuery(
-                        "DELETE FROM DatabaseBackups WHERE BackupID = @ID",
-                        new System.Data.SqlClient.SqlParameter("@ID", id));
-                    pnlSuccess.Visible = true;
-                    litSuccess.Text = "Backup deleted.";
-                    LoadBackups();
+                    string path = dt.Rows[0]["FilePath"].ToString();
+                    if (System.IO.File.Exists(path))
+                        System.IO.File.Delete(path);
                 }
-                catch (Exception ex)
-                {
-                    pnlError.Visible = true;
-                    litError.Text = "Error deleting backup: " + ex.Message;
-                    pnlSuccess.Visible = false;
-                }
+                DBHelper.ExecuteNonQuery(
+                    "DELETE FROM DatabaseBackups WHERE BackupID = @ID",
+                    new System.Data.SqlClient.SqlParameter("@ID", id));
+                pnlSuccess.Visible = true;
+                litSuccess.Text = "Backup deleted.";
+                LoadBackups();
             }
         }
 

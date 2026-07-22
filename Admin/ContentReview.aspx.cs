@@ -51,16 +51,16 @@ namespace CSA.Admin
             p.Total = total;
             ViewState["Pager"] = _pager;
 
-            litPending.Text = AdminService.GetPendingCount().ToString();
-
-            int approved = 0, rejected = 0;
+            int pending = 0, approved = 0, rejected = 0;
             foreach (DataRow row in list.Rows)
             {
                 string status = row["Status"].ToString();
-                if (status == "Removed") approved++;
+                if (status == "Pending") pending++;
+                else if (status == "Removed") approved++;
                 else if (status == "Dismissed") rejected++;
             }
 
+            litPending.Text = pending.ToString();
             litApproved.Text = approved.ToString();
             litRejected.Text = rejected.ToString();
 
@@ -90,7 +90,7 @@ namespace CSA.Admin
 
         protected void rptContent_ItemCommand(object source, RepeaterCommandEventArgs e)
         {
-            if (!int.TryParse(e.CommandArgument.ToString(), out int id)) return;
+            int id = Convert.ToInt32(e.CommandArgument);
             string adminId = Session["UserID"].ToString();
             switch (e.CommandName)
             {
@@ -98,32 +98,16 @@ namespace CSA.Admin
                     Response.Redirect($"~/Admin/PreviewContent.aspx?id={id}");
                     break;
                 case "Approve":
-                    try
-                    {
-                        AdminService.ApproveContent(id, adminId);
-                        pnlSuccess.Visible = true;
-                        litSuccess.Text = "Flag resolved - content removal action recorded.";
-                        LoadContent();
-                    }
-                    catch (Exception ex)
-                    {
-                        pnlError.Visible = true;
-                        litError.Text = "Error approving content: " + ex.Message;
-                    }
+                    AdminService.ApproveContent(id, adminId);
+                    pnlSuccess.Visible = true;
+                    litSuccess.Text = "Flag resolved � content removal action recorded.";
+                    LoadContent();
                     break;
                 case "Reject":
-                    try
-                    {
-                        AdminService.RejectContent(id, adminId);
-                        pnlSuccess.Visible = true;
-                        litSuccess.Text = "Flag dismissed - no action taken.";
-                        LoadContent();
-                    }
-                    catch (Exception ex)
-                    {
-                        pnlError.Visible = true;
-                        litError.Text = "Error dismissing flag: " + ex.Message;
-                    }
+                    AdminService.RejectContent(id, adminId);
+                    pnlSuccess.Visible = true;
+                    litSuccess.Text = "Flag dismissed � no action taken.";
+                    LoadContent();
                     break;
             }
         }

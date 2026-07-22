@@ -146,7 +146,7 @@ namespace CSA.Lecturer
                         int total = (int)cmd.ExecuteScalar();
                         litTotal.Text = total.ToString();
                     }
-                    catch (Exception)
+                    catch (Exception ex)
                     {
                         litTotal.Text = "0";
                     }
@@ -162,7 +162,7 @@ namespace CSA.Lecturer
                         decimal avgQuizScore = result != DBNull.Value ? Convert.ToDecimal(result) : 0;
                         litAvgQuiz.Text = Math.Round(avgQuizScore, 0).ToString() + "%";
                     }
-                    catch (Exception)
+                    catch (Exception ex)
                     {
                         litAvgQuiz.Text = "0%";
                     }
@@ -178,7 +178,7 @@ namespace CSA.Lecturer
                         decimal avgProgress = result != DBNull.Value ? Convert.ToDecimal(result) : 0;
                         litLabRate.Text = Math.Round(avgProgress, 0).ToString() + "%";
                     }
-                    catch (Exception)
+                    catch (Exception ex)
                     {
                         litLabRate.Text = "0%";
                     }

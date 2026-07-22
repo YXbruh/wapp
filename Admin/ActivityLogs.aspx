@@ -55,7 +55,7 @@
             <div class="toolbar">
                 <div class="search-wrap" style="flex:1">
                     <asp:TextBox ID="tbSearch" runat="server" CssClass="search-input"
-                        placeholder="Search by user or action..."
+                        placeholder="Search by user, action, or IP..."
                         AutoPostBack="true" OnTextChanged="Filter_Changed" />
                     <i class="ti ti-search" aria-hidden="true"></i>
                 </div>
@@ -91,6 +91,7 @@
                             <th scope="col">User</th>
                             <th scope="col">Action</th>
                             <th scope="col">Details</th>
+                            <th scope="col">IP Address</th>
                             <th scope="col">Timestamp</th>
                         </tr>
                     </thead>
@@ -110,6 +111,7 @@
                                     </td>
                                     <td class="fw-bold" style="color:var(--text)"><%# Eval("Action") %></td>
                                     <td class="text-muted" style="max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><%# Eval("Details") %></td>
+                                    <td class="text-muted" style="font-family:monospace;font-size:12px"><%# Eval("IPAddress") %></td>
                                     <td class="text-muted text-small"><%# Eval("OccurredAt", "{0:dd MMM yyyy HH:mm}") %></td>
                                 </tr>
                             </ItemTemplate>

@@ -152,7 +152,6 @@
             runat="server"
             CssClass="sidebar-link"
             CausesValidation="false"
-            OnClientClick="return showLogoutConfirm(this);"
             OnClick="lbLogout_Click">
 
             <i class="ti ti-logout"></i>
@@ -276,38 +275,17 @@
                                     <%# Eval("InstructorName") %>
                                 </span>
 
-                                <div style="display:flex;gap:7px">
+                                <asp:LinkButton
+                                    ID="btnOpen"
+                                    runat="server"
+                                    CssClass="enroll-btn"
+                                    CausesValidation="false"
+                                    CommandName="OpenCourse"
+                                    CommandArgument='<%# Eval("CourseID") %>'>
 
-                                    <asp:LinkButton
-                                        ID="btnOpen"
-                                        runat="server"
-                                        CssClass="enroll-btn"
-                                        CausesValidation="false"
-                                        CommandName="OpenCourse"
-                                        CommandArgument='<%# Eval("CourseID") %>'>
+                                    Open Course
 
-                                        Open Course
-
-                                    </asp:LinkButton>
-
-                                    <asp:HyperLink
-                                        ID="hlCourseFeedback"
-                                        runat="server"
-                                        CssClass="enroll-btn"
-                                        NavigateUrl='<%#
-                                            "Feedback.aspx?type=course&id=" +
-                                            Server.UrlEncode(
-                                                Convert.ToString(Eval("CourseID")))
-                                        %>'
-                                        Visible='<%#
-                                            Convert.ToDecimal(Eval("Progress")) >= 100
-                                        %>'>
-
-                                        Feedback
-
-                                    </asp:HyperLink>
-
-                                </div>
+                                </asp:LinkButton>
 
                             </div>
 

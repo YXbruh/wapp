@@ -38,13 +38,6 @@
             </div>
         </asp:Panel>
 
-        <asp:Panel ID="pnlError" runat="server" Visible="false">
-            <div class="alert-danger mb-16">
-                <i class="ti ti-alert-circle" aria-hidden="true"></i>
-                <asp:Literal ID="litError" runat="server" />
-            </div>
-        </asp:Panel>
-
         <!-- Severity summary -->
         <div class="metrics" style="grid-template-columns:repeat(4,1fr);margin-bottom:24px">
             <div class="metric">

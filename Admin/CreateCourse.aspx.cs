@@ -32,41 +32,24 @@ namespace CSA.Admin
         {
             if (!Page.IsValid) return;
 
-            if (!int.TryParse(tbDuration.Text, out int duration))
-            {
-                pnlError.Visible = true;
-                litError.Text = "Duration must be a valid number.";
-                pnlSuccess.Visible = false;
-                return;
-            }
+            string courseId = CourseService.Create(
+                tbName.Text.Trim(),
+                tbDescription.Text.Trim(),
+                ddlCategory.SelectedValue,
+                ddlInstructor.SelectedValue,
+                ddlLevel.SelectedValue,
+                Convert.ToInt32(tbDuration.Text));
 
-            try
-            {
-                string courseId = CourseService.Create(
-                    tbName.Text.Trim(),
-                    tbDescription.Text.Trim(),
-                    ddlCategory.SelectedValue,
-                    ddlInstructor.SelectedValue,
-                    ddlLevel.SelectedValue,
-                    duration);
+            AdminService.LogAudit(Session["UserID"].ToString(),
+                "CREATE_COURSE", "Courses", "0", "", tbName.Text.Trim());
 
-                AdminService.LogAudit(Session["UserID"].ToString(),
-                    "CREATE_COURSE", "Courses", "0", "", tbName.Text.Trim());
-
-                pnlSuccess.Visible = true;
-                litSuccess.Text = $"Course '{tbName.Text.Trim()}' created successfully. <a href='Courses.aspx' style='color:var(--accent3)'>Back to Courses</a>";
-                tbName.Text = tbDescription.Text = "";
-                ddlCategory.SelectedIndex = 0;
-                ddlInstructor.SelectedIndex = 0;
-                ddlLevel.SelectedIndex = 0;
-                tbDuration.Text = "0";
-            }
-            catch (Exception ex)
-            {
-                pnlError.Visible = true;
-                litError.Text = "Error creating course: " + ex.Message;
-                pnlSuccess.Visible = false;
-            }
+            pnlSuccess.Visible = true;
+            litSuccess.Text = $"Course '{tbName.Text.Trim()}' created successfully. <a href='Courses.aspx' style='color:var(--accent3)'>Back to Courses</a>";
+            tbName.Text = tbDescription.Text = "";
+            ddlCategory.SelectedIndex = 0;
+            ddlInstructor.SelectedIndex = 0;
+            ddlLevel.SelectedIndex = 0;
+            tbDuration.Text = "0";
         }
 
         protected void lbLogout_Click(object sender, EventArgs e)

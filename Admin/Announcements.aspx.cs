@@ -79,50 +79,36 @@ namespace CSA.Admin
         {
             if (!Page.IsValid) return;
             string adminId = Session["UserID"].ToString();
-            if (!int.TryParse(hfEditID.Value, out int editId)) editId = 0;
+            int editId = Convert.ToInt32(hfEditID.Value);
 
             DateTime? expiry = null;
             if (!string.IsNullOrWhiteSpace(tbExpiry.Text))
-            {
-                if (DateTime.TryParseExact(tbExpiry.Text, "yyyy-MM-dd",
-                    System.Globalization.CultureInfo.InvariantCulture,
-                    System.Globalization.DateTimeStyles.None, out DateTime exp))
-                    expiry = exp;
-            }
+                expiry = DateTime.Parse(tbExpiry.Text);
 
-            try
+            if (editId == 0)
             {
-                if (editId == 0)
-                {
-                    AdminService.CreateAnnouncement(
-                        tbTitle.Text.Trim(), tbMessage.Text.Trim(),
-                        ddlAudience.SelectedValue, ddlPriority.SelectedValue,
-                        expiry, adminId);
-                    pnlSuccess.Visible = true;
-                    litSuccess.Text = "Announcement published successfully.";
-                }
-                else
-                {
-                    AdminService.UpdateAnnouncement(editId,
-                        tbTitle.Text.Trim(), tbMessage.Text.Trim(),
-                        ddlAudience.SelectedValue, ddlPriority.SelectedValue, expiry);
-                    pnlSuccess.Visible = true;
-                    litSuccess.Text = "Announcement updated.";
-                    ResetForm();
-                }
-                LoadAnnouncements();
+                AdminService.CreateAnnouncement(
+                    tbTitle.Text.Trim(), tbMessage.Text.Trim(),
+                    ddlAudience.SelectedValue, ddlPriority.SelectedValue,
+                    expiry, adminId);
+                pnlSuccess.Visible = true;
+                litSuccess.Text = "Announcement published successfully.";
             }
-            catch (Exception ex)
+            else
             {
-                pnlError.Visible = true;
-                litError.Text = "Error saving announcement: " + ex.Message;
-                pnlSuccess.Visible = false;
+                AdminService.UpdateAnnouncement(editId,
+                    tbTitle.Text.Trim(), tbMessage.Text.Trim(),
+                    ddlAudience.SelectedValue, ddlPriority.SelectedValue, expiry);
+                pnlSuccess.Visible = true;
+                litSuccess.Text = "Announcement updated.";
+                ResetForm();
             }
+            LoadAnnouncements();
         }
 
         protected void rptAnnouncements_ItemCommand(object source, RepeaterCommandEventArgs e)
         {
-            if (!int.TryParse(e.CommandArgument.ToString(), out int id)) return;
+            int id = Convert.ToInt32(e.CommandArgument);
             if (e.CommandName == "Edit")
             {
                 DataTable dt = AdminService.GetAnnouncementById(id);
@@ -141,19 +127,10 @@ namespace CSA.Admin
             }
             else if (e.CommandName == "Delete")
             {
-                try
-                {
-                    AdminService.DeleteAnnouncement(id);
-                    pnlSuccess.Visible = true;
-                    litSuccess.Text = "Announcement deleted.";
-                    LoadAnnouncements();
-                }
-                catch (Exception ex)
-                {
-                    pnlError.Visible = true;
-                    litError.Text = "Error deleting announcement: " + ex.Message;
-                    pnlSuccess.Visible = false;
-                }
+                AdminService.DeleteAnnouncement(id);
+                pnlSuccess.Visible = true;
+                litSuccess.Text = "Announcement deleted.";
+                LoadAnnouncements();
             }
         }
 

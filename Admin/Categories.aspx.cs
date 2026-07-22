@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Web.UI;
 using System.Web.UI.WebControls;
 using CSA.Services;
 
@@ -9,8 +8,8 @@ namespace CSA.Admin
     {
         protected void Page_Load(object sender, EventArgs e)
         {
-            if (Session["UserID"] == null || Session["Role"] as string != "Admin")
-            { Response.Redirect("~/Login.aspx"); return; }
+            if (Session["Role"] == null || Session["Role"].ToString() != "Admin")
+                Response.Redirect("~/Login.aspx");
 
             if (!IsPostBack)
                 LoadCategories();
@@ -52,13 +51,11 @@ namespace CSA.Admin
                 if (isEdit)
                 {
                     CourseService.UpdateCategory(editID, tbName.Text.Trim(), tbDescription.Text.Trim());
-                    AdminService.LogAudit(Session["UserID"].ToString(), "UPDATE_CATEGORY", "Categories", editID, "", tbName.Text.Trim());
                     SetMessage("Category updated.", true);
                 }
                 else
                 {
                     CourseService.CreateCategory(tbName.Text.Trim(), tbDescription.Text.Trim());
-                    AdminService.LogAudit(Session["UserID"].ToString(), "CREATE_CATEGORY", "Categories", "0", "", tbName.Text.Trim());
                     SetMessage("Category created.", true);
                 }
 
@@ -96,7 +93,6 @@ namespace CSA.Admin
                 try
                 {
                     CourseService.DeleteCategory(id);
-                    AdminService.LogAudit(Session["UserID"].ToString(), "DELETE_CATEGORY", "Categories", id, "", "");
                     SetMessage("Category deleted.", true);
                     LoadCategories();
                 }

@@ -52,10 +52,17 @@ namespace CSA.Admin
             p.Total = total;
             ViewState["Pager"] = _pager;
 
+            int students = 0, instructors = 0;
+            foreach (DataRow row in users.Rows)
+            {
+                string role = row["Role"].ToString();
+                if (role == "Student") students++;
+                else if (role == "Lecturer") instructors++;
+            }
+
             litTotal.Text = total.ToString();
-            UserService.GetCountsByRole(out int totalStudents, out int totalLecturers);
-            litStudents.Text = totalStudents.ToString();
-            litInstructors.Text = totalLecturers.ToString();
+            litStudents.Text = students.ToString();
+            litInstructors.Text = instructors.ToString();
             litActiveToday.Text = UserService.GetActiveTodayCount().ToString();
 
             rptUsers.DataSource = users;
@@ -92,32 +99,16 @@ namespace CSA.Admin
                     Response.Redirect($"~/Admin/EditUser.aspx?id={id}");
                     break;
                 case "ToggleStatus":
-                    try
-                    {
-                        UserService.ToggleActive(id);
-                        AdminService.LogAudit(adminId, "TOGGLE_USER_STATUS", "Users", id, "", "");
-                        ShowSuccess("User status updated.");
-                        LoadUsers();
-                    }
-                    catch (Exception)
-                    {
-                        pnlError.Visible = true;
-                        litError.Text = "Error updating user status.";
-                    }
+                    UserService.ToggleActive(id);
+                    AdminService.LogAudit(adminId, "TOGGLE_USER_STATUS", "Users", id, "", "");
+                    ShowSuccess("User status updated.");
+                    LoadUsers();
                     break;
                 case "Delete":
-                    try
-                    {
-                        UserService.Delete(id);
-                        AdminService.LogAudit(adminId, "DELETE_USER", "Users", id, "", "");
-                        ShowSuccess("User deleted.");
-                        LoadUsers();
-                    }
-                    catch (Exception)
-                    {
-                        pnlError.Visible = true;
-                        litError.Text = "Cannot delete this user. They may have existing enrollments, activity logs, or other linked records. Remove those first.";
-                    }
+                    UserService.Delete(id);
+                    AdminService.LogAudit(adminId, "DELETE_USER", "Users", id, "", "");
+                    ShowSuccess("User deleted.");
+                    LoadUsers();
                     break;
             }
         }
@@ -129,7 +120,7 @@ namespace CSA.Admin
             Response.ContentType = "text/csv";
             Response.AddHeader("Content-Disposition", "attachment;filename=users.csv");
             Response.Write(csv);
-            Context.ApplicationInstance.CompleteRequest();
+            Response.End();
         }
 
         private void ShowSuccess(string msg)

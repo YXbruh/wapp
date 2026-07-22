@@ -24,27 +24,7 @@ namespace CSA.Admin
         private void LoadFlag()
         {
             DataTable dt = DBHelper.ExecuteQuery(
-                @"SELECT cf.*, u.FullName AS ReportedByName,
-                         CASE cf.ContentType
-                             WHEN 'Chapter' THEN ch.ChapterTitle
-                             WHEN 'Quiz' THEN q.Title
-                             WHEN 'Lab' THEN vl.LabTitle
-                             ELSE 'Unknown'
-                         END AS Title,
-                         CASE cf.ContentType
-                             WHEN 'Chapter' THEN LEFT(ch.Content, 100)
-                             WHEN 'Quiz' THEN q.Description
-                             WHEN 'Lab' THEN LEFT(vl.Scenario, 100)
-                             ELSE ''
-                         END AS Preview,
-                         c.CourseName
-                  FROM ContentFlags cf
-                  JOIN Users u ON cf.ReportedByID = u.UserID
-                  LEFT JOIN Chapters ch ON cf.ContentType = 'Chapter' AND cf.ContentID = ch.ChapterID
-                  LEFT JOIN Quizzes q ON cf.ContentType = 'Quiz' AND cf.ContentID = q.QuizID
-                  LEFT JOIN VirtualLabs vl ON cf.ContentType = 'Lab' AND cf.ContentID = vl.LabID
-                  LEFT JOIN Courses c ON (ch.CourseID = c.CourseID OR q.CourseID = c.CourseID OR vl.CourseID = c.CourseID)
-                  WHERE cf.FlagID = @ID",
+                "SELECT * FROM ContentFlags WHERE FlagID = @ID",
                 new System.Data.SqlClient.SqlParameter("@ID", _flagId));
 
             if (dt.Rows.Count == 0)
@@ -54,10 +34,16 @@ namespace CSA.Admin
             litFlagID.Text = row["FlagID"].ToString();
             litContentType.Text = row["ContentType"].ToString();
             litReason.Text = row["Reason"].ToString();
-            litReportedBy.Text = row["ReportedByName"].ToString();
-            litTitle.Text = row["Title"].ToString();
-            litCourse.Text = row["CourseName"].ToString();
-            litPreview.Text = row["Preview"].ToString();
+            litReportedBy.Text = row["ReportedByID"].ToString();
+
+            DataTable detail = AdminService.GetPendingContent("");
+            DataRow[] matches = detail.Select("FlagID = " + _flagId);
+            if (matches.Length > 0)
+            {
+                litTitle.Text = matches[0]["Title"].ToString();
+                litCourse.Text = matches[0]["CourseName"].ToString();
+                litPreview.Text = matches[0]["Preview"].ToString();
+            }
 
             btnApprove.Enabled = row["Status"].ToString() == "Pending";
             btnReject.Enabled = row["Status"].ToString() == "Pending";
@@ -71,30 +57,14 @@ namespace CSA.Admin
 
         protected void btnApprove_Click(object sender, EventArgs e)
         {
-            try
-            {
-                AdminService.ApproveContent(_flagId, Session["UserID"].ToString());
-                Response.Redirect("~/Admin/ContentReview.aspx");
-            }
-            catch (Exception ex)
-            {
-                pnlError.Visible = true;
-                litError.Text = "Error approving content: " + ex.Message;
-            }
+            AdminService.ApproveContent(_flagId, Session["UserID"].ToString());
+            Response.Redirect("~/Admin/ContentReview.aspx");
         }
 
         protected void btnReject_Click(object sender, EventArgs e)
         {
-            try
-            {
-                AdminService.RejectContent(_flagId, Session["UserID"].ToString());
-                Response.Redirect("~/Admin/ContentReview.aspx");
-            }
-            catch (Exception ex)
-            {
-                pnlError.Visible = true;
-                litError.Text = "Error dismissing flag: " + ex.Message;
-            }
+            AdminService.RejectContent(_flagId, Session["UserID"].ToString());
+            Response.Redirect("~/Admin/ContentReview.aspx");
         }
 
         protected void lbLogout_Click(object sender, EventArgs e)

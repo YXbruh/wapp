@@ -373,7 +373,7 @@ CREATE TABLE ContentFlags (
     FlagID        INT           NOT NULL IDENTITY(1,1) PRIMARY KEY,
     ReportedByID  NVARCHAR(10)  NOT NULL,
     ContentType   NVARCHAR(50)  NOT NULL,
-    ContentID     NVARCHAR(20)  NOT NULL,
+    ContentID     INT           NOT NULL,
     Reason        NVARCHAR(1000) NULL,
     Status        NVARCHAR(20)  NOT NULL DEFAULT 'Pending',
     ReviewedByID  NVARCHAR(10)  NULL,
