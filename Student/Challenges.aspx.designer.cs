@@ -213,15 +213,6 @@ namespace CSA.Student
         protected global::System.Web.UI.WebControls.Button btnSubmit;
 
         /// <summary>
-        /// btnNextAttempt control.
-        /// </summary>
-        /// <remarks>
-        /// Auto-generated field.
-        /// To modify move field declaration from designer file to code-behind file.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.Button btnNextAttempt;
-
-        /// <summary>
         /// hlQuizFeedback control.
         /// </summary>
         /// <remarks>
