@@ -48,7 +48,7 @@ namespace CSA.Admin
             catch (Exception ex)
             {
                 pnlError.Visible = true;
-                litError.Text = "Error creating user: " + ex.Message;
+                litError.Text = "Error creating user: " + Server.HtmlEncode(ex.Message);
                 pnlSuccess.Visible = false;
             }
         }

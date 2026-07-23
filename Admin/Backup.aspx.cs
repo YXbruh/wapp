@@ -9,10 +9,6 @@ namespace CSA.Admin
 {
     public partial class Backup : Page
     {
-        protected Literal litPageInfo;
-        protected LinkButton btnPrev;
-        protected LinkButton btnNext;
-
         private Pager _pager;
 
         protected void Page_Load(object sender, EventArgs e)
@@ -129,7 +125,7 @@ namespace CSA.Admin
                 catch (Exception ex)
                 {
                     pnlError.Visible = true;
-                    litError.Text = "Error downloading backup: " + ex.Message;
+                    litError.Text = "Error downloading backup: " + Server.HtmlEncode(ex.Message);
                 }
             }
             else if (e.CommandName == "Delete")
@@ -155,7 +151,7 @@ namespace CSA.Admin
                 catch (Exception ex)
                 {
                     pnlError.Visible = true;
-                    litError.Text = "Error deleting backup: " + ex.Message;
+                    litError.Text = "Error deleting backup: " + Server.HtmlEncode(ex.Message);
                     pnlSuccess.Visible = false;
                 }
             }

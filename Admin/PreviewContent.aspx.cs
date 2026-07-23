@@ -79,7 +79,7 @@ private void LoadFlag()
             catch (Exception ex)
             {
                 pnlError.Visible = true;
-                litError.Text = "Error approving content: " + ex.Message;
+                litError.Text = "Error approving content: " + Server.HtmlEncode(ex.Message);
             }
         }
 
@@ -93,7 +93,7 @@ private void LoadFlag()
             catch (Exception ex)
             {
                 pnlError.Visible = true;
-                litError.Text = "Error dismissing flag: " + ex.Message;
+                litError.Text = "Error dismissing flag: " + Server.HtmlEncode(ex.Message);
             }
         }
 

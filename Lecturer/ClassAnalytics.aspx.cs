@@ -1,10 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Web;
 using System.Web.UI;
-using System.Web.UI.WebControls;
 using System.Configuration;
 using System.Data.SqlClient;
 
@@ -56,7 +53,7 @@ namespace CSA.Lecturer
                 SqlDataReader reader = cmd.ExecuteReader();
                 while (reader.Read())
                 {
-                    ddlCourse.Items.Add(new ListItem(
+                    ddlCourse.Items.Add(new System.Web.UI.WebControls.ListItem(
                         reader["CourseName"].ToString(),
                         reader["CourseID"].ToString()
                     ));
@@ -67,7 +64,6 @@ namespace CSA.Lecturer
         private void LoadData(string instructorId, string courseId, string searchTerm)
         {
             if (string.IsNullOrEmpty(instructorId)) courseId = null;
-            if (string.IsNullOrEmpty(courseId)) courseId = null;
             if (string.IsNullOrEmpty(searchTerm)) searchTerm = "";
 
             string connString = ConfigurationManager.ConnectionStrings["CSAConnection"].ConnectionString;
@@ -146,7 +142,7 @@ namespace CSA.Lecturer
                         int total = (int)cmd.ExecuteScalar();
                         litTotal.Text = total.ToString();
                     }
-                    catch (Exception ex)
+                    catch
                     {
                         litTotal.Text = "0";
                     }
@@ -162,7 +158,7 @@ namespace CSA.Lecturer
                         decimal avgQuizScore = result != DBNull.Value ? Convert.ToDecimal(result) : 0;
                         litAvgQuiz.Text = Math.Round(avgQuizScore, 0).ToString() + "%";
                     }
-                    catch (Exception ex)
+                    catch
                     {
                         litAvgQuiz.Text = "0%";
                     }
@@ -178,7 +174,7 @@ namespace CSA.Lecturer
                         decimal avgProgress = result != DBNull.Value ? Convert.ToDecimal(result) : 0;
                         litLabRate.Text = Math.Round(avgProgress, 0).ToString() + "%";
                     }
-                    catch (Exception ex)
+                    catch
                     {
                         litLabRate.Text = "0%";
                     }

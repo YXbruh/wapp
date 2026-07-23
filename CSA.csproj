@@ -111,10 +111,8 @@
     <Content Include="Admin\Backup.aspx" />
     <Content Include="Admin\ContentReview.aspx" />
     <Content Include="Admin\Courses.aspx" />
-    <Content Include="Admin\SecurityAlerts.aspx" />
     <Content Include="Admin\CreateUser.aspx" />
     <Content Include="Admin\EditUser.aspx" />
-    <Content Include="Admin\ErrorLogs.aspx" />
     <Content Include="Admin\Categories.aspx" />
     <Content Include="Admin\CreateCourse.aspx" />
     <Content Include="Admin\EditCourse.aspx" />
@@ -442,13 +440,6 @@
     <Compile Include="Admin\EditUser.aspx.designer.cs">
       <DependentUpon>EditUser.aspx</DependentUpon>
     </Compile>
-    <Compile Include="Admin\ErrorLogs.aspx.cs">
-      <DependentUpon>ErrorLogs.aspx</DependentUpon>
-      <SubType>ASPXCodeBehind</SubType>
-    </Compile>
-    <Compile Include="Admin\ErrorLogs.aspx.designer.cs">
-      <DependentUpon>ErrorLogs.aspx</DependentUpon>
-    </Compile>
     <Compile Include="Admin\PreviewContent.aspx.cs">
       <DependentUpon>PreviewContent.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
@@ -462,13 +453,6 @@
     </Compile>
     <Compile Include="Admin\Profile.aspx.designer.cs">
       <DependentUpon>Profile.aspx</DependentUpon>
-    </Compile>
-    <Compile Include="Admin\SecurityAlerts.aspx.cs">
-      <DependentUpon>SecurityAlerts.aspx</DependentUpon>
-      <SubType>ASPXCodeBehind</SubType>
-    </Compile>
-    <Compile Include="Admin\SecurityAlerts.aspx.designer.cs">
-      <DependentUpon>SecurityAlerts.aspx</DependentUpon>
     </Compile>
     <Compile Include="Admin\Users.aspx.cs">
       <DependentUpon>Users.aspx</DependentUpon>

@@ -14,10 +14,8 @@
         <a href="ContentReview.aspx" class="sidebar-link"><i class="ti ti-file-check"></i>Content Review</a>
         <div class="sidebar-section">System</div>
         <a href="ActivityLogs.aspx" class="sidebar-link"><i class="ti ti-activity"></i>Activity Logs</a>
-        <a href="ErrorLogs.aspx"      class="sidebar-link"><i class="ti ti-bug"></i>Error Logs</a>
         <a href="Announcements.aspx" class="sidebar-link"><i class="ti ti-bell"></i>Announcements</a>
         <a href="Backup.aspx" class="sidebar-link"><i class="ti ti-database"></i>DB Backup</a>
-        <a href="SecurityAlerts.aspx" class="sidebar-link"><i class="ti ti-alert-triangle"></i>Security Alerts</a>
         <div class="sidebar-section">Account</div>
         <a href="Profile.aspx" class="sidebar-link"><i class="ti ti-user-circle"></i>My Profile</a>
         <asp:LinkButton ID="lbLogout" OnClientClick="return showLogoutConfirm(this);" runat="server" CssClass="sidebar-link" OnClick="lbLogout_Click">

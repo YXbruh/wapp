@@ -7,10 +7,6 @@ namespace CSA.Admin
 {
     public partial class Categories : System.Web.UI.Page
     {
-        protected Literal litPageInfo;
-        protected LinkButton btnPrev;
-        protected LinkButton btnNext;
-
         private Pager _pager;
 
         protected void Page_Load(object sender, EventArgs e)
@@ -119,7 +115,7 @@ namespace CSA.Admin
             }
             catch (Exception ex)
             {
-                SetMessage("Error: " + ex.Message, false);
+                SetMessage("Error: " + Server.HtmlEncode(ex.Message), false);
             }
         }
 
@@ -150,7 +146,7 @@ namespace CSA.Admin
                 }
                 catch (Exception ex)
                 {
-                    SetMessage("Error: " + ex.Message, false);
+                    SetMessage("Error: " + Server.HtmlEncode(ex.Message), false);
                 }
             }
         }
