@@ -77,6 +77,44 @@
         border:1px solid var(--warning);
     }
 
+    .attachment-list {
+        margin-top:12px;
+        display:flex;
+        flex-direction:column;
+        gap:8px;
+    }
+
+    .attachment-item {
+        display:flex;
+        align-items:center;
+        gap:8px;
+        width:fit-content;
+        max-width:100%;
+        padding:8px 11px;
+        color:var(--accent3);
+        background:var(--bg3);
+        border:1px solid var(--border);
+        border-radius:7px;
+        text-decoration:none;
+    }
+
+    .attachment-item:hover {
+        border-color:var(--accent2);
+    }
+
+    .attachment-image {
+        display:block;
+        max-width:100%;
+        max-height:320px;
+        margin-top:8px;
+        border:1px solid var(--border);
+        border-radius:8px;
+    }
+
+    .quiz-description {
+        color:var(--text2);
+    }
+
     .quiz-actions {
         display:flex;
         align-items:center;
@@ -432,13 +470,13 @@
 
                 </h2>
 
-                <p>
+                <div class="quiz-description">
 
                     <asp:Literal
                         ID="litQuizDescription"
                         runat="server" />
 
-                </p>
+                </div>
 
             </div>
 
@@ -558,6 +596,10 @@
                             </span>
 
                         </div>
+
+                        <asp:Literal
+                            ID="litQuestionAttachments"
+                            runat="server" />
 
                         <asp:Panel
                             ID="pnlMCQ"
