@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Data;
 using System.Web.UI;
 using System.Web.UI.WebControls;
@@ -8,7 +8,7 @@ namespace CSA.Admin
 {
     public partial class ErrorLogs : Page
     {
-        private const int PageSize = 25;
+        private const int PageSize = 10;
 
         private int CurrentPage
         {

@@ -110,13 +110,13 @@
                                             </asp:LinkButton>
                                             <asp:LinkButton runat="server" CssClass="btn-sm"
                                                 CommandName="Approve" CommandArgument='<%# Eval("FlagID") %>'
-                                                OnClientClick="return showConfirmAction(this, 'Are you sure you want to remove this content?', 'Approve');">
+                                                OnClientClick="return showConfirmAction(this, 'Approve this flag and remove the reported content?', 'Approve', 'var(--success)');">
                                                 <i class="ti ti-circle-check"></i> Approve
                                             </asp:LinkButton>
-                                            <asp:LinkButton runat="server" CssClass="btn-danger"
+                                            <asp:LinkButton runat="server" CssClass="btn-sm"
                                                 CommandName="Reject" CommandArgument='<%# Eval("FlagID") %>'
-                                                OnClientClick="return showConfirmAction(this, 'Are you sure you want to reject this content?', 'Reject');">
-                                                <i class="ti ti-circle-x"></i> Reject
+                                                OnClientClick="return showConfirmAction(this, 'Dismiss this flag without taking action?', 'Dismiss', 'var(--danger)');">
+                                                <i class="ti ti-circle-x"></i> Dismiss
                                             </asp:LinkButton>
                                         </div>
                                     </td>

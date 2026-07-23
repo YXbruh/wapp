@@ -120,6 +120,15 @@
                         </tbody>
                     </table>
                 </div>
+                <div class="pager-bar">
+                    <asp:LinkButton ID="btnPrev" runat="server" CssClass="btn-sm secondary" OnClick="btnPrev_Click">
+                        <i class="ti ti-chevron-left"></i> Previous
+                    </asp:LinkButton>
+                    <span class="pager-info"><asp:Literal ID="litPageInfo" runat="server" /></span>
+                    <asp:LinkButton ID="btnNext" runat="server" CssClass="btn-sm secondary" OnClick="btnNext_Click">
+                        Next <i class="ti ti-chevron-right"></i>
+                    </asp:LinkButton>
+                </div>
 
                 <asp:Panel ID="pnlEmpty" runat="server" Visible="false">
                     <p class="text-muted text-small mt-16" style="text-align:center;padding:16px 0">No categories yet.</p>
@@ -134,5 +143,7 @@
 <asp:Content ID="cScripts" ContentPlaceHolderID="Scripts" runat="server">
 <style>
 .alert-success{background:rgba(111,207,151,0.12);border:1px solid rgba(111,207,151,0.4);border-radius:8px;padding:12px 16px;font-size:13px;color:var(--success);display:flex;align-items:center;gap:8px}
+.pager-bar{display:flex;align-items:center;gap:8px;padding:10px 0}
+.pager-info{flex:1;text-align:center;font-size:12px;color:var(--text3)}
 </style>
 </asp:Content>

@@ -138,15 +138,15 @@
                                                 CommandName="Edit" CommandArgument='<%# Eval("UserID") %>'>
                                                 <i class="ti ti-edit"></i> Edit
                                             </asp:LinkButton>
-                                            <asp:LinkButton runat="server" CssClass="btn-sm secondary"
+<asp:LinkButton runat="server" CssClass="btn-sm secondary"
                                                 CommandName="ToggleStatus" CommandArgument='<%# Eval("UserID") %>'
-                                                OnClientClick="return showConfirmAction(this, 'Are you sure you want to toggle this user\\'s active status?', 'Toggle');">
+                                                OnClientClick="return showConfirmAction(this, 'Are you sure you want to toggle this user\'s active status?', 'Toggle', 'var(--warning)');">
                                                 <i class="ti <%# (bool)Eval("IsActive") ? "ti-user-off" : "ti-user-check" %>"></i>
                                                 <%# (bool)Eval("IsActive") ? "Deactivate" : "Activate" %>
                                             </asp:LinkButton>
                                             <asp:LinkButton runat="server" CssClass="btn-danger"
                                                 CommandName="Delete" CommandArgument='<%# Eval("UserID") %>'
-                                                OnClientClick="return showDeleteConfirm(this);">
+                                                OnClientClick="return showConfirmAction(this, 'Delete this user? This cannot be undone.', 'Delete', 'var(--danger)');">
                                                 <i class="ti ti-trash"></i>
                                             </asp:LinkButton>
                                         </div>

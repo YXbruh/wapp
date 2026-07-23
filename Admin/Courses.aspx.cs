@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Data;
 using System.Web.UI;
 using System.Web.UI.WebControls;
@@ -27,7 +27,7 @@ namespace CSA.Admin
                         _pager = p;
                     else
                     {
-                        _pager = new Pager { PageSize = 20 };
+                        _pager = new Pager { PageSize = 10 };
                         ViewState["Pager"] = _pager;
                     }
                 }

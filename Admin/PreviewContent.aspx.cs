@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Data;
 using System.Web.UI;
 using CSA.DataAccess;
@@ -21,7 +21,7 @@ namespace CSA.Admin
             if (!IsPostBack) LoadFlag();
         }
 
-        private void LoadFlag()
+private void LoadFlag()
         {
             DataTable dt = DBHelper.ExecuteQuery(
                 @"SELECT cf.*, u.FullName AS ReportedByName,
@@ -40,9 +40,9 @@ namespace CSA.Admin
                          c.CourseName
                   FROM ContentFlags cf
                   JOIN Users u ON cf.ReportedByID = u.UserID
-                  LEFT JOIN Chapters ch ON cf.ContentType = 'Chapter' AND cf.ContentID = ch.ChapterID
-                  LEFT JOIN Quizzes q ON cf.ContentType = 'Quiz' AND cf.ContentID = q.QuizID
-                  LEFT JOIN VirtualLabs vl ON cf.ContentType = 'Lab' AND cf.ContentID = vl.LabID
+                  LEFT JOIN Chapters ch ON cf.ContentType = 'Chapter' AND CAST(cf.ContentID AS NVARCHAR(10)) = ch.ChapterID
+                  LEFT JOIN Quizzes q ON cf.ContentType = 'Quiz' AND CAST(cf.ContentID AS NVARCHAR(10)) = q.QuizID
+                  LEFT JOIN VirtualLabs vl ON cf.ContentType = 'Lab' AND CAST(cf.ContentID AS NVARCHAR(10)) = vl.LabID
                   LEFT JOIN Courses c ON (ch.CourseID = c.CourseID OR q.CourseID = c.CourseID OR vl.CourseID = c.CourseID)
                   WHERE cf.FlagID = @ID",
                 new System.Data.SqlClient.SqlParameter("@ID", _flagId));

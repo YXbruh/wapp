@@ -309,6 +309,14 @@
 
         </a>
 
+        <a href="viewFeedback.aspx"
+            class="sidebar-link">
+
+            <i class="ti ti-message-star"></i>
+            My Feedback
+
+        </a>
+
         <div class="sidebar-section">Account</div>
 
         <a href="Profile.aspx"

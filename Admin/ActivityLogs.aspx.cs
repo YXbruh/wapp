@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Data;
 using System.Web.UI;
 using CSA.Services;
@@ -7,7 +7,7 @@ namespace CSA.Admin
 {
     public partial class Admin_ActivityLogs : Page
     {
-        private const int PageSize = 25;
+        private const int PageSize = 10;
 
         private int CurrentPage
         {

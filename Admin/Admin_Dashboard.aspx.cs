@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Data;
 using System.Web.UI;
 using System.Web.UI.WebControls;
@@ -8,6 +8,10 @@ namespace CSA.Admin
 {
     public partial class Admin_Dashboard : Page
     {
+        protected Panel pnlSuccess;
+        protected Literal litSuccess;
+        protected Panel pnlError;
+        protected Literal litError;
         protected void Page_Load(object sender, EventArgs e)
         {
             if (Session["UserID"] == null || Session["Role"] as string != "Admin")
@@ -85,8 +89,8 @@ namespace CSA.Admin
             {
                 if (userId == Session["UserID"].ToString())
                 {
-                    ClientScript.RegisterStartupScript(GetType(), "alert",
-                        "alert('You cannot delete your own account.');", true);
+                    pnlError.Visible = true;
+                    litError.Text = "You cannot delete your own account.";
                     return;
                 }
                 try
@@ -94,12 +98,14 @@ namespace CSA.Admin
                     UserService.Delete(userId);
                     AdminService.LogAudit(Session["UserID"].ToString(),
                         "DELETE_USER", "Users", userId, "", "");
+                    pnlSuccess.Visible = true;
+                    litSuccess.Text = "User deleted.";
                     LoadDashboard();
                 }
                 catch (Exception)
                 {
-                    ClientScript.RegisterStartupScript(GetType(), "alert",
-                        "alert('Cannot delete this user. They may have existing records (enrollments, activity logs, etc.) in the system.');", true);
+                    pnlError.Visible = true;
+                    litError.Text = "Cannot delete this user. They may have existing enrollments, activity logs, or other linked records. Remove those first.";
                 }
             }
         }

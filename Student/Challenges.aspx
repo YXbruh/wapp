@@ -326,7 +326,7 @@
                                         Attempts:
                                         <%# Eval("AttemptCount") %>
                                         /
-                                        <%# Eval("MaxAttempts") %>
+                                        <%# (Container.DataItem as System.Data.DataRowView)?.Row.Table.Columns.Contains("MaxAttempts") == true ? Eval("MaxAttempts") : 3 %>
                                     </span>
 
                                     <span class='badge <%#
@@ -368,13 +368,13 @@
                                     CommandArgument='<%# Eval("QuizID") %>'>
 
                                     <%#
-                                        Convert.ToInt32(Eval("AttemptCount")) >=
-                                        Convert.ToInt32(Eval("MaxAttempts"))
-                                            ? "View"
-                                            : Convert.ToBoolean(Eval("HasPassed"))
-                                                ? "Redo"
-                                                : "Start"
-                                    %>
+                                    Convert.ToInt32(Eval("AttemptCount")) >=
+                                    Convert.ToInt32((Container.DataItem as System.Data.DataRowView)?.Row.Table.Columns.Contains("MaxAttempts") == true ? Eval("MaxAttempts") : 3)
+                                        ? "View"
+                                        : Convert.ToBoolean(Eval("HasPassed"))
+                                            ? "Redo"
+                                            : "Start"
+                                %>
 
                                 </asp:LinkButton>
 

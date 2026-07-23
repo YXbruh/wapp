@@ -208,6 +208,14 @@ namespace CSA.Services
             return result != null ? Convert.ToInt32(result) : 0;
         }
 
+        public static void GetCountsByRole(out int totalStudents, out int totalLecturers)
+        {
+            totalStudents = Convert.ToInt32(DBHelper.ExecuteScalar(
+                @"SELECT COUNT(*) FROM Users u JOIN Roles r ON u.RoleID = r.RoleID WHERE r.RoleName = 'Student'"));
+            totalLecturers = Convert.ToInt32(DBHelper.ExecuteScalar(
+                @"SELECT COUNT(*) FROM Users u JOIN Roles r ON u.RoleID = r.RoleID WHERE r.RoleName = 'Lecturer'"));
+        }
+
         public static string ExportCsv(string keyword, string role, string status)
         {
             DataTable dt = Search(keyword, role, status);

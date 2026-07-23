@@ -120,6 +120,19 @@
         <div class="card mb-24">
             <div class="card-header">User Management</div>
 
+            <!-- Success/Error messages -->
+            <asp:Panel ID="pnlSuccess" runat="server" Visible="false">
+                <div class="alert-success mb-16">
+                    <i class="ti ti-circle-check" aria-hidden="true"></i>
+                    <asp:Literal ID="litSuccess" runat="server" />
+                </div>
+            </asp:Panel>
+            <asp:Panel ID="pnlError" runat="server" Visible="false">
+                <div class="validation-summary-errors mb-16">
+                    <asp:Literal ID="litError" runat="server" />
+                </div>
+            </asp:Panel>
+
             <!-- Toolbar: search + buttons -->
             <div class="toolbar">
                 <div class="search-wrap">
@@ -178,12 +191,12 @@
                                                 CommandArgument='<%# Eval("UserID") %>'>
                                                 <i class="ti ti-edit"></i> Edit
                                             </asp:LinkButton>
-                                            <asp:LinkButton runat="server" CssClass="btn-danger"
-                                                CommandName="Delete"
-                                                CommandArgument='<%# Eval("UserID") %>'
-                                                OnClientClick="return showDeleteConfirm(this);">
-                                                <i class="ti ti-trash"></i> Del
-                                            </asp:LinkButton>
+<asp:LinkButton runat="server" CssClass="btn-danger"
+                                                 CommandName="Delete"
+                                                 CommandArgument='<%# Eval("UserID") %>'
+                                                 OnClientClick="return showConfirmAction(this, 'Delete this user? This cannot be undone.', 'Delete', 'var(--danger)');">
+                                                 <i class="ti ti-trash"></i> Del
+                                             </asp:LinkButton>
                                         </div>
                                     </td>
                                 </tr>
