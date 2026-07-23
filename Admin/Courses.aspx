@@ -37,9 +37,15 @@
                 <asp:Literal ID="litSuccess" runat="server" />
             </div>
         </asp:Panel>
+        <asp:Panel ID="pnlError" runat="server" Visible="false">
+            <div class="validation-summary-errors mb-16">
+                <i class="ti ti-alert-circle" aria-hidden="true"></i>
+                <asp:Literal ID="litError" runat="server" />
+            </div>
+        </asp:Panel>
 
         <!-- Metrics -->
-        <div class="metrics" style="grid-template-columns:repeat(4,1fr);margin-bottom:24px">
+        <div class="metrics" style="grid-template-columns:repeat(3,1fr);margin-bottom:24px">
             <div class="metric">
                 <div class="metric-label">Total</div>
                 <div class="metric-val"><asp:Literal ID="litTotal" runat="server" Text="0"/></div>
@@ -54,11 +60,6 @@
                 <div class="metric-label">Draft</div>
                 <div class="metric-val" style="color:var(--warning)"><asp:Literal ID="litDraft" runat="server" Text="0"/></div>
                 <div class="metric-sub">in progress</div>
-            </div>
-            <div class="metric">
-                <div class="metric-label">Pending</div>
-                <div class="metric-val" style="color:var(--info)"><asp:Literal ID="litPending" runat="server" Text="0"/></div>
-                <div class="metric-sub">awaiting review</div>
             </div>
         </div>
 
@@ -76,7 +77,6 @@
                     <asp:ListItem Value="">All Status</asp:ListItem>
                     <asp:ListItem Value="Published">Published</asp:ListItem>
                     <asp:ListItem Value="Draft">Draft</asp:ListItem>
-                    <asp:ListItem Value="Pending">Pending</asp:ListItem>
                 </asp:DropDownList>
                 <asp:DropDownList ID="ddlLevel" runat="server" CssClass="form-select"
                     style="width:140px" AutoPostBack="true" OnSelectedIndexChanged="Search_Changed">
@@ -131,13 +131,14 @@
                                                 <i class="ti ti-edit"></i> Edit
                                             </asp:LinkButton>
                                             <asp:LinkButton runat="server" CssClass="btn-sm secondary"
-                                                CommandName="TogglePublish" CommandArgument='<%# Eval("CourseID") %>'>
+                                                CommandName="TogglePublish" CommandArgument='<%# Eval("CourseID") %>'
+                                                OnClientClick="return showConfirmAction(this, 'Are you sure you want to change this course\\'s publish status?', 'Toggle');">
                                                 <i class="ti <%# Eval("Status").ToString()=="Published" ? "ti-eye-off" : "ti-eye" %>"></i>
                                                 <%# Eval("Status").ToString()=="Published" ? "Unpublish" : "Publish" %>
                                             </asp:LinkButton>
                                             <asp:LinkButton runat="server" CssClass="btn-danger"
                                                 CommandName="Delete" CommandArgument='<%# Eval("CourseID") %>'
-                                                OnClientClick="return showConfirmAction(this, 'Delete this course? This cannot be undone.', 'Delete');">
+                                                OnClientClick="return showDeleteConfirm(this);">
                                                 <i class="ti ti-trash"></i>
                                             </asp:LinkButton>
                                         </div>

@@ -207,6 +207,23 @@ namespace CSA.Student
                     "@StudentID",
                     UserId));
 
+            // Debug: ensure MaxAttempts column exists
+            System.Diagnostics.Debug.WriteLine($"[LoadChallenges] Columns: {string.Join(", ", dt.Columns.Cast<System.Data.DataColumn>().Select(c => c.ColumnName))}");
+            
+            // Case-insensitive check for MaxAttempts column
+            var maxAttemptsCol = dt.Columns.Cast<System.Data.DataColumn>().FirstOrDefault(c => c.ColumnName.Equals("MaxAttempts", StringComparison.OrdinalIgnoreCase));
+            if (maxAttemptsCol == null)
+            {
+                dt.Columns.Add("MaxAttempts", typeof(int));
+                foreach (DataRow row in dt.Rows)
+                    row["MaxAttempts"] = 3;
+            }
+            else if (maxAttemptsCol.ColumnName != "MaxAttempts")
+            {
+                // Rename column to standard casing
+                maxAttemptsCol.ColumnName = "MaxAttempts";
+            }
+
             litTotal.Text =
                 dt.Rows.Count.ToString();
 
@@ -282,6 +299,22 @@ namespace CSA.Student
                 new SqlParameter(
                     "@StudentID",
                     UserId));
+
+            // Debug
+            System.Diagnostics.Debug.WriteLine($"[LoadQuiz] Columns: {string.Join(", ", dt.Columns.Cast<System.Data.DataColumn>().Select(c => c.ColumnName))}");
+
+            // Case-insensitive check for MaxAttempts column
+            var maxAttemptsCol = dt.Columns.Cast<System.Data.DataColumn>().FirstOrDefault(c => c.ColumnName.Equals("MaxAttempts", StringComparison.OrdinalIgnoreCase));
+            if (maxAttemptsCol == null)
+            {
+                dt.Columns.Add("MaxAttempts", typeof(int));
+                foreach (DataRow row in dt.Rows)
+                    row["MaxAttempts"] = 3;
+            }
+            else if (maxAttemptsCol.ColumnName != "MaxAttempts")
+            {
+                maxAttemptsCol.ColumnName = "MaxAttempts";
+            }
 
             if (dt.Rows.Count == 0)
             {
@@ -984,6 +1017,22 @@ namespace CSA.Student
                     new SqlParameter(
                         "@QuizID",
                         QuizId));
+
+            // Debug
+            System.Diagnostics.Debug.WriteLine($"[btnSubmit] Columns: {string.Join(", ", quizTable.Columns.Cast<System.Data.DataColumn>().Select(c => c.ColumnName))}");
+
+            // Case-insensitive check for MaxAttempts column
+            var maxAttemptsCol = quizTable.Columns.Cast<System.Data.DataColumn>().FirstOrDefault(c => c.ColumnName.Equals("MaxAttempts", StringComparison.OrdinalIgnoreCase));
+            if (maxAttemptsCol == null)
+            {
+                quizTable.Columns.Add("MaxAttempts", typeof(int));
+                foreach (DataRow row in quizTable.Rows)
+                    row["MaxAttempts"] = 3;
+            }
+            else if (maxAttemptsCol.ColumnName != "MaxAttempts")
+            {
+                maxAttemptsCol.ColumnName = "MaxAttempts";
+            }
 
             if (quizTable.Rows.Count == 0)
             {

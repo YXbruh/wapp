@@ -1,4 +1,5 @@
-﻿using System;
+using System;
+using System.Web.UI;
 using System.Web.UI.WebControls;
 using CSA.Services;
 
@@ -6,21 +7,69 @@ namespace CSA.Admin
 {
     public partial class Categories : System.Web.UI.Page
     {
+        protected Literal litPageInfo;
+        protected LinkButton btnPrev;
+        protected LinkButton btnNext;
+
+        private Pager _pager;
+
         protected void Page_Load(object sender, EventArgs e)
         {
-            if (Session["Role"] == null || Session["Role"].ToString() != "Admin")
-                Response.Redirect("~/Login.aspx");
+            if (Session["UserID"] == null || Session["Role"] as string != "Admin")
+            { Response.Redirect("~/Login.aspx"); return; }
 
-            if (!IsPostBack)
-                LoadCategories();
+            if (!IsPostBack) LoadCategories();
+        }
+
+        private Pager PagerState
+        {
+            get
+            {
+                if (_pager == null)
+                {
+                    if (ViewState["Pager"] is Pager p)
+                        _pager = p;
+                    else
+                    {
+                        _pager = new Pager { PageSize = 10 };
+                        ViewState["Pager"] = _pager;
+                    }
+                }
+                return _pager;
+            }
+        }
+
+        private void UpdatePagerUI()
+        {
+            var p = PagerState;
+            litPageInfo.Text = "Page " + p.Page + " of " + Math.Max(1, p.TotalPages) + " (" + p.Total + " total)";
+            btnPrev.Visible = p.HasPrevious;
+            btnNext.Visible = p.HasNext;
         }
 
         private void LoadCategories()
         {
-            var dt = CourseService.GetCategories();
+            var p = PagerState;
+            var dt = CourseService.GetCategories(p.Page, p.PageSize, out int total);
+            p.Total = total;
+            ViewState["Pager"] = _pager;
+
             rptCategories.DataSource = dt;
             rptCategories.DataBind();
             pnlEmpty.Visible = dt.Rows.Count == 0;
+            UpdatePagerUI();
+        }
+
+        protected void btnPrev_Click(object sender, EventArgs e)
+        {
+            PagerState.Page--;
+            LoadCategories();
+        }
+
+        protected void btnNext_Click(object sender, EventArgs e)
+        {
+            PagerState.Page++;
+            LoadCategories();
         }
 
         private void SetMessage(string msg, bool success)
@@ -51,11 +100,13 @@ namespace CSA.Admin
                 if (isEdit)
                 {
                     CourseService.UpdateCategory(editID, tbName.Text.Trim(), tbDescription.Text.Trim());
+                    AdminService.LogAudit(Session["UserID"].ToString(), "UPDATE_CATEGORY", "Categories", editID, "", tbName.Text.Trim());
                     SetMessage("Category updated.", true);
                 }
                 else
                 {
                     CourseService.CreateCategory(tbName.Text.Trim(), tbDescription.Text.Trim());
+                    AdminService.LogAudit(Session["UserID"].ToString(), "CREATE_CATEGORY", "Categories", "0", "", tbName.Text.Trim());
                     SetMessage("Category created.", true);
                 }
 
@@ -93,6 +144,7 @@ namespace CSA.Admin
                 try
                 {
                     CourseService.DeleteCategory(id);
+                    AdminService.LogAudit(Session["UserID"].ToString(), "DELETE_CATEGORY", "Categories", id, "", "");
                     SetMessage("Category deleted.", true);
                     LoadCategories();
                 }

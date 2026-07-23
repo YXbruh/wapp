@@ -37,6 +37,11 @@
                 <asp:Literal ID="litSuccess" runat="server" />
             </div>
         </asp:Panel>
+        <asp:Panel ID="pnlError" runat="server" Visible="false">
+            <div class="validation-summary-errors mb-16">
+                <asp:Literal ID="litError" runat="server" />
+            </div>
+        </asp:Panel>
 
         <!-- Metrics -->
         <div class="metrics" style="grid-template-columns:repeat(3,1fr);margin-bottom:24px">
@@ -46,14 +51,14 @@
                 <div class="metric-sub">awaiting action</div>
             </div>
             <div class="metric">
-                <div class="metric-label">Approved Today</div>
+                <div class="metric-label">Removals (This Page)</div>
                 <div class="metric-val" style="color:var(--success)"><asp:Literal ID="litApproved" runat="server" Text="0"/></div>
-                <div class="metric-sub">published</div>
+                <div class="metric-sub">content removed</div>
             </div>
             <div class="metric">
-                <div class="metric-label">Rejected Today</div>
+                <div class="metric-label">Dismissed (This Page)</div>
                 <div class="metric-val" style="color:var(--danger)"><asp:Literal ID="litRejected" runat="server" Text="0"/></div>
-                <div class="metric-sub">sent back</div>
+                <div class="metric-sub">no action taken</div>
             </div>
         </div>
 
@@ -100,17 +105,18 @@
                                     <td>
                                         <div class="action-btns">
                                             <asp:LinkButton runat="server" CssClass="btn-sm secondary"
-                                                CommandName="Preview" CommandArgument='<%# Eval("ContentID") %>'>
+                                                CommandName="Preview" CommandArgument='<%# Eval("FlagID") %>'>
                                                 <i class="ti ti-eye"></i> Preview
                                             </asp:LinkButton>
                                             <asp:LinkButton runat="server" CssClass="btn-sm"
-                                                CommandName="Approve" CommandArgument='<%# Eval("ContentID") %>'>
+                                                CommandName="Approve" CommandArgument='<%# Eval("FlagID") %>'
+                                                OnClientClick="return showConfirmAction(this, 'Approve this flag and remove the reported content?', 'Approve', 'var(--success)');">
                                                 <i class="ti ti-circle-check"></i> Approve
                                             </asp:LinkButton>
-                                            <asp:LinkButton runat="server" CssClass="btn-danger"
-                                                CommandName="Reject" CommandArgument='<%# Eval("ContentID") %>'
-                                                OnClientClick="return showConfirmAction(this, 'Reject this content item?', 'Reject');">
-                                                <i class="ti ti-circle-x"></i> Reject
+                                            <asp:LinkButton runat="server" CssClass="btn-sm"
+                                                CommandName="Reject" CommandArgument='<%# Eval("FlagID") %>'
+                                                OnClientClick="return showConfirmAction(this, 'Dismiss this flag without taking action?', 'Dismiss', 'var(--danger)');">
+                                                <i class="ti ti-circle-x"></i> Dismiss
                                             </asp:LinkButton>
                                         </div>
                                     </td>

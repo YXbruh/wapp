@@ -15,6 +15,7 @@
         <a href="Analytics.aspx"    class="sidebar-link active"><i class="ti ti-chart-bar"></i>Analytics</a>
         <a href="Certificates.aspx" class="sidebar-link"><i class="ti ti-certificate"></i>Certificates</a>
         <a href="Achievements.aspx" class="sidebar-link"><i class="ti ti-star"></i>Achievements</a>
+        <a href="viewFeedback.aspx" class="sidebar-link"><i class="ti ti-message-star"></i>My Feedback</a>
         <div class="sidebar-section">Account</div>
         <a href="Profile.aspx"      class="sidebar-link"><i class="ti ti-user"></i>Profile</a>
         <asp:LinkButton ID="lbLogout" runat="server" CssClass="sidebar-link" OnClick="lbLogout_Click">

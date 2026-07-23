@@ -38,6 +38,13 @@
             </div>
         </asp:Panel>
 
+        <asp:Panel ID="pnlError" runat="server" Visible="false">
+            <div class="alert-danger mb-16">
+                <i class="ti ti-alert-circle" aria-hidden="true"></i>
+                <asp:Literal ID="litError" runat="server" />
+            </div>
+        </asp:Panel>
+
         <!-- Severity summary -->
         <div class="metrics" style="grid-template-columns:repeat(4,1fr);margin-bottom:24px">
             <div class="metric">
@@ -127,6 +134,12 @@
                                             Visible='<%# !Convert.ToBoolean(Eval("IsResolved")) %>'
                                             OnClientClick="return showConfirmAction(this, 'Mark this error as resolved?', 'Resolve');">
                                             <i class="ti ti-circle-check"></i> Resolve
+                                        </asp:LinkButton>
+                                        <asp:LinkButton runat="server" CssClass="btn-sm"
+                                            style="background:#1e7e34; border-color:#1e7e34; color:#fff; pointer-events:none; opacity:0.85;"
+                                            Enabled="false"
+                                            Visible='<%# Convert.ToBoolean(Eval("IsResolved")) %>'>
+                                            <i class="ti ti-circle-check"></i> Resolved
                                         </asp:LinkButton>
                                     </td>
                                 </tr>

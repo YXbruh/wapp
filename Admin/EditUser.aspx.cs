@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Data;
 using System.Web.UI;
 using CSA.Services;
@@ -65,29 +65,38 @@ namespace CSA.Admin
         {
             if (!Page.IsValid) return;
 
-            UserService.Update(_userId,
-                tbFullName.Text.Trim(),
-                tbEmail.Text.Trim(),
-                ddlRole.SelectedValue,
-                cbActive.Checked,
-                tbPhone.Text.Trim(),
-                tbDepartment.Text.Trim(),
-                tbStudentID.Text.Trim());
-
-            string pw = tbNewPassword.Text.Trim();
-            if (!string.IsNullOrEmpty(pw))
+            try
             {
-                UserService.UpdatePassword(_userId, pw);
+                UserService.Update(_userId,
+                    tbFullName.Text.Trim(),
+                    tbEmail.Text.Trim(),
+                    ddlRole.SelectedValue,
+                    cbActive.Checked,
+                    tbPhone.Text.Trim(),
+                    tbDepartment.Text.Trim(),
+                    tbStudentID.Text.Trim());
+
+                string pw = tbNewPassword.Text.Trim();
+                if (!string.IsNullOrEmpty(pw))
+                {
+                    UserService.UpdatePassword(_userId, pw);
+                    AdminService.LogAudit(Session["UserID"].ToString(),
+                        "RESET_PASSWORD", "Users", "0", "", "Password reset by admin");
+                }
+
                 AdminService.LogAudit(Session["UserID"].ToString(),
-                    "RESET_PASSWORD", "Users", "0", "", "Password reset by admin");
+                    "UPDATE_USER", "Users", "0", "", tbFullName.Text.Trim());
+
+                pnlSuccess.Visible = true;
+                litSuccess.Text = "User updated successfully.";
+                litGeneratedPw.Text = "";
             }
-
-            AdminService.LogAudit(Session["UserID"].ToString(),
-                "UPDATE_USER", "Users", "0", "", tbFullName.Text.Trim());
-
-            pnlSuccess.Visible = true;
-            litSuccess.Text = "User updated successfully.";
-            litGeneratedPw.Text = "";
+            catch (Exception ex)
+            {
+                pnlError.Visible = true;
+                litError.Text = "Error updating user: " + ex.Message;
+                pnlSuccess.Visible = false;
+            }
         }
 
         protected void lbLogout_Click(object sender, EventArgs e)

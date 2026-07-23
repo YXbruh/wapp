@@ -1,15 +1,19 @@
-﻿using System;
+using System;
 using System.Data;
 using System.Web.UI;
-using System.Web.UI.WebControls;
 using CSA.Services;
 
 namespace CSA.Admin
 {
     public partial class Admin_ActivityLogs : Page
     {
-        private int _page = 1;
-        private const int PageSize = 25;
+        private const int PageSize = 10;
+
+        private int CurrentPage
+        {
+            get { return ViewState["Page"] as int? ?? 1; }
+            set { ViewState["Page"] = value; }
+        }
 
         protected void Page_Load(object sender, EventArgs e)
         {
@@ -27,28 +31,28 @@ namespace CSA.Admin
         {
             DataTable logs = AdminService.GetLogs(tbSearch.Text.Trim(),
                 ddlSeverity.SelectedValue, tbDateFrom.Text, tbDateTo.Text,
-                _page, PageSize, out int total);
+                CurrentPage, PageSize, out int total);
 
             litInfo.Text = AdminService.CountBySeverity("Info").ToString();
             litWarning.Text = AdminService.CountBySeverity("Warning").ToString();
             litCritical.Text = AdminService.CountBySeverity("Critical").ToString();
 
             litShowing.Text = $"{logs.Rows.Count} of {total}";
-            lbPrev.Enabled = _page > 1;
-            lbNext.Enabled = (_page * PageSize) < total;
+            lbPrev.Enabled = CurrentPage > 1;
+            lbNext.Enabled = (CurrentPage * PageSize) < total;
 
             rptLogs.DataSource = logs;
             rptLogs.DataBind();
             pnlEmpty.Visible = logs.Rows.Count == 0;
         }
 
-        protected void Filter_Changed(object sender, EventArgs e) { _page = 1; LoadLogs(); }
+        protected void Filter_Changed(object sender, EventArgs e) { CurrentPage = 1; LoadLogs(); }
 
         protected void lbPrev_Click(object sender, EventArgs e)
-        { if (_page > 1) { _page--; LoadLogs(); } }
+        { if (CurrentPage > 1) { CurrentPage--; LoadLogs(); } }
 
         protected void lbNext_Click(object sender, EventArgs e)
-        { _page++; LoadLogs(); }
+        { CurrentPage++; LoadLogs(); }
 
         protected void lbExport_Click(object sender, EventArgs e)
         {
@@ -56,13 +60,13 @@ namespace CSA.Admin
                 ddlSeverity.SelectedValue, tbDateFrom.Text, tbDateTo.Text,
                 1, 99999, out _);
             var sb = new System.Text.StringBuilder();
-            sb.AppendLine("Severity,User,Action,Details,IP,Timestamp");
+            sb.AppendLine("Severity,User,Action,Details,Timestamp");
             foreach (DataRow row in logs.Rows)
-                sb.AppendLine($"\"{row["Severity"]}\",\"{row["UserName"]}\",\"{row["Action"]}\",\"{row["Details"]}\",\"{row["IPAddress"]}\",\"{row["OccurredAt"]}\"");
+                sb.AppendLine($"\"{row["Severity"]}\",\"{row["UserName"]}\",\"{row["Action"]}\",\"{row["Details"]}\",\"{row["OccurredAt"]}\"");
             Response.ContentType = "text/csv";
             Response.AddHeader("Content-Disposition", "attachment;filename=audit_log.csv");
             Response.Write(sb.ToString());
-            Response.End();
+            Context.ApplicationInstance.CompleteRequest();
         }
 
         public string GetSeverityBadge(string s) =>

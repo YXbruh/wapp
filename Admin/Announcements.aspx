@@ -84,7 +84,7 @@
                     <asp:DropDownList ID="ddlAudience" runat="server" CssClass="form-select">
                         <asp:ListItem Value="All">All Users</asp:ListItem>
                         <asp:ListItem Value="Student">Students Only</asp:ListItem>
-                        <asp:ListItem Value="Lecturer">Instructors Only</asp:ListItem>
+                        <asp:ListItem Value="Lecturer">Lecturer Only</asp:ListItem>
                     </asp:DropDownList>
                 </div>
 
@@ -175,7 +175,7 @@
                                                 </asp:LinkButton>
                                                 <asp:LinkButton runat="server" CssClass="btn-danger"
                                                     CommandName="Delete" CommandArgument='<%# Eval("AnnouncementID") %>'
-                                                    OnClientClick="return showConfirmAction(this, 'Delete this announcement? This cannot be undone.', 'Delete');">
+                                                    OnClientClick="return showDeleteConfirm(this);">
                                                     <i class="ti ti-trash"></i>
                                                 </asp:LinkButton>
                                             </div>

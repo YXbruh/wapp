@@ -145,11 +145,32 @@ namespace CSA.Services
 
         public static DataTable GetCategories()
         {
-            return DBHelper.ExecuteQuery(@"
+            return GetCategories(0, 0, out _);
+        }
+
+        public static DataTable GetCategories(int page, int pageSize, out int total)
+        {
+            string countSql = "SELECT COUNT(*) FROM CourseCategories";
+            total = Convert.ToInt32(DBHelper.ExecuteScalar(countSql));
+
+            int offset = Math.Max(0, (page - 1) * pageSize);
+            string sql = @"
                 SELECT cc.CategoryID, cc.CategoryName, cc.Description,
                        FORMAT(cc.CreatedAt, 'dd MMM yyyy') AS CreatedDisplay,
                        (SELECT COUNT(*) FROM Courses WHERE CategoryID = cc.CategoryID) AS CourseCount
-                FROM CourseCategories cc ORDER BY cc.CategoryName");
+                FROM CourseCategories cc ORDER BY cc.CategoryName";
+
+            if (pageSize > 0)
+                sql += " OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
+
+            var pars = new System.Collections.Generic.List<SqlParameter>();
+            if (pageSize > 0)
+            {
+                pars.Add(new SqlParameter("@Offset", offset));
+                pars.Add(new SqlParameter("@PageSize", pageSize));
+            }
+
+            return DBHelper.ExecuteQuery(sql, pars.ToArray());
         }
 
         public static string CreateCategory(string name, string description)
@@ -229,6 +250,11 @@ namespace CSA.Services
                 draft = Convert.ToInt32(dt.Rows[0]["Draft"]);
                 pending = Convert.ToInt32(dt.Rows[0]["Pending"]);
             }
+        }
+
+        public static void GetCounts(out int total, out int published, out int draft)
+        {
+            GetCounts(out total, out published, out draft, out _);
         }
     }
 }

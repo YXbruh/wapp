@@ -473,7 +473,8 @@
             function showConfirmAction(
                 button,
                 message,
-                confirmLabel) {
+                confirmLabel,
+                confirmColor) {
 
                 _confirmActionLink = button;
 
@@ -486,6 +487,14 @@
                     "confirmActionBtn"
                 ).textContent =
                     confirmLabel || "Confirm";
+
+                // Set color based on confirmColor parameter
+                var btn = document.getElementById("confirmActionBtn");
+                var icon = document.querySelector("#confirmActionModal .modal-icon");
+                var color = confirmColor || "var(--danger)";
+                btn.style.background = color;
+                btn.style.borderColor = color;
+                if (icon) icon.style.color = color;
 
                 document.getElementById(
                     "confirmActionModal"

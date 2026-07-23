@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Data;
 using System.Web.UI;
 using CSA.Services;
@@ -50,19 +50,37 @@ namespace CSA.Admin
 
         protected void btnSave_Click(object sender, EventArgs e)
         {
-            CourseService.Update(_courseId,
-                tbName.Text.Trim(),
-                tbDescription.Text.Trim(),
-                ddlCategory.SelectedValue,
-                ddlInstructor.SelectedValue,
-                ddlLevel.SelectedValue,
-                Convert.ToInt32(tbDuration.Text));
+            if (!int.TryParse(tbDuration.Text, out int duration))
+            {
+                pnlError.Visible = true;
+                litError.Text = "Duration must be a valid number.";
+                pnlSuccess.Visible = false;
+                return;
+            }
 
-            AdminService.LogAudit(Session["UserID"].ToString(),
-                "UPDATE_COURSE", "Courses", "0", "", tbName.Text.Trim());
+            try
+            {
+                CourseService.Update(_courseId,
+                    tbName.Text.Trim(),
+                    tbDescription.Text.Trim(),
+                    ddlCategory.SelectedValue,
+                    ddlInstructor.SelectedValue,
+                    ddlLevel.SelectedValue,
+                    duration);
 
-            pnlSuccess.Visible = true;
-            litSuccess.Text = "Course updated successfully.";
+                AdminService.LogAudit(Session["UserID"].ToString(),
+                    "UPDATE_COURSE", "Courses", "0", "", tbName.Text.Trim());
+
+                pnlSuccess.Visible = true;
+                litSuccess.Text = "Course updated successfully.";
+                pnlError.Visible = false;
+            }
+            catch (Exception ex)
+            {
+                pnlError.Visible = true;
+                litError.Text = "Error: " + Server.HtmlEncode(ex.Message);
+                pnlSuccess.Visible = false;
+            }
         }
 
         protected void lbLogout_Click(object sender, EventArgs e)

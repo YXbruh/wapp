@@ -58,9 +58,9 @@ namespace CSA.Services
                        c.CourseName
                 FROM ContentFlags cf
                 JOIN Users u ON cf.ReportedByID = u.UserID
-                LEFT JOIN Chapters ch ON cf.ContentType = 'Chapter' AND cf.ContentID = ch.ChapterID
-                LEFT JOIN Quizzes q ON cf.ContentType = 'Quiz' AND cf.ContentID = q.QuizID
-                LEFT JOIN VirtualLabs vl ON cf.ContentType = 'Lab' AND cf.ContentID = vl.LabID
+                LEFT JOIN Chapters ch ON cf.ContentType = 'Chapter' AND CAST(cf.ContentID AS NVARCHAR(10)) = ch.ChapterID
+                LEFT JOIN Quizzes q ON cf.ContentType = 'Quiz' AND CAST(cf.ContentID AS NVARCHAR(10)) = q.QuizID
+                LEFT JOIN VirtualLabs vl ON cf.ContentType = 'Lab' AND CAST(cf.ContentID AS NVARCHAR(10)) = vl.LabID
                 LEFT JOIN Courses c ON (ch.CourseID = c.CourseID OR q.CourseID = c.CourseID OR vl.CourseID = c.CourseID)
                 {where}
                 ORDER BY cf.FlaggedAt DESC";
@@ -275,14 +275,35 @@ namespace CSA.Services
         // ========================================================================
         public static DataTable GetBackups()
         {
-            return DBHelper.ExecuteQuery(@"
+            return GetBackups(0, 0, out _);
+        }
+
+        public static DataTable GetBackups(int page, int pageSize, out int total)
+        {
+            string countSql = "SELECT COUNT(*) FROM DatabaseBackups";
+            total = Convert.ToInt32(DBHelper.ExecuteScalar(countSql));
+
+            int offset = Math.Max(0, (page - 1) * pageSize);
+            string sql = @"
                 SELECT BackupID, BackupLabel AS Label, BackupType, FileSize, Status, CreatedAt,
                        CASE WHEN FileSize > 1048576 THEN CAST(ROUND(FileSize/1048576.0,1) AS NVARCHAR)+' MB'
                             WHEN FileSize > 1024 THEN CAST(ROUND(FileSize/1024.0,1) AS NVARCHAR)+' KB'
                             ELSE CAST(FileSize AS NVARCHAR)+' B'
                        END AS SizeDisplay,
                        FORMAT(CreatedAt, 'dd MMM yyyy HH:mm') AS CreatedDisplay
-                FROM DatabaseBackups ORDER BY CreatedAt DESC");
+                FROM DatabaseBackups ORDER BY CreatedAt DESC";
+
+            if (pageSize > 0)
+                sql += " OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
+
+            var pars = new System.Collections.Generic.List<SqlParameter>();
+            if (pageSize > 0)
+            {
+                pars.Add(new SqlParameter("@Offset", offset));
+                pars.Add(new SqlParameter("@PageSize", pageSize));
+            }
+
+            return DBHelper.ExecuteQuery(sql, pars.ToArray());
         }
 
         public static bool ExecuteBackup(string label, string type, string adminId, out string error)
@@ -290,11 +311,20 @@ namespace CSA.Services
             error = "";
             try
             {
-                string dbName = "CyberShieldAcademy";
                 string backupDir = @"C:\Users\ivanc\source\repos\wapp\App_Data\Backups\";
                 System.IO.Directory.CreateDirectory(backupDir);
-                string fileName = $"{dbName}_{DateTime.Now:yyyyMMdd_HHmmss}.bak";
-                string filePath = backupDir + fileName;
+
+                // Get the actual database name (without path)
+                string dbName = DBHelper.ExecuteScalar("SELECT DB_NAME()")?.ToString() ?? "CyberShieldAcademy";
+                // Clean up database name for filename (remove path if present)
+                string cleanDbName = System.IO.Path.GetFileNameWithoutExtension(dbName);
+                if (string.IsNullOrEmpty(cleanDbName) || cleanDbName.Contains("\\") || cleanDbName.Contains(":"))
+                {
+                    cleanDbName = "CyberShieldAcademy";
+                }
+
+                string fileName = $"{cleanDbName}_{DateTime.Now:yyyyMMdd_HHmmss}.bak";
+                string filePath = System.IO.Path.Combine(backupDir, fileName);
 
                 string sql = $@"BACKUP DATABASE [{dbName}] TO DISK = @Path WITH FORMAT, MEDIANAME = 'CSABackup', NAME = @Label; SELECT 1 AS Result";
                 object result = DBHelper.ExecuteScalar(sql,
@@ -471,6 +501,28 @@ namespace CSA.Services
             object r = DBHelper.ExecuteScalar(
                 "SELECT COUNT(*) FROM ErrorLogs WHERE Severity = @Sev AND CAST(OccurredAt AS DATE) = CAST(GETDATE() AS DATE)",
                 new SqlParameter("@Sev", severity));
+            return r != null ? Convert.ToInt32(r) : 0;
+        }
+
+        public static int GetErrorLogUnresolvedCount()
+        {
+            object r = DBHelper.ExecuteScalar("SELECT COUNT(*) FROM ErrorLogs WHERE IsResolved = 0");
+            return r != null ? Convert.ToInt32(r) : 0;
+        }
+
+        public static int GetAlertCountByStatus(string status)
+        {
+            object r = DBHelper.ExecuteScalar(
+                "SELECT COUNT(*) FROM SecurityAlerts WHERE AlertStatus = @Status",
+                new SqlParameter("@Status", status));
+            return r != null ? Convert.ToInt32(r) : 0;
+        }
+
+        public static int GetAlertCountBySeverity(string severity)
+        {
+            object r = DBHelper.ExecuteScalar(
+                "SELECT COUNT(*) FROM SecurityAlerts WHERE Severity = @Severity",
+                new SqlParameter("@Severity", severity));
             return r != null ? Convert.ToInt32(r) : 0;
         }
 

@@ -9,9 +9,7 @@
     <aside class="sidebar" role="navigation" aria-label="Admin menu">
         <div class="sidebar-section">Admin Panel</div>
         <a href="Admin_Dashboard.aspx" class="sidebar-link active"><i class="ti ti-layout-dashboard"></i>Overview</a>
-        <a href="Users.aspx"          class="sidebar-link"><i class="ti ti-users"></i>Users
-            <span class="sidebar-badge"><asp:Literal ID="litPendingUsers" runat="server" Text="0" /></span>
-        </a>
+        <a href="Users.aspx"          class="sidebar-link"><i class="ti ti-users"></i>Users</a>
         <a href="Courses.aspx"        class="sidebar-link"><i class="ti ti-books"></i>Courses</a>
         <a href="Categories.aspx"     class="sidebar-link"><i class="ti ti-category"></i>Categories</a>
         <a href="ContentReview.aspx"  class="sidebar-link"><i class="ti ti-file-check"></i>Content Review</a>
@@ -21,9 +19,7 @@
         <a href="ErrorLogs.aspx"      class="sidebar-link"><i class="ti ti-bug"></i>Error Logs</a>
         <a href="Announcements.aspx"  class="sidebar-link"><i class="ti ti-bell"></i>Announcements</a>
         <a href="Backup.aspx"         class="sidebar-link"><i class="ti ti-database"></i>DB Backup</a>
-        <a href="SecurityAlerts.aspx" class="sidebar-link"><i class="ti ti-alert-triangle"></i>Security Alerts
-            <span class="sidebar-badge"><asp:Literal ID="litAlertCount" runat="server" Text="0" /></span>
-        </a>
+        <a href="SecurityAlerts.aspx" class="sidebar-link"><i class="ti ti-alert-triangle"></i>Security Alerts</a>
 
         <div class="sidebar-section">Account</div>
         <a href="Profile.aspx" class="sidebar-link"><i class="ti ti-user-circle"></i>My Profile</a>
@@ -124,6 +120,19 @@
         <div class="card mb-24">
             <div class="card-header">User Management</div>
 
+            <!-- Success/Error messages -->
+            <asp:Panel ID="pnlSuccess" runat="server" Visible="false">
+                <div class="alert-success mb-16">
+                    <i class="ti ti-circle-check" aria-hidden="true"></i>
+                    <asp:Literal ID="litSuccess" runat="server" />
+                </div>
+            </asp:Panel>
+            <asp:Panel ID="pnlError" runat="server" Visible="false">
+                <div class="validation-summary-errors mb-16">
+                    <asp:Literal ID="litError" runat="server" />
+                </div>
+            </asp:Panel>
+
             <!-- Toolbar: search + buttons -->
             <div class="toolbar">
                 <div class="search-wrap">
@@ -182,12 +191,12 @@
                                                 CommandArgument='<%# Eval("UserID") %>'>
                                                 <i class="ti ti-edit"></i> Edit
                                             </asp:LinkButton>
-                                            <asp:LinkButton runat="server" CssClass="btn-danger"
-                                                CommandName="Delete"
-                                                CommandArgument='<%# Eval("UserID") %>'
-                                                OnClientClick="return showConfirmAction(this, 'Delete this user? This cannot be undone.', 'Delete');">
-                                                <i class="ti ti-trash"></i> Del
-                                            </asp:LinkButton>
+<asp:LinkButton runat="server" CssClass="btn-danger"
+                                                 CommandName="Delete"
+                                                 CommandArgument='<%# Eval("UserID") %>'
+                                                 OnClientClick="return showConfirmAction(this, 'Delete this user? This cannot be undone.', 'Delete', 'var(--danger)');">
+                                                 <i class="ti ti-trash"></i> Del
+                                             </asp:LinkButton>
                                         </div>
                                     </td>
                                 </tr>

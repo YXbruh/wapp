@@ -99,10 +99,11 @@
                     Do not close the browser during backup.
                 </div>
 
-                <asp:Button ID="btnBackup" runat="server" CssClass="btn-primary"
+                <asp:LinkButton ID="btnBackup" runat="server" CssClass="btn-primary"
                     OnClick="btnBackup_Click"
-                    OnClientClick="return showConfirmAction(this, 'Start a full database backup? This may take a few minutes.', 'Start Backup');"
-                    Text="Start Backup" />
+                    OnClientClick="return showConfirmAction(this, 'Start a full database backup now?', 'Start Backup');">
+                    <i class="ti ti-database" aria-hidden="true"></i> Start Backup
+                </asp:LinkButton>
             </div>
 
             <!-- Backup history -->
@@ -138,7 +139,7 @@
                                                 </asp:LinkButton>
                                                 <asp:LinkButton runat="server" CssClass="btn-danger"
                                                     CommandName="Delete" CommandArgument='<%# Eval("BackupID") %>'
-                                                    OnClientClick="return showConfirmAction(this, 'Delete this backup? This cannot be undone.', 'Delete');">
+                                                    OnClientClick="return showConfirmAction(this, 'Delete this backup file? This cannot be undone.', 'Delete');">
                                                     <i class="ti ti-trash"></i>
                                                 </asp:LinkButton>
                                             </div>
@@ -148,6 +149,15 @@
                             </asp:Repeater>
                         </tbody>
                     </table>
+                </div>
+                <div class="pager-bar">
+                    <asp:LinkButton ID="btnPrev" runat="server" CssClass="btn-sm secondary" OnClick="btnPrev_Click">
+                        <i class="ti ti-chevron-left"></i> Previous
+                    </asp:LinkButton>
+                    <span class="pager-info"><asp:Literal ID="litPageInfo" runat="server" /></span>
+                    <asp:LinkButton ID="btnNext" runat="server" CssClass="btn-sm secondary" OnClick="btnNext_Click">
+                        Next <i class="ti ti-chevron-right"></i>
+                    </asp:LinkButton>
                 </div>
                 <asp:Panel ID="pnlEmpty" runat="server" Visible="false">
                     <p class="text-muted text-small mt-16" style="text-align:center;padding:16px 0">No backups yet.</p>
@@ -159,5 +169,7 @@
 </div>
 </asp:Content>
 <asp:Content ID="cScripts" ContentPlaceHolderID="Scripts" runat="server">
-<style>.alert-success{background:rgba(111,207,151,0.12);border:1px solid rgba(111,207,151,0.4);border-radius:8px;padding:12px 16px;font-size:13px;color:var(--success);display:flex;align-items:center;gap:8px}</style>
+<style>.alert-success{background:rgba(111,207,151,0.12);border:1px solid rgba(111,207,151,0.4);border-radius:8px;padding:12px 16px;font-size:13px;color:var(--success);display:flex;align-items:center;gap:8px}
+.pager-bar{display:flex;align-items:center;gap:8px;padding:10px 0}
+.pager-info{flex:1;text-align:center;font-size:12px;color:var(--text3)}</style>
 </asp:Content>

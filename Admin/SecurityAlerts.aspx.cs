@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Data;
 using System.Web.UI;
 using System.Web.UI.WebControls;
@@ -27,7 +27,7 @@ namespace CSA.Admin
                         _pager = p;
                     else
                     {
-                        _pager = new Pager { PageSize = 20 };
+                        _pager = new Pager { PageSize = 10 };
                         ViewState["Pager"] = _pager;
                     }
                 }
@@ -52,19 +52,9 @@ namespace CSA.Admin
             p.Total = total;
             ViewState["Pager"] = _pager;
 
-            int open = 0, high = 0, investigating = 0;
-            foreach (DataRow row in alerts.Rows)
-            {
-                string status = row["AlertStatus"].ToString();
-                string severity = row["Severity"].ToString();
-                if (status == "Open") open++;
-                if (severity == "High") high++;
-                if (status == "Investigating") investigating++;
-            }
-
-            litOpen.Text = open.ToString();
-            litHigh.Text = high.ToString();
-            litInvestigating.Text = investigating.ToString();
+            litOpen.Text = AdminService.GetAlertCountByStatus("Open").ToString();
+            litHigh.Text = AdminService.GetAlertCountBySeverity("High").ToString();
+            litInvestigating.Text = AdminService.GetAlertCountByStatus("Investigating").ToString();
             litResolved.Text = AdminService.GetResolvedTodayCount().ToString();
 
             rptAlerts.DataSource = alerts;
@@ -93,34 +83,48 @@ namespace CSA.Admin
 
         protected void rptAlerts_ItemCommand(object source, RepeaterCommandEventArgs e)
         {
-            int id = Convert.ToInt32(e.CommandArgument);
+            if (!int.TryParse(e.CommandArgument.ToString(), out int id)) return;
             string adminId = Session["UserID"].ToString();
-            switch (e.CommandName)
+            try
             {
-                case "Investigate":
-                    AdminService.SetAlertStatus(id, "Investigating", adminId);
-                    pnlSuccess.Visible = true;
-                    litSuccess.Text = "Alert marked as under investigation.";
-                    LoadAlerts();
-                    break;
-                case "Resolve":
-                    AdminService.SetAlertStatus(id, "Resolved", adminId);
-                    pnlSuccess.Visible = true;
-                    litSuccess.Text = "Alert resolved successfully.";
-                    LoadAlerts();
-                    break;
-                case "BlockUser":
-                    DataTable alert = AdminService.GetAlertById(id);
-                    if (alert.Rows.Count > 0)
-                    {
-                        string affectedUserId = alert.Rows[0]["AffectedUserID"].ToString();
-                        UserService.ToggleActive(affectedUserId);
+                switch (e.CommandName)
+                {
+                    case "Investigate":
+                        AdminService.SetAlertStatus(id, "Investigating", adminId);
+                        pnlSuccess.Visible = true;
+                        litSuccess.Text = "Alert marked as under investigation.";
+                        LoadAlerts();
+                        break;
+                    case "Resolve":
                         AdminService.SetAlertStatus(id, "Resolved", adminId);
                         pnlSuccess.Visible = true;
-                        litSuccess.Text = "User blocked and alert resolved.";
-                    }
-                    LoadAlerts();
-                    break;
+                        litSuccess.Text = "Alert resolved successfully.";
+                        LoadAlerts();
+                        break;
+                    case "BlockUser":
+                        DataTable alert = AdminService.GetAlertById(id);
+                        if (alert.Rows.Count > 0)
+                        {
+                            string affectedUserId = alert.Rows[0]["AffectedUserID"].ToString();
+                            if (affectedUserId == Session["UserID"].ToString())
+                            {
+                                ClientScript.RegisterStartupScript(GetType(), "alert",
+                                    "alert('You cannot block your own account.');", true);
+                                break;
+                            }
+                            UserService.ToggleActive(affectedUserId);
+                            AdminService.SetAlertStatus(id, "Resolved", adminId);
+                            pnlSuccess.Visible = true;
+                            litSuccess.Text = "User blocked and alert resolved.";
+                        }
+                        LoadAlerts();
+                        break;
+                }
+            }
+            catch (Exception)
+            {
+                pnlError.Visible = true;
+                litError.Text = "Error processing alert action.";
             }
         }
 
@@ -137,7 +141,7 @@ namespace CSA.Admin
             Response.ContentType = "text/csv";
             Response.AddHeader("Content-Disposition", "attachment;filename=security-alerts.csv");
             Response.Write(csv);
-            Response.End();
+            Context.ApplicationInstance.CompleteRequest();
         }
 
         protected void lbLogout_Click(object sender, EventArgs e)

@@ -64,9 +64,15 @@
                 <label class="form-label">Preview</label>
                 <div style="background:var(--bg2);padding:16px;border-radius:8px;white-space:pre-wrap"><asp:Literal ID="litPreview" runat="server" /></div>
             </div>
-            <div class="form-group" style="display:flex;gap:8px">
-                <asp:Button ID="btnApprove" runat="server" CssClass="btn-primary" OnClick="btnApprove_Click" Text="Approve (Remove Content)" />
-                <asp:Button ID="btnReject" runat="server" CssClass="btn-sm" OnClick="btnReject_Click" Text="Dismiss Flag" />
+<div class="form-group" style="display:flex;gap:8px">
+                <asp:LinkButton ID="btnApprove" runat="server" CssClass="btn-primary" OnClick="btnApprove_Click"
+                    OnClientClick="return showConfirmAction(this, 'Approve this flag and remove the reported content?', 'Approve', 'var(--success)');">
+                    <i class="ti ti-circle-check" aria-hidden="true"></i> Approve (Remove Content)
+                </asp:LinkButton>
+                <asp:LinkButton ID="btnReject" runat="server" CssClass="btn-sm" OnClick="btnReject_Click"
+                    OnClientClick="return showConfirmAction(this, 'Dismiss this flag without taking action?', 'Dismiss', 'var(--danger)');">
+                    <i class="ti ti-circle-x" aria-hidden="true"></i> Dismiss Flag
+                </asp:LinkButton>
             </div>
         </div>
     </main>
