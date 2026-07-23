@@ -94,7 +94,7 @@ namespace CSA.Admin
             catch (Exception ex)
             {
                 pnlError.Visible = true;
-                litError.Text = "Error updating user: " + ex.Message;
+                litError.Text = "Error updating user: " + Server.HtmlEncode(ex.Message);
                 pnlSuccess.Visible = false;
             }
         }

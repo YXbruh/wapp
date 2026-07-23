@@ -62,11 +62,19 @@ namespace CSA.Admin
             var sb = new System.Text.StringBuilder();
             sb.AppendLine("Severity,User,Action,Details,Timestamp");
             foreach (DataRow row in logs.Rows)
-                sb.AppendLine($"\"{row["Severity"]}\",\"{row["UserName"]}\",\"{row["Action"]}\",\"{row["Details"]}\",\"{row["OccurredAt"]}\"");
+                sb.AppendLine($"{CsvEscape(row["Severity"])},{CsvEscape(row["UserName"])},{CsvEscape(row["Action"])},{CsvEscape(row["Details"])},{CsvEscape(row["OccurredAt"])}");
             Response.ContentType = "text/csv";
             Response.AddHeader("Content-Disposition", "attachment;filename=audit_log.csv");
             Response.Write(sb.ToString());
             Context.ApplicationInstance.CompleteRequest();
+        }
+
+        private static string CsvEscape(object value)
+        {
+            var s = value?.ToString() ?? "";
+            if (s.IndexOfAny(new[] { ',', '"', '\n', '\r' }) >= 0)
+                return "\"" + s.Replace("\"", "\"\"") + "\"";
+            return s;
         }
 
         public string GetSeverityBadge(string s) =>

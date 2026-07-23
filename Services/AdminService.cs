@@ -311,7 +311,8 @@ namespace CSA.Services
             error = "";
             try
             {
-                string backupDir = @"C:\Users\ivanc\source\repos\wapp\App_Data\Backups\";
+                string backupDir = System.IO.Path.Combine(
+                    System.Web.HttpContext.Current.Server.MapPath("~/App_Data"), "Backups");
                 System.IO.Directory.CreateDirectory(backupDir);
 
                 // Get the actual database name (without path)
@@ -544,6 +545,37 @@ namespace CSA.Services
                 "UPDATE ErrorLogs SET IsResolved = 1 WHERE ErrorID = @ID",
                 new SqlParameter("@ID", errorId));
             LogAudit(adminId, "RESOLVE_ERROR", "ErrorLogs", errorId.ToString(), "", "");
+        }
+
+        public static DataTable GetEmailsByAudience(string audience)
+        {
+            string where = "";
+            if (audience == "Students")
+                where = "WHERE u.RoleID = (SELECT RoleID FROM Roles WHERE RoleName = 'Student')";
+            else if (audience == "Lecturers")
+                where = "WHERE u.RoleID = (SELECT RoleID FROM Roles WHERE RoleName = 'Lecturer')";
+            else if (audience == "Admins")
+                where = "WHERE u.RoleID = (SELECT RoleID FROM Roles WHERE RoleName = 'Admin')";
+            // "All" or unknown -> no where clause (all users)
+
+            return DBHelper.ExecuteQuery($@"
+                SELECT DISTINCT u.Email
+                FROM Users u
+                JOIN Roles r ON u.RoleID = r.RoleID
+                {where}
+                AND u.IsActive = 1
+                AND u.Email IS NOT NULL AND u.Email <> ''");
+        }
+
+        public static DataTable GetAllUsers()
+        {
+            return DBHelper.ExecuteQuery(@"
+                SELECT u.Email, u.FullName, u.RoleID, r.RoleName,
+                       u.FullName + ' (' + u.Email + ')' AS DisplayName
+                FROM Users u
+                JOIN Roles r ON u.RoleID = r.RoleID
+                WHERE u.IsActive = 1
+                ORDER BY r.RoleName, u.FullName");
         }
     }
 }

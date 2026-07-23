@@ -14,10 +14,8 @@
         <a href="ContentReview.aspx"  class="sidebar-link"><i class="ti ti-file-check"></i>Content Review</a>
         <div class="sidebar-section">System</div>
         <a href="ActivityLogs.aspx"   class="sidebar-link"><i class="ti ti-activity"></i>Activity Logs</a>
-        <a href="ErrorLogs.aspx"      class="sidebar-link"><i class="ti ti-bug"></i>Error Logs</a>
         <a href="Announcements.aspx"  class="sidebar-link active"><i class="ti ti-bell"></i>Announcements</a>
         <a href="Backup.aspx"         class="sidebar-link"><i class="ti ti-database"></i>DB Backup</a>
-        <a href="SecurityAlerts.aspx" class="sidebar-link"><i class="ti ti-alert-triangle"></i>Security Alerts</a>
         <div class="sidebar-section">Account</div>
         <a href="Profile.aspx" class="sidebar-link"><i class="ti ti-user-circle"></i>My Profile</a>
         <asp:LinkButton ID="lbLogout" OnClientClick="return showLogoutConfirm(this);" runat="server" CssClass="sidebar-link" OnClick="lbLogout_Click">
@@ -81,12 +79,59 @@
                     <label class="form-label" for="<%= ddlAudience.ClientID %>">
                         <i class="ti ti-users" aria-hidden="true"></i>Audience
                     </label>
-                    <asp:DropDownList ID="ddlAudience" runat="server" CssClass="form-select">
+                    <asp:DropDownList ID="ddlAudience" runat="server" CssClass="form-select" AutoPostBack="true" OnSelectedIndexChanged="ddlAudience_SelectedIndexChanged">
                         <asp:ListItem Value="All">All Users</asp:ListItem>
                         <asp:ListItem Value="Student">Students Only</asp:ListItem>
-                        <asp:ListItem Value="Lecturer">Lecturer Only</asp:ListItem>
+                        <asp:ListItem Value="Lecturer">Lecturers Only</asp:ListItem>
+                        <asp:ListItem Value="Custom">Custom Selection</asp:ListItem>
                     </asp:DropDownList>
                 </div>
+
+                <asp:Panel ID="pnlCustomRecipients" runat="server" Visible="false" style="margin-bottom:16px;">
+                    <div class="custom-recipient-panel">
+                        <label class="form-label">
+                            <i class="ti ti-user-check" aria-hidden="true"></i>Select Recipients
+                            <span class="text-muted" style="font-weight:400;font-size:12px;margin-left:8px">(hold Ctrl/Cmd to multi-select)</span>
+                        </label>
+
+                        <!-- Search/Filter -->
+                        <div class="form-group" style="margin-bottom:12px;">
+                            <asp:TextBox ID="txtRecipientSearch" runat="server" CssClass="form-input"
+                                placeholder="Search recipients..." AutoPostBack="false"
+                                onkeyup="filterRecipients(this)" style="width:100%;"></asp:TextBox>
+                        </div>
+
+                        <!-- Recipient List - Custom Card Layout -->
+                        <div style="max-height:350px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;background:var(--bg);padding:8px;">
+                            <asp:Repeater ID="rptRecipients" runat="server">
+                                <ItemTemplate>
+                                    <div class="recipient-card" style="display:flex;align-items:center;padding:10px 12px;margin:4px 0;background:var(--bg2);border:1px solid var(--border);border-radius:6px;transition:background 0.15s;">
+                                        <asp:CheckBox ID="cbRecipient" runat="server"
+                                            CssClass="recipient-checkbox"
+                                            style="margin-right:12px;width:18px;height:18px;accent-color:var(--primary);flex-shrink:0;" />
+                                        <asp:HiddenField ID="hfEmail" runat="server" Value='<%# Eval("Email") %>' />
+                                        <div style="flex:1;min-width:0;">
+                                            <div style="display:flex;align-items:center;gap:8px;">
+                                                <asp:Label ID="lblName" runat="server"
+                                                    Text='<%# Eval("FullName") %>'
+                                                    style="font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" />
+                                                <asp:Label ID="lblRole" runat="server"
+                                                    Text='<%# Eval("RoleName") %>'
+                                                    CssClass="badge"
+                                                    style="font-size:10px;padding:2px 6px;white-space:nowrap;" />
+                                            </div>
+                                            <asp:Label ID="lblEmail" runat="server"
+                                                Text='<%# Eval("Email") %>'
+                                                style="font-size:12px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;" />
+                                        </div>
+                                    </div>
+                                </ItemTemplate>
+                            </asp:Repeater>
+                        </div>
+
+
+                    </div>
+                </asp:Panel>
 
                 <div class="form-group">
                     <label class="form-label" for="<%= ddlPriority.ClientID %>">
@@ -209,5 +254,20 @@
 <asp:Content ID="cScripts" ContentPlaceHolderID="Scripts" runat="server">
 <style>.alert-success{background:rgba(111,207,151,0.12);border:1px solid rgba(111,207,151,0.4);border-radius:8px;padding:12px 16px;font-size:13px;color:var(--success);display:flex;align-items:center;gap:8px}
 .pager-bar{display:flex;align-items:center;gap:8px;padding:10px 0}
-.pager-info{flex:1;text-align:center;font-size:12px;color:var(--text3)}</style>
+.pager-info{flex:1;text-align:center;font-size:12px;color:var(--text3)}
+.recipient-card:hover{background:var(--border)!important}
+.recipient-checkbox{transform:scale(1.1);cursor:pointer}
+.recipient-card{transition:background 0.15s}
+</style>
+<script>
+    function filterRecipients(input) {
+        var filter = input.value.toLowerCase();
+        var cards = document.querySelectorAll('.recipient-card');
+        cards.forEach(function(card) {
+            var text = card.textContent.toLowerCase();
+            var match = text.indexOf(filter) > -1;
+            card.style.display = match ? 'flex' : 'none';
+        });
+    }
+</script>
 </asp:Content>

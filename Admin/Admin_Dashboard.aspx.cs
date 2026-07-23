@@ -8,10 +8,6 @@ namespace CSA.Admin
 {
     public partial class Admin_Dashboard : Page
     {
-        protected Panel pnlSuccess;
-        protected Literal litSuccess;
-        protected Panel pnlError;
-        protected Literal litError;
         protected void Page_Load(object sender, EventArgs e)
         {
             if (Session["UserID"] == null || Session["Role"] as string != "Admin")

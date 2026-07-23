@@ -1,9 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Web;
 using System.Web.UI;
-using System.Web.UI.WebControls;
 using System.Configuration;
 using System.Data.SqlClient;
 
@@ -189,7 +186,7 @@ namespace CSA.Lecturer
                         int activeModulesCount = (int)cmd.ExecuteScalar();
                         litModules.Text = activeModulesCount.ToString();
                     }
-                    catch (Exception ex)
+                    catch
                     {
                         litModules.Text = "0";
                     }
@@ -204,7 +201,7 @@ namespace CSA.Lecturer
                         int studentsCount = (int)cmd.ExecuteScalar();
                         litStudents.Text = studentsCount.ToString();
                     }
-                    catch (Exception ex)
+                    catch
                     {
                         litStudents.Text = "0";
                     }
@@ -220,7 +217,7 @@ namespace CSA.Lecturer
                         decimal avgProgress = result != DBNull.Value ? Convert.ToDecimal(result) : 0;
                         litLabRate.Text = Math.Round(avgProgress, 0).ToString() + "%";
                     }
-                    catch (Exception ex)
+                    catch
                     {
                         litLabRate.Text = "0%";
                     }
@@ -236,7 +233,7 @@ namespace CSA.Lecturer
                         decimal avgQuizScore = result != DBNull.Value ? Convert.ToDecimal(result) : 0;
                         litQuizAvg.Text = Math.Round(avgQuizScore, 0).ToString() + "%";
                     }
-                    catch (Exception ex)
+                    catch
                     {
                         litQuizAvg.Text = "0%";
                     }
@@ -269,7 +266,7 @@ namespace CSA.Lecturer
                         // Show/hide the no data panel
                         pnlNoLabs.Visible = labRates.Count == 0;
                     }
-                    catch (Exception ex)
+                    catch
                     {
                         pnlNoLabs.Visible = true;
                         rptLabRates.DataSource = null;
@@ -304,7 +301,7 @@ namespace CSA.Lecturer
                         // Show/hide the no data panel
                         pnlNoQuiz.Visible = quizScores.Count == 0;
                     }
-                    catch (Exception ex)
+                    catch
                     {
                         pnlNoQuiz.Visible = true;
                         rptQuizScores.DataSource = null;
@@ -343,7 +340,7 @@ namespace CSA.Lecturer
                         // Show/hide the no data panel
                         pnlNoModules.Visible = modules.Count == 0;
                     }
-                    catch (Exception ex)
+                    catch
                     {
                         pnlNoModules.Visible = true;
                         rptModules.DataSource = null;

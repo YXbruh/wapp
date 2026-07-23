@@ -65,7 +65,6 @@ namespace CSA
             }
             else if (_role == "Student")
             {
-                string userId = Session["UserID"]?.ToString() ?? "";
                 // TODO: enroll student in course
                 BindCourses();
             }

@@ -64,7 +64,7 @@ namespace CSA.Admin
             catch (Exception ex)
             {
                 pnlError.Visible = true;
-                litError.Text = "Error creating course: " + ex.Message;
+                litError.Text = "Error creating course: " + Server.HtmlEncode(ex.Message);
                 pnlSuccess.Visible = false;
             }
         }
