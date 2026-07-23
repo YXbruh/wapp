@@ -155,9 +155,9 @@ namespace CSA.Services
                 new SqlParameter("@Email", email),
                 new SqlParameter("@Hash", hash),
                 new SqlParameter("@RoleID", roleId),
-                new SqlParameter("@StudentID", string.IsNullOrEmpty(studentId) ? (object)DBNull.Value : studentId),
-                new SqlParameter("@Phone", string.IsNullOrEmpty(phone) ? (object)DBNull.Value : phone),
-                new SqlParameter("@Dept", string.IsNullOrEmpty(department) ? (object)DBNull.Value : department));
+                new SqlParameter("@StudentID", (object)studentId ?? DBNull.Value),
+                new SqlParameter("@Phone", (object)phone ?? DBNull.Value),
+                new SqlParameter("@Dept", (object)department ?? DBNull.Value));
             return userId;
         }
 
@@ -172,9 +172,9 @@ namespace CSA.Services
                 new SqlParameter("@Email", email),
                 new SqlParameter("@RoleID", roleId),
                 new SqlParameter("@Active", isActive),
-                new SqlParameter("@Phone", string.IsNullOrEmpty(phone) ? (object)DBNull.Value : phone),
-                new SqlParameter("@Dept", string.IsNullOrEmpty(department) ? (object)DBNull.Value : department),
-                new SqlParameter("@StudentID", string.IsNullOrEmpty(studentId) ? (object)DBNull.Value : studentId),
+                new SqlParameter("@Phone", (object)phone ?? DBNull.Value),
+                new SqlParameter("@Dept", (object)department ?? DBNull.Value),
+                new SqlParameter("@StudentID", (object)studentId ?? DBNull.Value),
                 new SqlParameter("@ID", userId));
         }
 

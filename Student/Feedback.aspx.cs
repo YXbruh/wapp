@@ -3,7 +3,6 @@ using System.Configuration;
 using System.Data;
 using System.Data.SqlClient;
 using System.Web.UI;
-using CSA.Services;
 
 namespace CSA.Student
 {
@@ -424,9 +423,6 @@ namespace CSA.Student
                 con.Open();
                 cmd.ExecuteNonQuery();
             }
-
-            AdminService.LogAudit(UserId, "SUBMIT_FEEDBACK", "Feedback", ItemId, "",
-                rating + " stars on " + targetColumn.Replace("ID", ""));
 
             pnlMessage.Visible = true;
             pnlMessage.CssClass =

@@ -339,8 +339,6 @@ namespace CSA.Student
 
                     cmd.ExecuteNonQuery();
                 }
-
-                AdminService.LogAudit(UserId, "ENROLL_COURSE", "Enrollments", courseId, "", "");
             }
         }
 

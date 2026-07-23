@@ -368,13 +368,13 @@
                                     CommandArgument='<%# Eval("QuizID") %>'>
 
                                     <%#
-                                    Convert.ToInt32(Eval("AttemptCount")) >=
-                                    Convert.ToInt32((Container.DataItem as System.Data.DataRowView)?.Row.Table.Columns.Contains("MaxAttempts") == true ? Eval("MaxAttempts") : 3)
-                                        ? "View"
-                                        : Convert.ToBoolean(Eval("HasPassed"))
-                                            ? "Redo"
-                                            : "Start"
-                                %>
+                                        Convert.ToInt32(Eval("AttemptCount")) >=
+                                        Convert.ToInt32(Eval("MaxAttempts"))
+                                            ? "View Answers"
+                                            : Convert.ToInt32(Eval("AttemptCount")) > 0
+                                                ? "Reattempt"
+                                                : "Start"
+                                    %>
 
                                 </asp:LinkButton>
 
@@ -653,28 +653,25 @@
                                 runat="server"
                                 CssClass="badge" />
 
-                            <div style="margin-top:8px">
+                            <asp:Panel
+                                ID="pnlStudentAnswer"
+                                runat="server"
+                                style="margin-top:8px">
 
-                                <strong>
-                                    Your answer:
-                                </strong>
+                                <strong>Your answer:</strong>
 
                                 <asp:Literal
                                     ID="litStudentAnswer"
                                     runat="server" />
 
-                            </div>
+                            </asp:Panel>
 
                             <div>
-
-                                <strong>
-                                    Correct answer:
-                                </strong>
+                                <strong>Correct answer:</strong>
 
                                 <asp:Literal
                                     ID="litCorrectAnswer"
                                     runat="server" />
-
                             </div>
 
                             <asp:Panel
@@ -682,9 +679,7 @@
                                 runat="server"
                                 Visible="false">
 
-                                <strong>
-                                    Explanation:
-                                </strong>
+                                <strong>Explanation:</strong>
 
                                 <asp:Literal
                                     ID="litExplanation"
@@ -702,8 +697,6 @@
 
             <div class="quiz-actions">
 
-            <div style="display:flex;gap:10px;align-items:center">
-
                 <asp:Button
                     ID="btnSubmit"
                     runat="server"
@@ -719,17 +712,6 @@
                         this.disabled = true;
                         this.value = 'Submitting...';"
                     OnClick="btnSubmit_Click" />
-
-                <asp:Button
-                    ID="btnNextAttempt"
-                    runat="server"
-                    CssClass="btn-sm secondary"
-                    Text="Start Next Attempt"
-                    CausesValidation="false"
-                    Visible="false"
-                    OnClick="btnNextAttempt_Click" />
-
-            </div>
 
                 <asp:HyperLink
                     ID="hlQuizFeedback"

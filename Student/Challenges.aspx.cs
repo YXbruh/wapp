@@ -144,8 +144,12 @@ namespace CSA.Student
                     q.Title,
                     q.PassMark,
                     q.DurationMinutes,
-                    ISNULL(q.MaxAttempts, 3)
-                        AS MaxAttempts,
+
+                    ISNULL(
+                        q.MaxAttempts,
+                        3
+                    ) AS MaxAttempts,
+
                     c.CourseName,
 
                     COUNT(
@@ -207,23 +211,6 @@ namespace CSA.Student
                     "@StudentID",
                     UserId));
 
-            // Debug: ensure MaxAttempts column exists
-            System.Diagnostics.Debug.WriteLine($"[LoadChallenges] Columns: {string.Join(", ", dt.Columns.Cast<System.Data.DataColumn>().Select(c => c.ColumnName))}");
-            
-            // Case-insensitive check for MaxAttempts column
-            var maxAttemptsCol = dt.Columns.Cast<System.Data.DataColumn>().FirstOrDefault(c => c.ColumnName.Equals("MaxAttempts", StringComparison.OrdinalIgnoreCase));
-            if (maxAttemptsCol == null)
-            {
-                dt.Columns.Add("MaxAttempts", typeof(int));
-                foreach (DataRow row in dt.Rows)
-                    row["MaxAttempts"] = 3;
-            }
-            else if (maxAttemptsCol.ColumnName != "MaxAttempts")
-            {
-                // Rename column to standard casing
-                maxAttemptsCol.ColumnName = "MaxAttempts";
-            }
-
             litTotal.Text =
                 dt.Rows.Count.ToString();
 
@@ -261,6 +248,48 @@ namespace CSA.Student
                 Convert.ToString(
                     e.CommandArgument);
 
+            DataTable quizTable =
+                Query(@"
+                    SELECT
+                        ISNULL(
+                            MaxAttempts,
+                            3
+                        ) AS MaxAttempts
+
+                    FROM Quizzes
+
+                    WHERE QuizID = @QuizID
+                      AND IsPublished = 1",
+                    new SqlParameter(
+                        "@QuizID",
+                        QuizId));
+
+            if (quizTable.Rows.Count == 0)
+            {
+                return;
+            }
+
+            int attempts =
+                GetAttemptCount();
+
+            int maxAttempts =
+                GetMaxAttempts(
+                    quizTable.Rows[0]);
+
+            /*
+             * A new attempt is started only after
+             * returning to the Challenges page and
+             * clicking Reattempt.
+             */
+            if (attempts < maxAttempts &&
+                CurrentAttemptSubmitted)
+            {
+                CurrentAttemptSubmitted =
+                    false;
+
+                ClearTimer();
+            }
+
             LoadQuiz();
         }
 
@@ -274,8 +303,12 @@ namespace CSA.Student
                     q.StartDate,
                     q.EndDate,
                     q.DurationMinutes,
-                    ISNULL(q.MaxAttempts, 3)
-                        AS MaxAttempts,
+
+                    ISNULL(
+                        q.MaxAttempts,
+                        3
+                    ) AS MaxAttempts,
+
                     c.CourseName
 
                 FROM Quizzes q
@@ -300,22 +333,6 @@ namespace CSA.Student
                     "@StudentID",
                     UserId));
 
-            // Debug
-            System.Diagnostics.Debug.WriteLine($"[LoadQuiz] Columns: {string.Join(", ", dt.Columns.Cast<System.Data.DataColumn>().Select(c => c.ColumnName))}");
-
-            // Case-insensitive check for MaxAttempts column
-            var maxAttemptsCol = dt.Columns.Cast<System.Data.DataColumn>().FirstOrDefault(c => c.ColumnName.Equals("MaxAttempts", StringComparison.OrdinalIgnoreCase));
-            if (maxAttemptsCol == null)
-            {
-                dt.Columns.Add("MaxAttempts", typeof(int));
-                foreach (DataRow row in dt.Rows)
-                    row["MaxAttempts"] = 3;
-            }
-            else if (maxAttemptsCol.ColumnName != "MaxAttempts")
-            {
-                maxAttemptsCol.ColumnName = "MaxAttempts";
-            }
-
             if (dt.Rows.Count == 0)
             {
                 return;
@@ -328,7 +345,8 @@ namespace CSA.Student
                 GetAttemptCount();
 
             int maxAttempts =
-                GetMaxAttempts(quiz);
+                GetMaxAttempts(
+                    quiz);
 
             litQuizTitle.Text =
                 Server.HtmlEncode(
@@ -368,15 +386,6 @@ namespace CSA.Student
                 Server.HtmlEncode(
                     notice);
 
-            btnSubmit.Enabled =
-                notice == "" &&
-                !CurrentAttemptSubmitted;
-
-            btnNextAttempt.Visible =
-                notice == "" &&
-                CurrentAttemptSubmitted &&
-                attempts < maxAttempts;
-
             hlQuizFeedback.Visible =
                 attempts > 0;
 
@@ -386,28 +395,53 @@ namespace CSA.Student
                     QuizId);
 
             BindQuestions();
+            LoadAttempts();
 
-            if (CurrentAttemptSubmitted)
+            if (attempts >= maxAttempts)
             {
+                btnSubmit.Visible = false;
+                btnSubmit.Enabled = false;
+
+                ClearTimer();
+
+                ShowCorrectAnswersOnly();
+
+                pnlNotice.Visible = true;
+
+                litNotice.Text =
+                    "You have used all available attempts. " +
+                    "The correct answers and explanations " +
+                    "are shown below.";
+            }
+            else if (CurrentAttemptSubmitted)
+            {
+                btnSubmit.Visible = true;
+                btnSubmit.Enabled = false;
+
                 SetAnswerControlsEnabled(
                     false);
 
-                if (attempts < maxAttempts)
-                {
-                    pnlNotice.Visible = true;
+                ClearTimer();
 
-                    litNotice.Text =
-                        "This attempt has already been submitted. " +
-                        "Click Start Next Attempt to try again.";
-                }
+                pnlNotice.Visible = true;
+
+                litNotice.Text =
+                    "This attempt has already been submitted. " +
+                    "Return to the Challenges page to begin " +
+                    "another attempt.";
             }
+            else
+            {
+                btnSubmit.Visible = true;
 
-            LoadAttempts();
+                btnSubmit.Enabled =
+                    notice == "";
 
-            ConfigureTimer(
-                quiz,
-                attempts,
-                maxAttempts);
+                ConfigureTimer(
+                    quiz,
+                    attempts,
+                    maxAttempts);
+            }
 
             pnlResult.Visible = false;
             pnlChallengeList.Visible = false;
@@ -438,7 +472,9 @@ namespace CSA.Student
             int maxAttempts)
         {
             pnlTimer.Visible = false;
-            hfRemainingSeconds.Value = "";
+
+            hfRemainingSeconds.Value =
+                "";
 
             if (!btnSubmit.Enabled ||
                 CurrentAttemptSubmitted ||
@@ -446,7 +482,6 @@ namespace CSA.Student
                 quiz["DurationMinutes"] ==
                     DBNull.Value)
             {
-                ClearTimer();
                 return;
             }
 
@@ -456,7 +491,6 @@ namespace CSA.Student
 
             if (durationMinutes <= 0)
             {
-                ClearTimer();
                 return;
             }
 
@@ -552,7 +586,9 @@ namespace CSA.Student
             }
 
             pnlTimer.Visible = false;
-            hfRemainingSeconds.Value = "";
+
+            hfRemainingSeconds.Value =
+                "";
         }
 
         private void BindQuestions()
@@ -691,6 +727,11 @@ namespace CSA.Student
             object sender,
             EventArgs e)
         {
+            /*
+             * Lock the current displayed attempt before
+             * running any database work. Rapid requests
+             * after the first request are rejected.
+             */
             Application.Lock();
 
             try
@@ -699,10 +740,6 @@ namespace CSA.Student
                 {
                     btnSubmit.Enabled = false;
 
-                    btnNextAttempt.Visible =
-                        GetAttemptCount() <
-                        GetQuizMaxAttempts();
-
                     ShowResult(
                         false,
                         "This attempt has already been submitted.");
@@ -710,7 +747,8 @@ namespace CSA.Student
                     return;
                 }
 
-                CurrentAttemptSubmitted = true;
+                CurrentAttemptSubmitted =
+                    true;
             }
             finally
             {
@@ -763,6 +801,7 @@ namespace CSA.Student
                         false;
 
                     btnSubmit.Enabled = true;
+
                     return;
                 }
 
@@ -773,18 +812,25 @@ namespace CSA.Student
                     GetAttemptCount();
 
                 int maxAttempts =
-                    GetMaxAttempts(quiz);
+                    GetMaxAttempts(
+                        quiz);
 
                 if (attempts >= maxAttempts)
                 {
+                    btnSubmit.Visible = false;
                     btnSubmit.Enabled = false;
-                    btnNextAttempt.Visible = false;
-
-                    ShowResult(
-                        false,
-                        "You have used all available attempts.");
 
                     ClearTimer();
+
+                    ShowCorrectAnswersOnly();
+
+                    pnlNotice.Visible = true;
+
+                    litNotice.Text =
+                        "You have used all available attempts. " +
+                        "The correct answers and explanations " +
+                        "are shown below.";
+
                     return;
                 }
 
@@ -856,8 +902,7 @@ namespace CSA.Student
                     string answer =
                         answers.ContainsKey(
                             questionId)
-                            ? answers[
-                                questionId]
+                            ? answers[questionId]
                             : "";
 
                     if (IsCorrect(
@@ -866,8 +911,7 @@ namespace CSA.Student
                     {
                         obtained +=
                             Convert.ToInt32(
-                                question[
-                                    "Points"]);
+                                question["Points"]);
                     }
                 }
 
@@ -901,9 +945,6 @@ namespace CSA.Student
                     score,
                     passed,
                     awardXp);
-
-                AdminService.LogAudit(UserId, "SUBMIT_QUIZ", "QuizAttempts", QuizId, "",
-                    score.ToString("0.##") + "% - " + (passed ? "Passed" : "Failed"));
 
                 ClearTimer();
 
@@ -942,13 +983,6 @@ namespace CSA.Student
                     passed,
                     message);
 
-                ShowAnswerReview(
-                    questions,
-                    answers);
-
-                SetAnswerControlsEnabled(
-                    false);
-
                 attempts++;
 
                 litAttemptUsage.Text =
@@ -956,12 +990,8 @@ namespace CSA.Student
                     maxAttempts +
                     " attempts";
 
-                btnSubmit.Enabled = false;
-
-                btnNextAttempt.Visible =
-                    attempts < maxAttempts;
-
-                hlQuizFeedback.Visible = true;
+                hlQuizFeedback.Visible =
+                    true;
 
                 hlQuizFeedback.NavigateUrl =
                     "Feedback.aspx?type=quiz&id=" +
@@ -969,18 +999,34 @@ namespace CSA.Student
                         QuizId);
 
                 pnlNotice.Visible = true;
+                btnSubmit.Enabled = false;
 
                 if (attempts >= maxAttempts)
                 {
+                    btnSubmit.Visible = false;
+
+                    ShowCorrectAnswersOnly();
+
                     litNotice.Text =
                         "You have used all available attempts. " +
-                        "You may still review the quiz.";
+                        "The correct answers and explanations " +
+                        "are shown below.";
                 }
                 else
                 {
+                    btnSubmit.Visible = true;
+
+                    ShowAnswerReview(
+                        questions,
+                        answers);
+
+                    SetAnswerControlsEnabled(
+                        false);
+
                     litNotice.Text =
-                        "Attempt submitted. Click Start Next Attempt " +
-                        "when you are ready to try again.";
+                        "Attempt submitted. Return to the " +
+                        "Challenges page and click Reattempt " +
+                        "when you are ready.";
                 }
 
                 LoadAttempts();
@@ -990,156 +1036,11 @@ namespace CSA.Student
                 CurrentAttemptSubmitted =
                     false;
 
+                btnSubmit.Visible = true;
                 btnSubmit.Enabled = true;
-                btnNextAttempt.Visible = false;
 
                 throw;
             }
-        }
-
-        protected void btnNextAttempt_Click(
-            object sender,
-            EventArgs e)
-        {
-            DataTable quizTable =
-                Query(@"
-                    SELECT
-                        StartDate,
-                        EndDate,
-                        DurationMinutes,
-                        ISNULL(
-                            MaxAttempts,
-                            3
-                        ) AS MaxAttempts
-
-                    FROM Quizzes
-
-                    WHERE QuizID =
-                          @QuizID
-                      AND IsPublished = 1",
-                    new SqlParameter(
-                        "@QuizID",
-                        QuizId));
-
-            // Debug
-            System.Diagnostics.Debug.WriteLine($"[btnSubmit] Columns: {string.Join(", ", quizTable.Columns.Cast<System.Data.DataColumn>().Select(c => c.ColumnName))}");
-
-            // Case-insensitive check for MaxAttempts column
-            var maxAttemptsCol = quizTable.Columns.Cast<System.Data.DataColumn>().FirstOrDefault(c => c.ColumnName.Equals("MaxAttempts", StringComparison.OrdinalIgnoreCase));
-            if (maxAttemptsCol == null)
-            {
-                quizTable.Columns.Add("MaxAttempts", typeof(int));
-                foreach (DataRow row in quizTable.Rows)
-                    row["MaxAttempts"] = 3;
-            }
-            else if (maxAttemptsCol.ColumnName != "MaxAttempts")
-            {
-                maxAttemptsCol.ColumnName = "MaxAttempts";
-            }
-
-            if (quizTable.Rows.Count == 0)
-            {
-                return;
-            }
-
-            DataRow quiz =
-                quizTable.Rows[0];
-
-            int attempts =
-                GetAttemptCount();
-
-            int maxAttempts =
-                GetMaxAttempts(quiz);
-
-            if (attempts >= maxAttempts)
-            {
-                CurrentAttemptSubmitted = true;
-
-                btnSubmit.Enabled = false;
-                btnNextAttempt.Visible = false;
-
-                pnlNotice.Visible = true;
-
-                litNotice.Text =
-                    "You have used all available attempts.";
-
-                return;
-            }
-
-            string unavailable =
-                GetUnavailableMessage(
-                    quiz,
-                    attempts,
-                    maxAttempts);
-
-            if (unavailable != "")
-            {
-                btnSubmit.Enabled = false;
-                btnNextAttempt.Visible = false;
-
-                pnlNotice.Visible = true;
-
-                litNotice.Text =
-                    Server.HtmlEncode(
-                        unavailable);
-
-                return;
-            }
-
-            CurrentAttemptSubmitted = false;
-
-            ClearTimer();
-
-            BindQuestions();
-
-            SetAnswerControlsEnabled(
-                true);
-
-            btnSubmit.Enabled = true;
-            btnNextAttempt.Visible = false;
-
-            pnlResult.Visible = false;
-            pnlNotice.Visible = false;
-
-            litAttemptUsage.Text =
-                attempts + " / " +
-                maxAttempts +
-                " attempts";
-
-            ConfigureTimer(
-                quiz,
-                attempts,
-                maxAttempts);
-        }
-
-        private int GetQuizMaxAttempts()
-        {
-            object value =
-                Scalar(@"
-                    SELECT
-                        ISNULL(
-                            MaxAttempts,
-                            3
-                        )
-                    FROM Quizzes
-                    WHERE QuizID =
-                          @QuizID",
-                    new SqlParameter(
-                        "@QuizID",
-                        QuizId));
-
-            if (value == null ||
-                value == DBNull.Value)
-            {
-                return 3;
-            }
-
-            int maxAttempts =
-                Convert.ToInt32(value);
-
-            return maxAttempts < 1
-                ? 1
-                : maxAttempts;
         }
 
         private void SetAnswerControlsEnabled(
@@ -1206,6 +1107,156 @@ namespace CSA.Student
             }
         }
 
+        private void ShowCorrectAnswersOnly()
+        {
+            DataTable questions =
+                Query(@"
+                    SELECT
+                        QuestionID,
+                        QuestionType,
+                        OptionA,
+                        OptionB,
+                        OptionC,
+                        OptionD,
+                        CorrectAnswer,
+                        Explanation
+
+                    FROM QuizQuestions
+
+                    WHERE QuizID =
+                          @QuizID
+
+                    ORDER BY
+                        SortOrder,
+                        QuestionID",
+                    new SqlParameter(
+                        "@QuizID",
+                        QuizId));
+
+            foreach (RepeaterItem item
+                     in rptQuestions.Items)
+            {
+                string questionId =
+                    ((HiddenField)
+                        item.FindControl(
+                            "hfQuestionID"))
+                        .Value;
+
+                DataRow question =
+                    questions.AsEnumerable()
+                        .First(row =>
+                            Convert.ToString(
+                                row["QuestionID"]) ==
+                            questionId);
+
+                Panel mcqPanel =
+                    item.FindControl(
+                        "pnlMCQ") as Panel;
+
+                RadioButtonList trueFalse =
+                    item.FindControl(
+                        "rblTrueFalse")
+                    as RadioButtonList;
+
+                TextBox structure =
+                    item.FindControl(
+                        "tbStructure")
+                    as TextBox;
+
+                Panel studentAnswerPanel =
+                    item.FindControl(
+                        "pnlStudentAnswer")
+                    as Panel;
+
+                Panel answerReviewPanel =
+                    item.FindControl(
+                        "pnlAnswerReview")
+                    as Panel;
+
+                Panel explanationPanel =
+                    item.FindControl(
+                        "pnlExplanation")
+                    as Panel;
+
+                Label answerResult =
+                    item.FindControl(
+                        "lblAnswerResult")
+                    as Label;
+
+                Literal correctAnswer =
+                    item.FindControl(
+                        "litCorrectAnswer")
+                    as Literal;
+
+                Literal explanation =
+                    item.FindControl(
+                        "litExplanation")
+                    as Literal;
+
+                if (mcqPanel != null)
+                {
+                    mcqPanel.Visible = false;
+                }
+
+                if (trueFalse != null)
+                {
+                    trueFalse.Visible = false;
+                }
+
+                if (structure != null)
+                {
+                    structure.Visible = false;
+                }
+
+                if (studentAnswerPanel != null)
+                {
+                    studentAnswerPanel.Visible =
+                        false;
+                }
+
+                if (answerResult != null)
+                {
+                    answerResult.Visible =
+                        false;
+                }
+
+                if (correctAnswer != null)
+                {
+                    correctAnswer.Text =
+                        Server.HtmlEncode(
+                            DisplayAnswer(
+                                question,
+                                Convert.ToString(
+                                    question[
+                                        "CorrectAnswer"])));
+                }
+
+                string explanationText =
+                    Convert.ToString(
+                        question["Explanation"]);
+
+                if (explanationPanel != null)
+                {
+                    explanationPanel.Visible =
+                        !string.IsNullOrWhiteSpace(
+                            explanationText);
+                }
+
+                if (explanation != null)
+                {
+                    explanation.Text =
+                        Server.HtmlEncode(
+                            explanationText);
+                }
+
+                if (answerReviewPanel != null)
+                {
+                    answerReviewPanel.Visible =
+                        true;
+                }
+            }
+        }
+
         private Dictionary<string, string>
             ReadAnswers()
         {
@@ -1261,8 +1312,7 @@ namespace CSA.Student
                             ",",
                             selected);
                 }
-                else if (type ==
-                         "TrueFalse")
+                else if (type == "TrueFalse")
                 {
                     answers[questionId] =
                         ((RadioButtonList)
@@ -1306,13 +1356,11 @@ namespace CSA.Student
         {
             string type =
                 Convert.ToString(
-                    question[
-                        "QuestionType"]);
+                    question["QuestionType"]);
 
             string expected =
                 Convert.ToString(
-                    question[
-                        "CorrectAnswer"]);
+                    question["CorrectAnswer"]);
 
             if (type == "MCQ")
             {
@@ -1333,8 +1381,7 @@ namespace CSA.Student
 
             string strategy =
                 Convert.ToString(
-                    question[
-                        "MatchStrategy"]);
+                    question["MatchStrategy"]);
 
             if (strategy == "Contains")
             {
@@ -1400,15 +1447,13 @@ namespace CSA.Student
                     questions.AsEnumerable()
                         .First(row =>
                             Convert.ToString(
-                                row[
-                                    "QuestionID"]) ==
+                                row["QuestionID"]) ==
                             questionId);
 
                 string answer =
                     answers.ContainsKey(
                         questionId)
-                        ? answers[
-                            questionId]
+                        ? answers[questionId]
                         : "";
 
                 bool correct =
@@ -1419,6 +1464,19 @@ namespace CSA.Student
                 Label result =
                     (Label)item.FindControl(
                         "lblAnswerResult");
+
+                Panel studentAnswerPanel =
+                    item.FindControl(
+                        "pnlStudentAnswer")
+                    as Panel;
+
+                if (studentAnswerPanel != null)
+                {
+                    studentAnswerPanel.Visible =
+                        true;
+                }
+
+                result.Visible = true;
 
                 result.Text =
                     correct
@@ -1461,8 +1519,7 @@ namespace CSA.Student
 
                 string explanation =
                     Convert.ToString(
-                        question[
-                            "Explanation"]);
+                        question["Explanation"]);
 
                 Panel explanationPanel =
                     (Panel)item.FindControl(
@@ -1491,8 +1548,7 @@ namespace CSA.Student
             string answer)
         {
             if (Convert.ToString(
-                question[
-                    "QuestionType"]) !=
+                question["QuestionType"]) !=
                 "MCQ")
             {
                 return answer;
@@ -1503,8 +1559,7 @@ namespace CSA.Student
 
             foreach (string letter
                      in Normalise(
-                         answer)
-                         .Split(','))
+                         answer).Split(','))
             {
                 if (letter == "")
                 {
@@ -1514,8 +1569,7 @@ namespace CSA.Student
                 string option =
                     Convert.ToString(
                         question[
-                            "Option" +
-                            letter]);
+                            "Option" + letter]);
 
                 result.Add(
                     letter + ". " +
@@ -1608,8 +1662,7 @@ namespace CSA.Student
                             string answer =
                                 answers.ContainsKey(
                                     questionId)
-                                    ? answers[
-                                        questionId]
+                                    ? answers[questionId]
                                     : "";
 
                             Execute(
@@ -1876,6 +1929,11 @@ namespace CSA.Student
             object sender,
             EventArgs e)
         {
+            /*
+             * Do not clear the timer here.
+             * Leaving an unfinished attempt must not
+             * reset its remaining time.
+             */
             QuizId = "";
 
             pnlWorkspace.Visible = false;

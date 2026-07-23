@@ -225,8 +225,6 @@ namespace CSA.Lecturer
                     ? $"Quiz created with {committed} attachment(s)."
                     : "Quiz created. You can now add questions and attachments to it.");
 
-                AdminService.LogAudit(CurrentInstructorId, "CREATE_QUIZ", "Quizzes", newId, "", tbNewQuizTitle.Text.Trim());
-
                 LoadQuestions();
                 LoadAttachments(newId);
                 LoadQuizDetails(newId);
@@ -338,8 +336,6 @@ namespace CSA.Lecturer
             LoadQuizDetails(quizId);
             LoadQuestions();
             ShowMarksSummary();
-
-            AdminService.LogAudit(CurrentInstructorId, "UPDATE_QUIZ", "Quizzes", quizId, "", title);
         }
 
         // ---------------------------------------------------------
@@ -359,8 +355,6 @@ namespace CSA.Lecturer
                 LoadQuizDropdown();
                 LoadQuestions();
                 LoadAttachments(ddlQuiz.SelectedValue);
-
-                AdminService.LogAudit(CurrentInstructorId, "DELETE_QUIZ", "Quizzes", quizId, "", "");
             }
             else if (result == -1)
             {

@@ -450,9 +450,6 @@ namespace CSA.Student
                 }
             }
 
-            AdminService.LogAudit(UserId, "SUBMIT_LAB", "LabSubmissions", submissionId, "",
-                isCorrect ? "Passed" : "Failed");
-
             if (isCorrect)
             {
                 string message =

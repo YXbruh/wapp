@@ -203,11 +203,21 @@ namespace CSA.Services
         public static DataTable GetLogs(string keyword, string severity,
             string dateFrom, string dateTo, int page, int pageSize, out int total)
         {
+            string sevWhere = "";
+            if (!string.IsNullOrEmpty(severity))
+            {
+                if (severity == "Critical")
+                    sevWhere = " AND (al.Action LIKE '%DELETE%' OR al.Action LIKE '%ERROR%')";
+                else if (severity == "Warning")
+                    sevWhere = " AND (al.Action LIKE '%CREATE%' OR al.Action LIKE '%UPDATE%') AND al.Action NOT LIKE '%DELETE%' AND al.Action NOT LIKE '%ERROR%'";
+                else
+                    sevWhere = " AND al.Action NOT LIKE '%CREATE%' AND al.Action NOT LIKE '%UPDATE%' AND al.Action NOT LIKE '%DELETE%' AND al.Action NOT LIKE '%ERROR%'";
+            }
+
             string where = "1=1";
             if (!string.IsNullOrEmpty(keyword))
                 where += " AND (al.Action LIKE @Keyword OR al.IPAddress LIKE @Keyword OR u.FullName LIKE @Keyword)";
-            if (!string.IsNullOrEmpty(severity))
-                where += " AND al.Action LIKE @SevPattern";
+            where += sevWhere;
             if (!string.IsNullOrEmpty(dateFrom))
                 where += " AND al.OccurredAt >= @DateFrom";
             if (!string.IsNullOrEmpty(dateTo))
@@ -216,17 +226,15 @@ namespace CSA.Services
             string countSql = "SELECT COUNT(*) FROM AuditLog al JOIN Users u ON al.PerformedByID = u.UserID WHERE " + where;
             total = Convert.ToInt32(DBHelper.ExecuteScalar(countSql,
                 new SqlParameter("@Keyword", "%" + keyword + "%"),
-                new SqlParameter("@SevPattern", "%" + severity + "%"),
                 new SqlParameter("@DateFrom", (object)dateFrom ?? DBNull.Value),
                 new SqlParameter("@DateTo", (object)dateTo ?? DBNull.Value)));
+
+            string severityExpr = "CASE WHEN al.Action LIKE '%DELETE%' OR al.Action LIKE '%ERROR%' THEN 'Critical' WHEN al.Action LIKE '%UPDATE%' OR al.Action LIKE '%CREATE%' THEN 'Warning' ELSE 'Info' END";
 
             string sql = $@"
                 SELECT al.AuditID, al.Action, al.TableAffected, al.RecordID, al.IPAddress, al.OccurredAt,
                        u.FullName AS UserName, u.Email AS UserEmail,
-                       CASE WHEN al.Action LIKE '%DELETE%' OR al.Action LIKE '%ERROR%' THEN 'Critical'
-                            WHEN al.Action LIKE '%UPDATE%' OR al.Action LIKE '%CREATE%' THEN 'Warning'
-                            ELSE 'Info'
-                       END AS Severity,
+                       {severityExpr} AS Severity,
                        al.Action AS Details
                 FROM AuditLog al
                 JOIN Users u ON al.PerformedByID = u.UserID
@@ -236,7 +244,6 @@ namespace CSA.Services
 
             return DBHelper.ExecuteQuery(sql,
                 new SqlParameter("@Keyword", "%" + keyword + "%"),
-                new SqlParameter("@SevPattern", "%" + severity + "%"),
                 new SqlParameter("@DateFrom", (object)dateFrom ?? DBNull.Value),
                 new SqlParameter("@DateTo", (object)dateTo ?? DBNull.Value),
                 new SqlParameter("@Offset", (page - 1) * pageSize),
@@ -245,12 +252,16 @@ namespace CSA.Services
 
         public static int CountBySeverity(string severity)
         {
-            string pattern = severity == "Info" ? "%CREATE%LOGIN%"
-                : severity == "Warning" ? "%UPDATE%"
-                : "%DELETE%ERROR%";
+            string where;
+            if (severity == "Critical")
+                where = "(Action LIKE '%DELETE%' OR Action LIKE '%ERROR%')";
+            else if (severity == "Warning")
+                where = "(Action LIKE '%CREATE%' OR Action LIKE '%UPDATE%') AND Action NOT LIKE '%DELETE%' AND Action NOT LIKE '%ERROR%'";
+            else
+                where = "Action NOT LIKE '%CREATE%' AND Action NOT LIKE '%UPDATE%' AND Action NOT LIKE '%DELETE%' AND Action NOT LIKE '%ERROR%'";
+
             object r = DBHelper.ExecuteScalar(
-                "SELECT COUNT(*) FROM AuditLog WHERE Action LIKE @Pattern AND CAST(OccurredAt AS DATE) = CAST(GETDATE() AS DATE)",
-                new SqlParameter("@Pattern", pattern));
+                $"SELECT COUNT(*) FROM AuditLog WHERE {where} AND CAST(OccurredAt AS DATE) = CAST(GETDATE() AS DATE)");
             return r != null ? Convert.ToInt32(r) : 0;
         }
 

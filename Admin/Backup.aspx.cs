@@ -144,6 +144,8 @@ namespace CSA.Admin
                     DBHelper.ExecuteNonQuery(
                         "DELETE FROM DatabaseBackups WHERE BackupID = @ID",
                         new System.Data.SqlClient.SqlParameter("@ID", id));
+                    AdminService.LogAudit(Session["UserID"].ToString(),
+                        "DELETE_BACKUP", "DatabaseBackups", id.ToString(), "", "");
                     pnlSuccess.Visible = true;
                     litSuccess.Text = "Backup deleted.";
                     LoadBackups();
