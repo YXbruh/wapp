@@ -84,7 +84,7 @@
                     <asp:DropDownList ID="ddlAudience" runat="server" CssClass="form-select">
                         <asp:ListItem Value="All">All Users</asp:ListItem>
                         <asp:ListItem Value="Student">Students Only</asp:ListItem>
-                        <asp:ListItem Value="Lecturer">Instructors Only</asp:ListItem>
+                        <asp:ListItem Value="Lecturer">Lecturer Only</asp:ListItem>
                     </asp:DropDownList>
                 </div>
 
