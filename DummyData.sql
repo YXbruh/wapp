@@ -313,11 +313,13 @@ GO
 
 
 -- CONTENT FLAGS
--- ContentFlags.ContentID is NVARCHAR(20) — matches Chapter/Quiz/Lab IDs.
+-- NOTE: ContentFlags.ContentID is INT in the schema, so it cannot hold the
+-- NVARCHAR code IDs (e.g. 'CHPFFQ984'). Placeholder numbers are used here.
+-- If you want real linkage, change ContentID to NVARCHAR(10) like AuditLog.RecordID.
 INSERT INTO ContentFlags (ReportedByID, ContentType, ContentID, Reason, Status, ReviewedByID, ReviewedAt, FlaggedAt) VALUES
-('USRGMP204', 'Chapter', 'CHPQUC697', 'Possible typo in the CIA triad diagram.', 'Pending', NULL, NULL, DATEADD(DAY,-1,GETDATE())),
-('USRRBX787', 'Quiz', 'QUZPXK955', 'Question 3 wording is confusing.', 'Reviewed', 'USRAME107', DATEADD(HOUR,-20,GETDATE()), DATEADD(DAY,-3,GETDATE())),
-('USRJOY656', 'Lab', 'LABMYS892', 'Regex validation rejects a valid payload.', 'Resolved', 'USRAME107', DATEADD(HOUR,-4,GETDATE()), DATEADD(DAY,-2,GETDATE()));
+('USRGMP204', 'Chapter', 2, 'Possible typo in the CIA triad diagram.', 'Pending', NULL, NULL, DATEADD(DAY,-1,GETDATE())),
+('USRRBX787', 'Quiz', 1, 'Question 3 wording is confusing.', 'Reviewed', 'USRAME107', DATEADD(HOUR,-20,GETDATE()), DATEADD(DAY,-3,GETDATE())),
+('USRJOY656', 'Lab', 5, 'Regex validation rejects a valid payload.', 'Resolved', 'USRAME107', DATEADD(HOUR,-4,GETDATE()), DATEADD(DAY,-2,GETDATE()));
 GO
 
 

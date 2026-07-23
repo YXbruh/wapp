@@ -61,6 +61,12 @@
             Achievements
         </a>
 
+        <a href="viewFeedback.aspx" 
+            class="sidebar-link">
+            <i class="ti ti-message-star"></i>
+            My Feedback
+        </a>
+
         <div class="sidebar-section">Account</div>
 
         <a href="Profile.aspx"
@@ -74,7 +80,6 @@
             runat="server"
             CssClass="sidebar-link"
             CausesValidation="false"
-            OnClientClick="return showLogoutConfirm(this);"
             OnClick="lbLogout_Click">
 
             <i class="ti ti-logout"></i>

@@ -212,20 +212,22 @@ namespace CSA.Services
             return sb.ToString();
         }
 
-        public static void GetCounts(out int total, out int published, out int draft)
+        public static void GetCounts(out int total, out int published, out int draft, out int pending)
         {
             DataTable dt = DBHelper.ExecuteQuery(@"
                 SELECT
                     COUNT(*) AS Total,
                     SUM(CASE WHEN IsPublished = 1 THEN 1 ELSE 0 END) AS Published,
-                    SUM(CASE WHEN IsPublished = 0 THEN 1 ELSE 0 END) AS Draft
+                    SUM(CASE WHEN IsPublished = 0 THEN 1 ELSE 0 END) AS Draft,
+                    0 AS Pending
                 FROM Courses");
-            total = 0; published = 0; draft = 0;
+            total = 0; published = 0; draft = 0; pending = 0;
             if (dt.Rows.Count > 0)
             {
                 total = Convert.ToInt32(dt.Rows[0]["Total"]);
                 published = Convert.ToInt32(dt.Rows[0]["Published"]);
                 draft = Convert.ToInt32(dt.Rows[0]["Draft"]);
+                pending = Convert.ToInt32(dt.Rows[0]["Pending"]);
             }
         }
     }

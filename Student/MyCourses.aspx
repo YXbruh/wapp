@@ -276,17 +276,38 @@
                                     <%# Eval("InstructorName") %>
                                 </span>
 
-                                <asp:LinkButton
-                                    ID="btnOpen"
-                                    runat="server"
-                                    CssClass="enroll-btn"
-                                    CausesValidation="false"
-                                    CommandName="OpenCourse"
-                                    CommandArgument='<%# Eval("CourseID") %>'>
+                                <div style="display:flex;gap:7px">
 
-                                    Open Course
+                                    <asp:LinkButton
+                                        ID="btnOpen"
+                                        runat="server"
+                                        CssClass="enroll-btn"
+                                        CausesValidation="false"
+                                        CommandName="OpenCourse"
+                                        CommandArgument='<%# Eval("CourseID") %>'>
 
-                                </asp:LinkButton>
+                                        Open Course
+
+                                    </asp:LinkButton>
+
+                                    <asp:HyperLink
+                                        ID="hlCourseFeedback"
+                                        runat="server"
+                                        CssClass="enroll-btn"
+                                        NavigateUrl='<%#
+                                            "Feedback.aspx?type=course&id=" +
+                                            Server.UrlEncode(
+                                                Convert.ToString(Eval("CourseID")))
+                                        %>'
+                                        Visible='<%#
+                                            Convert.ToDecimal(Eval("Progress")) >= 100
+                                        %>'>
+
+                                        Feedback
+
+                                    </asp:HyperLink>
+
+                                </div>
 
                             </div>
 
