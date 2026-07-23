@@ -902,6 +902,9 @@ namespace CSA.Student
                     passed,
                     awardXp);
 
+                AdminService.LogAudit(UserId, "SUBMIT_QUIZ", "QuizAttempts", QuizId, "",
+                    score.ToString("0.##") + "% - " + (passed ? "Passed" : "Failed"));
+
                 ClearTimer();
 
                 string message =

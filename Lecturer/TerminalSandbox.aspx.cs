@@ -112,6 +112,8 @@ namespace CSA.Lecturer
                     LoadAttachments(savedId);
                     ClientScript.RegisterStartupScript(GetType(), "openEditor",
                         "toggleEditor(true);", true);
+
+                    AdminService.LogAudit(CurrentInstructorId, "CREATE_LAB", "VirtualLabs", savedId, "", tbLabTitle.Text.Trim());
                 }
                 else
                 {
@@ -121,6 +123,8 @@ namespace CSA.Lecturer
                     ResetForm();
                     ClientScript.RegisterStartupScript(GetType(), "closeEditor",
                         "toggleEditor(false);", true);
+
+                    AdminService.LogAudit(CurrentInstructorId, "UPDATE_LAB", "VirtualLabs", savedId, "", tbLabTitle.Text.Trim());
                 }
             }
             catch (Exception ex)
@@ -157,6 +161,8 @@ namespace CSA.Lecturer
                     pnlSuccess.Visible = true;
                     litSuccess.Text = "Lab deleted.";
                     LoadLabs();
+
+                    AdminService.LogAudit(CurrentInstructorId, "DELETE_LAB", "VirtualLabs", id, "", "");
                     break;
             }
         }

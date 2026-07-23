@@ -183,6 +183,8 @@ namespace CSA.Lecturer
                     ? $"Chapter saved with {committed} attachment(s)."
                     : "Chapter saved. You can now attach articles, pictures, media links, and documents to it.");
 
+                AdminService.LogAudit(userId, "CREATE_CHAPTER", "Chapters", newId, "", title);
+
                 // Keep editing the chapter we just created so the Attachments panel opens.
                 editId = newId;
                 hfEditID.Value = newId;
@@ -220,6 +222,8 @@ namespace CSA.Lecturer
                     ? $"Chapter updated with {committed} new attachment(s)."
                     : "Chapter updated successfully.");
                 LoadAttachments(editId);
+
+                AdminService.LogAudit(userId, "UPDATE_CHAPTER", "Chapters", editId, "", title);
             }
 
             LoadContentList();
@@ -389,6 +393,8 @@ namespace CSA.Lecturer
                 ShowSuccess("Chapter deleted.");
                 if (hfEditID.Value == id) ResetForm();
                 LoadContentList();
+
+                AdminService.LogAudit(userId, "DELETE_CHAPTER", "Chapters", id, "", "");
             }
         }
 
