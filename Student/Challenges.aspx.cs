@@ -22,6 +22,9 @@ namespace CSA.Student
         private const string TimerDurationPrefix =
             "StudentQuizTimerDuration_";
 
+        private const string AttemptSubmittedPrefix =
+            "StudentQuizAttemptSubmitted_";
+
         private string ConnectionString
         {
             get
@@ -71,6 +74,33 @@ namespace CSA.Student
                 return TimerDurationPrefix +
                        UserId + "_" +
                        QuizId;
+            }
+        }
+
+        private string AttemptSubmittedKey
+        {
+            get
+            {
+                return AttemptSubmittedPrefix +
+                       UserId + "_" +
+                       QuizId;
+            }
+        }
+
+        private bool CurrentAttemptSubmitted
+        {
+            get
+            {
+                object value =
+                    Session[AttemptSubmittedKey];
+
+                return value != null &&
+                       Convert.ToBoolean(value);
+            }
+            set
+            {
+                Session[AttemptSubmittedKey] =
+                    value;
             }
         }
 
@@ -339,7 +369,13 @@ namespace CSA.Student
                     notice);
 
             btnSubmit.Enabled =
-                notice == "";
+                notice == "" &&
+                !CurrentAttemptSubmitted;
+
+            btnNextAttempt.Visible =
+                notice == "" &&
+                CurrentAttemptSubmitted &&
+                attempts < maxAttempts;
 
             hlQuizFeedback.Visible =
                 attempts > 0;
@@ -350,6 +386,22 @@ namespace CSA.Student
                     QuizId);
 
             BindQuestions();
+
+            if (CurrentAttemptSubmitted)
+            {
+                SetAnswerControlsEnabled(
+                    false);
+
+                if (attempts < maxAttempts)
+                {
+                    pnlNotice.Visible = true;
+
+                    litNotice.Text =
+                        "This attempt has already been submitted. " +
+                        "Click Start Next Attempt to try again.";
+                }
+            }
+
             LoadAttempts();
 
             ConfigureTimer(
@@ -389,6 +441,7 @@ namespace CSA.Student
             hfRemainingSeconds.Value = "";
 
             if (!btnSubmit.Enabled ||
+                CurrentAttemptSubmitted ||
                 attempts >= maxAttempts ||
                 quiz["DurationMinutes"] ==
                     DBNull.Value)
@@ -638,31 +691,323 @@ namespace CSA.Student
             object sender,
             EventArgs e)
         {
+            Application.Lock();
+
+            try
+            {
+                if (CurrentAttemptSubmitted)
+                {
+                    btnSubmit.Enabled = false;
+
+                    btnNextAttempt.Visible =
+                        GetAttemptCount() <
+                        GetQuizMaxAttempts();
+
+                    ShowResult(
+                        false,
+                        "This attempt has already been submitted.");
+
+                    return;
+                }
+
+                CurrentAttemptSubmitted = true;
+            }
+            finally
+            {
+                Application.UnLock();
+            }
+
+            btnSubmit.Enabled = false;
+
+            try
+            {
+                DataTable quizTable =
+                    Query(@"
+                        SELECT
+                            PassMark,
+                            StartDate,
+                            EndDate,
+                            DurationMinutes,
+
+                            ISNULL(
+                                MaxAttempts,
+                                3
+                            ) AS MaxAttempts,
+
+                            ISNULL(
+                                TotalMarks,
+                                (
+                                    SELECT
+                                        ISNULL(
+                                            SUM(Points),
+                                            0
+                                        )
+                                    FROM QuizQuestions
+                                    WHERE QuizID =
+                                          @QuizID
+                                )
+                            ) AS TotalMarks
+
+                        FROM Quizzes
+
+                        WHERE QuizID =
+                              @QuizID
+                          AND IsPublished = 1",
+                        new SqlParameter(
+                            "@QuizID",
+                            QuizId));
+
+                if (quizTable.Rows.Count == 0)
+                {
+                    CurrentAttemptSubmitted =
+                        false;
+
+                    btnSubmit.Enabled = true;
+                    return;
+                }
+
+                DataRow quiz =
+                    quizTable.Rows[0];
+
+                int attempts =
+                    GetAttemptCount();
+
+                int maxAttempts =
+                    GetMaxAttempts(quiz);
+
+                if (attempts >= maxAttempts)
+                {
+                    btnSubmit.Enabled = false;
+                    btnNextAttempt.Visible = false;
+
+                    ShowResult(
+                        false,
+                        "You have used all available attempts.");
+
+                    ClearTimer();
+                    return;
+                }
+
+                string unavailable =
+                    GetUnavailableMessage(
+                        quiz,
+                        attempts,
+                        maxAttempts);
+
+                bool timeExpired =
+                    HasTimeExpired() ||
+                    hfRemainingSeconds.Value == "0";
+
+                if (unavailable != "" &&
+                    !timeExpired)
+                {
+                    CurrentAttemptSubmitted =
+                        false;
+
+                    btnSubmit.Enabled = true;
+
+                    ShowResult(
+                        false,
+                        unavailable);
+
+                    return;
+                }
+
+                DataTable questions =
+                    Query(@"
+                        SELECT
+                            QuestionID,
+                            QuestionType,
+                            OptionA,
+                            OptionB,
+                            OptionC,
+                            OptionD,
+                            CorrectAnswer,
+                            MatchStrategy,
+                            Explanation,
+                            Points
+
+                        FROM QuizQuestions
+
+                        WHERE QuizID =
+                              @QuizID
+
+                        ORDER BY
+                            SortOrder,
+                            QuestionID",
+                        new SqlParameter(
+                            "@QuizID",
+                            QuizId));
+
+                Dictionary<string, string>
+                    answers =
+                        ReadAnswers();
+
+                int obtained = 0;
+
+                foreach (DataRow question
+                         in questions.Rows)
+                {
+                    string questionId =
+                        Convert.ToString(
+                            question[
+                                "QuestionID"]);
+
+                    string answer =
+                        answers.ContainsKey(
+                            questionId)
+                            ? answers[
+                                questionId]
+                            : "";
+
+                    if (IsCorrect(
+                        question,
+                        answer))
+                    {
+                        obtained +=
+                            Convert.ToInt32(
+                                question[
+                                    "Points"]);
+                    }
+                }
+
+                int total =
+                    Convert.ToInt32(
+                        quiz["TotalMarks"]);
+
+                decimal score =
+                    total == 0
+                        ? 0
+                        : Math.Round(
+                            obtained *
+                            100m /
+                            total,
+                            2);
+
+                bool passed =
+                    score >=
+                    Convert.ToDecimal(
+                        quiz["PassMark"]);
+
+                bool awardXp =
+                    passed &&
+                    !HasPassed();
+
+                SaveAttempt(
+                    questions,
+                    answers,
+                    obtained,
+                    total,
+                    score,
+                    passed,
+                    awardXp);
+
+                ClearTimer();
+
+                string message =
+                    "You scored " +
+                    obtained + " / " +
+                    total + " marks (" +
+                    score.ToString("0.##") +
+                    "%). ";
+
+                if (passed && awardXp)
+                {
+                    message +=
+                        "Challenge passed. XP awarded.";
+                }
+                else if (passed)
+                {
+                    message +=
+                        "Challenge passed. " +
+                        "No additional XP was awarded.";
+                }
+                else
+                {
+                    message +=
+                        "Challenge not passed.";
+                }
+
+                if (timeExpired)
+                {
+                    message +=
+                        " The quiz was submitted because " +
+                        "the time limit ended.";
+                }
+
+                ShowResult(
+                    passed,
+                    message);
+
+                ShowAnswerReview(
+                    questions,
+                    answers);
+
+                SetAnswerControlsEnabled(
+                    false);
+
+                attempts++;
+
+                litAttemptUsage.Text =
+                    attempts + " / " +
+                    maxAttempts +
+                    " attempts";
+
+                btnSubmit.Enabled = false;
+
+                btnNextAttempt.Visible =
+                    attempts < maxAttempts;
+
+                hlQuizFeedback.Visible = true;
+
+                hlQuizFeedback.NavigateUrl =
+                    "Feedback.aspx?type=quiz&id=" +
+                    Server.UrlEncode(
+                        QuizId);
+
+                pnlNotice.Visible = true;
+
+                if (attempts >= maxAttempts)
+                {
+                    litNotice.Text =
+                        "You have used all available attempts. " +
+                        "You may still review the quiz.";
+                }
+                else
+                {
+                    litNotice.Text =
+                        "Attempt submitted. Click Start Next Attempt " +
+                        "when you are ready to try again.";
+                }
+
+                LoadAttempts();
+            }
+            catch
+            {
+                CurrentAttemptSubmitted =
+                    false;
+
+                btnSubmit.Enabled = true;
+                btnNextAttempt.Visible = false;
+
+                throw;
+            }
+        }
+
+        protected void btnNextAttempt_Click(
+            object sender,
+            EventArgs e)
+        {
             DataTable quizTable =
                 Query(@"
                     SELECT
-                        PassMark,
                         StartDate,
                         EndDate,
                         DurationMinutes,
                         ISNULL(
                             MaxAttempts,
                             3
-                        ) AS MaxAttempts,
-
-                        ISNULL(
-                            TotalMarks,
-                            (
-                                SELECT
-                                    ISNULL(
-                                        SUM(Points),
-                                        0
-                                    )
-                                FROM QuizQuestions
-                                WHERE QuizID =
-                                      @QuizID
-                            )
-                        ) AS TotalMarks
+                        ) AS MaxAttempts
 
                     FROM Quizzes
 
@@ -705,12 +1050,15 @@ namespace CSA.Student
 
             if (attempts >= maxAttempts)
             {
-                ShowResult(
-                    false,
-                    "You have used all available attempts.");
+                CurrentAttemptSubmitted = true;
 
                 btnSubmit.Enabled = false;
-                ClearTimer();
+                btnNextAttempt.Visible = false;
+
+                pnlNotice.Visible = true;
+
+                litNotice.Text =
+                    "You have used all available attempts.";
 
                 return;
             }
@@ -721,184 +1069,138 @@ namespace CSA.Student
                     attempts,
                     maxAttempts);
 
-            bool timeExpired =
-                HasTimeExpired() ||
-                hfRemainingSeconds.Value == "0";
-
-            if (unavailable != "" &&
-                !timeExpired)
+            if (unavailable != "")
             {
-                ShowResult(
-                    false,
-                    unavailable);
+                btnSubmit.Enabled = false;
+                btnNextAttempt.Visible = false;
+
+                pnlNotice.Visible = true;
+
+                litNotice.Text =
+                    Server.HtmlEncode(
+                        unavailable);
 
                 return;
             }
 
-            DataTable questions =
-                Query(@"
-                    SELECT
-                        QuestionID,
-                        QuestionType,
-                        OptionA,
-                        OptionB,
-                        OptionC,
-                        OptionD,
-                        CorrectAnswer,
-                        MatchStrategy,
-                        Explanation,
-                        Points
-
-                    FROM QuizQuestions
-
-                    WHERE QuizID =
-                          @QuizID
-
-                    ORDER BY
-                        SortOrder,
-                        QuestionID",
-                    new SqlParameter(
-                        "@QuizID",
-                        QuizId));
-
-            Dictionary<string, string>
-                answers =
-                    ReadAnswers();
-
-            int obtained = 0;
-
-            foreach (DataRow question
-                     in questions.Rows)
-            {
-                string questionId =
-                    Convert.ToString(
-                        question[
-                            "QuestionID"]);
-
-                string answer =
-                    answers.ContainsKey(
-                        questionId)
-                        ? answers[
-                            questionId]
-                        : "";
-
-                if (IsCorrect(
-                    question,
-                    answer))
-                {
-                    obtained +=
-                        Convert.ToInt32(
-                            question["Points"]);
-                }
-            }
-
-            int total =
-                Convert.ToInt32(
-                    quiz["TotalMarks"]);
-
-            decimal score =
-                total == 0
-                    ? 0
-                    : Math.Round(
-                        obtained *
-                        100m /
-                        total,
-                        2);
-
-            bool passed =
-                score >=
-                Convert.ToDecimal(
-                    quiz["PassMark"]);
-
-            bool awardXp =
-                passed &&
-                !HasPassed();
-
-            SaveAttempt(
-                questions,
-                answers,
-                obtained,
-                total,
-                score,
-                passed,
-                awardXp);
+            CurrentAttemptSubmitted = false;
 
             ClearTimer();
 
-            string message =
-                "You scored " +
-                obtained + " / " +
-                total + " marks (" +
-                score.ToString("0.##") +
-                "%). ";
+            BindQuestions();
 
-            if (passed && awardXp)
-            {
-                message +=
-                    "Challenge passed. XP awarded.";
-            }
-            else if (passed)
-            {
-                message +=
-                    "Challenge passed. " +
-                    "No additional XP was awarded.";
-            }
-            else
-            {
-                message +=
-                    "Challenge not passed.";
-            }
+            SetAnswerControlsEnabled(
+                true);
 
-            if (timeExpired)
-            {
-                message +=
-                    " The quiz was submitted because " +
-                    "the time limit ended.";
-            }
+            btnSubmit.Enabled = true;
+            btnNextAttempt.Visible = false;
 
-            ShowResult(
-                passed,
-                message);
-
-            ShowAnswerReview(
-                questions,
-                answers);
-
-            attempts++;
+            pnlResult.Visible = false;
+            pnlNotice.Visible = false;
 
             litAttemptUsage.Text =
                 attempts + " / " +
                 maxAttempts +
                 " attempts";
 
-            btnSubmit.Enabled =
-                attempts < maxAttempts;
+            ConfigureTimer(
+                quiz,
+                attempts,
+                maxAttempts);
+        }
 
-            hlQuizFeedback.Visible = true;
+        private int GetQuizMaxAttempts()
+        {
+            object value =
+                Scalar(@"
+                    SELECT
+                        ISNULL(
+                            MaxAttempts,
+                            3
+                        )
+                    FROM Quizzes
+                    WHERE QuizID =
+                          @QuizID",
+                    new SqlParameter(
+                        "@QuizID",
+                        QuizId));
 
-            hlQuizFeedback.NavigateUrl =
-                "Feedback.aspx?type=quiz&id=" +
-                Server.UrlEncode(
-                    QuizId);
-
-            if (attempts >= maxAttempts)
+            if (value == null ||
+                value == DBNull.Value)
             {
-                pnlNotice.Visible = true;
-
-                litNotice.Text =
-                    "You have used all available attempts. " +
-                    "You may still review the quiz.";
+                return 3;
             }
-            else
+
+            int maxAttempts =
+                Convert.ToInt32(value);
+
+            return maxAttempts < 1
+                ? 1
+                : maxAttempts;
+        }
+
+        private void SetAnswerControlsEnabled(
+            bool enabled)
+        {
+            foreach (RepeaterItem item
+                     in rptQuestions.Items)
             {
-                pnlNotice.Visible = true;
+                CheckBox cbA =
+                    item.FindControl(
+                        "cbA") as CheckBox;
 
-                litNotice.Text =
-                    "Attempt submitted. Reopen the quiz " +
-                    "when you are ready to begin your next attempt.";
+                CheckBox cbB =
+                    item.FindControl(
+                        "cbB") as CheckBox;
+
+                CheckBox cbC =
+                    item.FindControl(
+                        "cbC") as CheckBox;
+
+                CheckBox cbD =
+                    item.FindControl(
+                        "cbD") as CheckBox;
+
+                RadioButtonList trueFalse =
+                    item.FindControl(
+                        "rblTrueFalse")
+                    as RadioButtonList;
+
+                TextBox structure =
+                    item.FindControl(
+                        "tbStructure")
+                    as TextBox;
+
+                if (cbA != null)
+                {
+                    cbA.Enabled = enabled;
+                }
+
+                if (cbB != null)
+                {
+                    cbB.Enabled = enabled;
+                }
+
+                if (cbC != null)
+                {
+                    cbC.Enabled = enabled;
+                }
+
+                if (cbD != null)
+                {
+                    cbD.Enabled = enabled;
+                }
+
+                if (trueFalse != null)
+                {
+                    trueFalse.Enabled = enabled;
+                }
+
+                if (structure != null)
+                {
+                    structure.Enabled = enabled;
+                }
             }
-
-            LoadAttempts();
         }
 
         private Dictionary<string, string>
@@ -1571,8 +1873,6 @@ namespace CSA.Student
             object sender,
             EventArgs e)
         {
-            ClearTimer();
-
             QuizId = "";
 
             pnlWorkspace.Visible = false;

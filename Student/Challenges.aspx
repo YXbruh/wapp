@@ -702,12 +702,34 @@
 
             <div class="quiz-actions">
 
+            <div style="display:flex;gap:10px;align-items:center">
+
                 <asp:Button
                     ID="btnSubmit"
                     runat="server"
                     CssClass="btn-primary"
                     Text="Submit Challenge"
+                    UseSubmitBehavior="false"
+                    OnClientClick="
+                        if (this.getAttribute('data-submitting') === '1') {
+                            return false;
+                        }
+
+                        this.setAttribute('data-submitting', '1');
+                        this.disabled = true;
+                        this.value = 'Submitting...';"
                     OnClick="btnSubmit_Click" />
+
+                <asp:Button
+                    ID="btnNextAttempt"
+                    runat="server"
+                    CssClass="btn-sm secondary"
+                    Text="Start Next Attempt"
+                    CausesValidation="false"
+                    Visible="false"
+                    OnClick="btnNextAttempt_Click" />
+
+            </div>
 
                 <asp:HyperLink
                     ID="hlQuizFeedback"
