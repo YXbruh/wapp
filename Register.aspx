@@ -107,22 +107,6 @@
                     Text="<i class='ti ti-alert-circle'></i> Passwords do not match." />
             </div>
 
-            <!-- Terms checkbox -->
-            <div class="form-group">
-                <label style="display:flex;align-items:flex-start;gap:8px;font-size:12px;color:var(--text2);cursor:pointer;line-height:1.6">
-                    <asp:CheckBox ID="cbTerms" runat="server" style="margin-top:2px" />
-                    I agree to the <a href="Terms.aspx" style="color:var(--accent2)">Terms of Service</a>
-                    and <a href="Privacy.aspx" style="color:var(--accent2)">Privacy Policy</a>
-                </label>
-
-                <asp:CustomValidator ID="cvTerms" runat="server" 
-                    ErrorMessage="You must agree to the Terms and Conditions."
-                    OnServerValidate="cvTerms_ServerValidate" 
-                    CssClass="val-error" 
-                    Display="Dynamic" />
-
-            </div>
-
             <asp:Button ID="btnRegister" runat="server" Text="Sign Up" CssClass="form-submit"
                 OnClick="btnRegister_Click" />
 

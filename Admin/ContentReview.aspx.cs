@@ -150,6 +150,43 @@ namespace CSA.Admin
             }
         }
 
+        protected void btnSendRevision_Click(object sender, EventArgs e)
+        {
+            string[] parts = Convert.ToString(hfRevisionRef.Value).Split('|');
+            string message = tbRevisionMessage.Text.Trim();
+            if (parts.Length != 2 || string.IsNullOrEmpty(message))
+            {
+                pnlError.Visible = true;
+                litError.Text = "Please pick an item and describe the changes the lecturer needs to make.";
+                LoadContent();
+                return;
+            }
+
+            string type = parts[0], id = parts[1];
+            string adminId = Session["UserID"].ToString();
+            try
+            {
+                if (AdminService.RequestRevision(type, id, adminId, message, out bool emailSent))
+                {
+                    pnlSuccess.Visible = true;
+                    litSuccess.Text = emailSent
+                        ? type + " sent back for revision — the lecturer has been emailed your requested changes."
+                        : type + " sent back for revision. The email notification could not be sent (SMTP not configured or unavailable); please contact the lecturer directly.";
+                }
+                else
+                {
+                    pnlError.Visible = true;
+                    litError.Text = "That content no longer exists.";
+                }
+                LoadContent();
+            }
+            catch (Exception ex)
+            {
+                pnlError.Visible = true;
+                litError.Text = "Error requesting revision: " + Server.HtmlEncode(ex.Message);
+            }
+        }
+
         protected void lbLogout_Click(object sender, EventArgs e)
         { Session.Clear(); Session.Abandon(); Response.Redirect("~/Login.aspx?msg=loggedout"); }
     }

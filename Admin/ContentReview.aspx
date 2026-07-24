@@ -115,6 +115,10 @@
                                                 OnClientClick="return showConfirmAction(this, 'Reject this submission and leave it as a draft?', 'Reject', 'var(--danger)');">
                                                 <i class="ti ti-circle-x"></i> Reject
                                             </asp:LinkButton>
+                                            <button type="button" class="btn-sm secondary"
+                                                onclick='openRevisionModal("<%# Eval("ContentType") %>|<%# Eval("ContentID") %>", "<%# System.Web.HttpUtility.JavaScriptStringEncode(Convert.ToString(Eval("Title"))) %>")'>
+                                                <i class="ti ti-message-2"></i> Request Revision
+                                            </button>
                                         </div>
                                     </td>
                                 </tr>
@@ -141,6 +145,34 @@
                 </div>
             </asp:Panel>
         </div>
+
+        <!-- Request Revision modal -->
+        <asp:HiddenField ID="hfRevisionRef" runat="server" />
+        <div id="revisionModal" class="modal-overlay" style="display:none">
+            <div class="modal-box" style="text-align:left;max-width:520px">
+                <div class="modal-icon" style="color:var(--accent2);text-align:center">
+                    <i class="ti ti-message-2"></i>
+                </div>
+                <p class="modal-text" style="text-align:center">Request changes from the lecturer</p>
+                <p class="text-small text-muted" style="margin-bottom:8px">
+                    Reviewing: <strong id="revisionTitle"></strong>. The item stays a draft and the
+                    lecturer is emailed the changes you describe below.
+                </p>
+                <asp:TextBox ID="tbRevisionMessage" runat="server" TextMode="MultiLine" Rows="5"
+                    CssClass="form-input" placeholder="Describe what the lecturer needs to change before this can be published…"
+                    style="width:100%;resize:vertical" />
+                <div style="display:flex;justify-content:center;gap:12px;margin-top:16px">
+                    <button type="button" class="form-submit" onclick="closeRevisionModal()"
+                        style="width:auto;min-width:120px;background:var(--bg2);color:var(--text)">
+                        Cancel
+                    </button>
+                    <asp:Button ID="btnSendRevision" runat="server" CssClass="form-submit"
+                        Text="Send to Lecturer" OnClick="btnSendRevision_Click"
+                        OnClientClick="return validateRevision();"
+                        style="width:auto;min-width:120px;background:var(--accent2);color:#fff" />
+                </div>
+            </div>
+        </div>
     </main>
 </div>
 </asp:Content>
@@ -148,4 +180,24 @@
 <style>.alert-success{background:rgba(111,207,151,0.12);border:1px solid rgba(111,207,151,0.4);border-radius:8px;padding:12px 16px;font-size:13px;color:var(--success);display:flex;align-items:center;gap:8px}
 .pager-bar{display:flex;align-items:center;gap:8px;padding:10px 0}
 .pager-info{flex:1;text-align:center;font-size:12px;color:var(--text3)}</style>
+<script>
+    function openRevisionModal(ref, title) {
+        document.getElementById('<%= hfRevisionRef.ClientID %>').value = ref;
+        document.getElementById('<%= tbRevisionMessage.ClientID %>').value = '';
+        document.getElementById('revisionTitle').textContent = title || 'this item';
+        document.getElementById('revisionModal').style.display = 'flex';
+        return false;
+    }
+    function closeRevisionModal() {
+        document.getElementById('revisionModal').style.display = 'none';
+    }
+    function validateRevision() {
+        var box = document.getElementById('<%= tbRevisionMessage.ClientID %>');
+        if (!box.value.trim()) {
+            box.focus();
+            return false;
+        }
+        return true;
+    }
+</script>
 </asp:Content>

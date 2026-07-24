@@ -9,11 +9,6 @@ namespace CSA
     {
         protected void Page_Load(object sender, EventArgs e) { }
 
-        protected void cvTerms_ServerValidate(object source, ServerValidateEventArgs args)
-        {
-            args.IsValid = cbTerms.Checked;
-        }
-
         protected void btnRegister_Click(object sender, EventArgs e)
         {
             if (!Page.IsValid) return;

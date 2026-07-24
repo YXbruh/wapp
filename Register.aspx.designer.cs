@@ -141,24 +141,6 @@ namespace CSA
         protected global::System.Web.UI.WebControls.CompareValidator cvPasswords;
 
         /// <summary>
-        /// cbTerms control.
-        /// </summary>
-        /// <remarks>
-        /// Auto-generated field.
-        /// To modify move field declaration from designer file to code-behind file.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.CheckBox cbTerms;
-
-        /// <summary>
-        /// cvTerms control.
-        /// </summary>
-        /// <remarks>
-        /// Auto-generated field.
-        /// To modify move field declaration from designer file to code-behind file.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.CustomValidator cvTerms;
-
-        /// <summary>
         /// btnRegister control.
         /// </summary>
         /// <remarks>

@@ -32,19 +32,19 @@
     <!-- STATS -->
     <div class="stats-row" role="region" aria-label="Platform statistics">
         <div class="stat-card">
-            <div class="stat-num"><asp:Literal ID="litStudents" runat="server" Text="12,400+" /></div>
+            <div class="stat-num"><asp:Literal ID="litStudents" runat="server" Text="0" /></div>
             <div class="stat-label">Students Enrolled</div>
         </div>
         <div class="stat-card">
-            <div class="stat-num"><asp:Literal ID="litCourses" runat="server" Text="86" /></div>
+            <div class="stat-num"><asp:Literal ID="litCourses" runat="server" Text="0" /></div>
             <div class="stat-label">Active Courses</div>
         </div>
         <div class="stat-card">
-            <div class="stat-num"><asp:Literal ID="litLabs" runat="server" Text="320+" /></div>
+            <div class="stat-num"><asp:Literal ID="litLabs" runat="server" Text="0" /></div>
             <div class="stat-label">Virtual Labs</div>
         </div>
         <div class="stat-card">
-            <div class="stat-num">98%</div>
+            <div class="stat-num"><asp:Literal ID="litSatisfaction" runat="server" Text="—" /></div>
             <div class="stat-label">Satisfaction Rate</div>
         </div>
     </div>
@@ -52,37 +52,37 @@
     <!-- FEATURES -->
     <section class="section" aria-labelledby="featuresHeading">
         <div class="section-title" id="featuresHeading">Why CyberShield Academy?</div>
-        <div class="section-sub">Everything you need to become a cybersecurity professional</div>
+        <div class="section-sub">A practical way to learn security — courses, labs and quizzes in one place</div>
         <div class="features-grid">
             <div class="feature-card">
                 <div class="feat-icon"><i class="ti ti-terminal-2" aria-hidden="true"></i></div>
-                <h3>Virtual Labs</h3>
-                <p>Practice with real Kali Linux terminals, CTF challenges, and live network simulations in a safe sandbox environment.</p>
+                <h3>Hands-On Virtual Labs</h3>
+                <p>Work through guided lab scenarios in an in-browser terminal sandbox, with your commands checked against each lab's goal.</p>
             </div>
             <div class="feature-card">
                 <div class="feat-icon"><i class="ti ti-chart-line" aria-hidden="true"></i></div>
-                <h3>Progress Tracking</h3>
-                <p>Detailed analytics on quiz scores, lab completion rates, and skill progression mapped to industry certifications.</p>
+                <h3>Track Your Progress</h3>
+                <p>Completed chapters, quizzes and labs roll up into a clear progress percentage for every course you take.</p>
             </div>
             <div class="feature-card">
                 <div class="feat-icon"><i class="ti ti-certificate" aria-hidden="true"></i></div>
-                <h3>Achievements</h3>
-                <p>Earn badges and certificates as you complete modules, challenges, and assessment milestones.</p>
+                <h3>Achievements &amp; Certificates</h3>
+                <p>Earn badges as you reach milestones and a certificate once you complete a course.</p>
             </div>
             <div class="feature-card">
-                <div class="feat-icon"><i class="ti ti-users" aria-hidden="true"></i></div>
-                <h3>Community</h3>
-                <p>Join discussion boards, participate in team CTF events, and collaborate with security professionals worldwide.</p>
+                <div class="feat-icon"><i class="ti ti-school" aria-hidden="true"></i></div>
+                <h3>Learn From Lecturers</h3>
+                <p>Every chapter, quiz and lab is written and reviewed by lecturers — and you can leave feedback and get a reply.</p>
             </div>
             <div class="feature-card">
-                <div class="feat-icon"><i class="ti ti-refresh" aria-hidden="true"></i></div>
-                <h3>Always Updated</h3>
-                <p>Content is continuously updated to reflect the latest CVEs, attack vectors, and defensive techniques.</p>
+                <div class="feat-icon"><i class="ti ti-books" aria-hidden="true"></i></div>
+                <h3>Structured Courses</h3>
+                <p>Each course is organised into chapters, quizzes and labs, with beginner, intermediate and advanced levels.</p>
             </div>
             <div class="feature-card">
                 <div class="feat-icon"><i class="ti ti-device-desktop" aria-hidden="true"></i></div>
                 <h3>Learn Anywhere</h3>
-                <p>Fully responsive platform accessible from desktop, tablet, or mobile — no installation required.</p>
+                <p>A responsive platform that works on desktop, tablet or mobile — nothing to install.</p>
             </div>
         </div>
     </section>

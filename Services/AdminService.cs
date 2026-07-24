@@ -23,6 +23,24 @@ namespace CSA.Services
             return dt;
         }
 
+        /// <summary>
+        /// Live counts for the public home page, so the landing stats reflect the
+        /// real platform instead of hard-coded placeholder numbers.
+        /// AvgRating is NULL when no feedback has been left yet.
+        /// </summary>
+        public static DataRow GetHomepageStats()
+        {
+            DataTable dt = DBHelper.ExecuteQuery(@"
+                SELECT
+                    (SELECT COUNT(*) FROM Users u JOIN Roles r ON u.RoleID = r.RoleID
+                        WHERE r.RoleName = 'Student')                       AS StudentCount,
+                    (SELECT COUNT(*) FROM Courses     WHERE IsPublished = 1) AS CourseCount,
+                    (SELECT COUNT(*) FROM VirtualLabs WHERE IsPublished = 1) AS LabCount,
+                    (SELECT AVG(CAST(StarRating AS FLOAT)) FROM Feedback
+                        WHERE StarRating IS NOT NULL)                       AS AvgRating");
+            return dt.Rows[0];
+        }
+
         // ========================================================================
         // CONTENT REVIEW
         //
@@ -192,6 +210,78 @@ namespace CSA.Services
         public static bool RejectContent(string contentType, string contentId, string adminId)
         {
             return SetContentPublished(contentType, contentId, adminId, false);
+        }
+
+        /// <summary>
+        /// Sends a submission back to its author for changes: it stays a draft, the
+        /// requested changes are recorded in the audit log, and the author is emailed.
+        /// Returns false when the content type is unknown or the row no longer exists.
+        /// <paramref name="emailSent"/> reports whether the notification email was delivered.
+        /// </summary>
+        public static bool RequestRevision(string contentType, string contentId,
+            string adminId, string message, out bool emailSent)
+        {
+            emailSent = false;
+
+            if (!TryResolveContentTable(contentType, out string table, out string key))
+                return false;
+
+            // The item must stay a draft the author can edit and resubmit.
+            int rows = DBHelper.ExecuteNonQuery(
+                $@"UPDATE {table} SET IsPublished = 0, UpdatedAt = GETDATE()
+                   WHERE {key} = @ID",
+                new SqlParameter("@ID", contentId ?? ""));
+            if (rows == 0) return false;
+
+            LogAudit(adminId, "REQUEST_REVISION", table, contentId, "", message);
+
+            // Notify the lecturer who authored it (best-effort — a mail failure must
+            // not undo the revision request itself).
+            DataRow author = GetContentAuthorContact(contentType, contentId);
+            if (author != null)
+            {
+                string title = author["Title"].ToString();
+                string body =
+                    "<h2>Revision requested</h2>" +
+                    $"<p>Hi {System.Net.WebUtility.HtmlEncode(author["FullName"].ToString())},</p>" +
+                    $"<p>An administrator has requested changes to your {System.Net.WebUtility.HtmlEncode(contentType.ToLower())} " +
+                    $"\"<strong>{System.Net.WebUtility.HtmlEncode(title)}</strong>\" before it can be published.</p>" +
+                    "<p><strong>Requested changes:</strong></p>" +
+                    $"<blockquote style='border-left:3px solid #ccc;padding-left:12px;color:#444'>{System.Net.WebUtility.HtmlEncode(message)}</blockquote>" +
+                    "<p>Please update the content and resubmit it for review.</p>" +
+                    "<hr><p><small>Sent from CyberShield Academy</small></p>";
+                emailSent = EmailService.Send(author["Email"].ToString(),
+                    "Revision requested: " + title, body);
+            }
+            return true;
+        }
+
+        /// <summary>Author (lecturer) name/email plus the content title, for the revision email.</summary>
+        private static DataRow GetContentAuthorContact(string contentType, string contentId)
+        {
+            string sql;
+            switch (contentType)
+            {
+                case "Chapter":
+                    sql = @"SELECT ch.ChapterTitle AS Title, u.FullName, u.Email
+                            FROM Chapters ch JOIN Users u ON ch.CreatedByID = u.UserID
+                            WHERE ch.ChapterID = @ID";
+                    break;
+                case "Quiz":
+                    sql = @"SELECT q.Title, u.FullName, u.Email
+                            FROM Quizzes q JOIN Users u ON q.CreatedByID = u.UserID
+                            WHERE q.QuizID = @ID";
+                    break;
+                case "Lab":
+                    sql = @"SELECT vl.LabTitle AS Title, u.FullName, u.Email
+                            FROM VirtualLabs vl JOIN Users u ON vl.CreatedByID = u.UserID
+                            WHERE vl.LabID = @ID";
+                    break;
+                default:
+                    return null;
+            }
+            DataTable dt = DBHelper.ExecuteQuery(sql, new SqlParameter("@ID", contentId ?? ""));
+            return dt.Rows.Count > 0 ? dt.Rows[0] : null;
         }
 
         private static bool SetContentPublished(string contentType, string contentId,

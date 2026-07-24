@@ -59,14 +59,25 @@ namespace CSA
         protected void rptCourses_ItemCommand(object source, RepeaterCommandEventArgs e)
         {
             string courseId = e.CommandArgument.ToString();
-            if (_role == "Admin" || _role == "Lecturer")
+            if (_role == "Admin")
             {
+                // Admins manage the course record itself.
                 Response.Redirect($"~/Admin/EditCourse.aspx?id={courseId}");
+            }
+            else if (_role == "Lecturer")
+            {
+                // Lecturers manage their course content (chapters, quizzes, labs).
+                Response.Redirect("~/Lecturer/ManageContent.aspx");
             }
             else if (_role == "Student")
             {
-                // TODO: enroll student in course
-                BindCourses();
+                // Students jump into their own course area to open or enrol in the course.
+                Response.Redirect("~/Student/MyCourses.aspx");
+            }
+            else
+            {
+                // Guests must register before they can join a course.
+                Response.Redirect("~/Register.aspx");
             }
         }
 
@@ -99,7 +110,8 @@ namespace CSA
         public string GetActionText(bool isEnrolled)
         {
             if (_role == "Admin" || _role == "Lecturer") return "Manage";
-            return isEnrolled ? "Enrolled" : "Enroll Now";
+            if (_role == "Student") return isEnrolled ? "Open Course" : "Enroll Now";
+            return "Enroll Now";
         }
 
         public string GetActionCss(bool isEnrolled)
@@ -110,8 +122,9 @@ namespace CSA
 
         public bool GetActionEnabled(bool isEnrolled)
         {
-            if (_role == "Admin" || _role == "Lecturer") return true;
-            return !isEnrolled;
+            // Everyone can click: admins/lecturers manage, students jump to their
+            // course area (even when already enrolled), and guests go to register.
+            return true;
         }
     }
 }

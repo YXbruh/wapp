@@ -77,18 +77,27 @@ namespace CSA.Admin
                     tbStudentID.Text.Trim());
 
                 string pw = tbNewPassword.Text.Trim();
+                bool pwReset = false;
+                bool pwEmailed = false;
                 if (!string.IsNullOrEmpty(pw))
                 {
                     UserService.UpdatePassword(_userId, pw);
                     AdminService.LogAudit(Session["UserID"].ToString(),
                         "RESET_PASSWORD", "Users", "0", "", "Password reset by admin");
+                    pwReset = true;
+                    pwEmailed = SendNewPasswordEmail(tbEmail.Text.Trim(), tbFullName.Text.Trim(), pw);
                 }
 
                 AdminService.LogAudit(Session["UserID"].ToString(),
                     "UPDATE_USER", "Users", "0", "", tbFullName.Text.Trim());
 
                 pnlSuccess.Visible = true;
-                litSuccess.Text = "User updated successfully.";
+                if (pwReset)
+                    litSuccess.Text = pwEmailed
+                        ? "User updated successfully. The new password was emailed to " + Server.HtmlEncode(tbEmail.Text.Trim()) + "."
+                        : "User updated and password reset, but the email could not be sent (SMTP not configured or unavailable). Share the new password with the user manually.";
+                else
+                    litSuccess.Text = "User updated successfully.";
                 litGeneratedPw.Text = "";
             }
             catch (Exception ex)
@@ -97,6 +106,21 @@ namespace CSA.Admin
                 litError.Text = "Error updating user: " + Server.HtmlEncode(ex.Message);
                 pnlSuccess.Visible = false;
             }
+        }
+
+        // Sends the newly reset password to the user, using the same SMTP setup and
+        // HTML style as the announcement emails (EmailService reads the same Web.config keys).
+        private bool SendNewPasswordEmail(string toEmail, string fullName, string newPassword)
+        {
+            string title = "Your CyberShield Academy password has been reset";
+            string body =
+                $"<h2>{System.Net.WebUtility.HtmlEncode(title)}</h2>" +
+                $"<p>Hi {System.Net.WebUtility.HtmlEncode(fullName)},</p>" +
+                "<p>An administrator has reset your password. Your new password is:</p>" +
+                $"<p style='font-size:16px;font-weight:bold;letter-spacing:1px'>{System.Net.WebUtility.HtmlEncode(newPassword)}</p>" +
+                "<p>Please sign in and change it as soon as possible.</p>" +
+                "<hr><p><small>Sent from CyberShield Academy</small></p>";
+            return EmailService.Send(toEmail, title, body);
         }
 
         protected void lbLogout_Click(object sender, EventArgs e)

@@ -56,7 +56,7 @@
                 <asp:DropDownList ID="ddlCategory" runat="server" CssClass="form-select" />
             </div>
             <div class="form-group">
-                <label class="form-label">Instructor</label>
+                <label class="form-label">Lecturer</label>
                 <asp:DropDownList ID="ddlInstructor" runat="server" CssClass="form-select" />
                 <asp:RequiredFieldValidator ID="rfvInstructor" runat="server" ControlToValidate="ddlInstructor"
                     ValidationGroup="CreateCourse" Display="Dynamic" CssClass="val-error"
