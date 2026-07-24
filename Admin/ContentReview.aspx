@@ -26,7 +26,7 @@
     <main class="dash-content">
         <div class="dash-header">
             <h2>Content Review</h2>
-            <p>Approve or reject instructor-submitted content before it goes live.</p>
+            <p>Chapters, quizzes and labs submitted by lecturers. Nothing reaches students until you publish it here.</p>
         </div>
 
         <asp:Panel ID="pnlSuccess" runat="server" Visible="false">
@@ -46,17 +46,17 @@
             <div class="metric">
                 <div class="metric-label">Pending Review</div>
                 <div class="metric-val" style="color:var(--warning)"><asp:Literal ID="litPending" runat="server" Text="0"/></div>
-                <div class="metric-sub">awaiting action</div>
+                <div class="metric-sub">drafts awaiting a decision</div>
             </div>
             <div class="metric">
-                <div class="metric-label">Removals (This Page)</div>
-                <div class="metric-val" style="color:var(--success)"><asp:Literal ID="litApproved" runat="server" Text="0"/></div>
-                <div class="metric-sub">content removed</div>
+                <div class="metric-label">Published</div>
+                <div class="metric-val" style="color:var(--success)"><asp:Literal ID="litPublished" runat="server" Text="0"/></div>
+                <div class="metric-sub">live for students</div>
             </div>
             <div class="metric">
-                <div class="metric-label">Dismissed (This Page)</div>
-                <div class="metric-val" style="color:var(--danger)"><asp:Literal ID="litRejected" runat="server" Text="0"/></div>
-                <div class="metric-sub">no action taken</div>
+                <div class="metric-label">Reviewed Today</div>
+                <div class="metric-val"><asp:Literal ID="litReviewedToday" runat="server" Text="0"/></div>
+                <div class="metric-sub">decisions recorded</div>
             </div>
         </div>
 
@@ -68,7 +68,6 @@
                 <asp:ListItem Value="Chapter">Chapter</asp:ListItem>
                 <asp:ListItem Value="Quiz">Quiz</asp:ListItem>
                 <asp:ListItem Value="Lab">Lab</asp:ListItem>
-                <asp:ListItem Value="Announcement">Announcement</asp:ListItem>
             </asp:DropDownList>
         </div>
 
@@ -79,9 +78,9 @@
                         <tr>
                             <th scope="col">Content</th>
                             <th scope="col">Type</th>
-                            <th scope="col">Submitted By</th>
+                            <th scope="col">Author</th>
                             <th scope="col">Course</th>
-                            <th scope="col">Submitted</th>
+                            <th scope="col">Last Updated</th>
                             <th scope="col">Actions</th>
                         </tr>
                     </thead>
@@ -91,30 +90,30 @@
                             <ItemTemplate>
                                 <tr>
                                     <td>
-                                        <div class="fw-bold" style="color:var(--text)"><%# Eval("Title") %></div>
+                                        <div class="fw-bold" style="color:var(--text)"><%#: Eval("Title") %></div>
                                         <div class="text-small text-muted" style="max-width:260px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
-                                            <%# Eval("Preview") %>
+                                            <%#: Eval("Preview") %>
                                         </div>
                                     </td>
-                                    <td><span class="badge badge-blue"><%# Eval("ContentType") %></span></td>
-                                    <td class="text-muted"><%# Eval("ReportedBy") %></td>
-                                    <td class="text-muted"><%# Eval("CourseName") %></td>
-                                    <td class="text-muted"><%# Eval("FlaggedAt", "{0:dd MMM yyyy}") %></td>
+                                    <td><span class="badge badge-blue"><%#: Eval("ContentType") %></span></td>
+                                    <td class="text-muted"><%#: Eval("SubmittedBy") %></td>
+                                    <td class="text-muted"><%#: Eval("CourseName") %></td>
+                                    <td class="text-muted"><%#: Eval("SubmittedAt", "{0:dd MMM yyyy}") %></td>
                                     <td>
                                         <div class="action-btns">
                                             <asp:LinkButton runat="server" CssClass="btn-sm secondary"
-                                                CommandName="Preview" CommandArgument='<%# Eval("FlagID") %>'>
+                                                CommandName="Preview" CommandArgument='<%# Eval("ContentType") + "|" + Eval("ContentID") %>'>
                                                 <i class="ti ti-eye"></i> Preview
                                             </asp:LinkButton>
                                             <asp:LinkButton runat="server" CssClass="btn-sm"
-                                                CommandName="Approve" CommandArgument='<%# Eval("FlagID") %>'
-                                                OnClientClick="return showConfirmAction(this, 'Approve this flag and remove the reported content?', 'Approve', 'var(--success)');">
+                                                CommandName="Approve" CommandArgument='<%# Eval("ContentType") + "|" + Eval("ContentID") %>'
+                                                OnClientClick="return showConfirmAction(this, 'Publish this content so enrolled students can see it?', 'Publish', 'var(--success)');">
                                                 <i class="ti ti-circle-check"></i> Approve
                                             </asp:LinkButton>
                                             <asp:LinkButton runat="server" CssClass="btn-sm"
-                                                CommandName="Reject" CommandArgument='<%# Eval("FlagID") %>'
-                                                OnClientClick="return showConfirmAction(this, 'Dismiss this flag without taking action?', 'Dismiss', 'var(--danger)');">
-                                                <i class="ti ti-circle-x"></i> Dismiss
+                                                CommandName="Reject" CommandArgument='<%# Eval("ContentType") + "|" + Eval("ContentID") %>'
+                                                OnClientClick="return showConfirmAction(this, 'Reject this submission and leave it as a draft?', 'Reject', 'var(--danger)');">
+                                                <i class="ti ti-circle-x"></i> Reject
                                             </asp:LinkButton>
                                         </div>
                                     </td>
@@ -138,7 +137,7 @@
             <asp:Panel ID="pnlEmpty" runat="server" Visible="false">
                 <div style="text-align:center;padding:40px 20px">
                     <i class="ti ti-circle-check" style="font-size:40px;color:var(--success)" aria-hidden="true"></i>
-                    <p class="text-muted mt-16">All clear — no content pending review.</p>
+                    <p class="text-muted mt-16">All caught up — no submissions waiting to be published.</p>
                 </div>
             </asp:Panel>
         </div>

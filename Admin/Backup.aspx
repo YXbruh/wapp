@@ -124,11 +124,11 @@
                                           OnItemCommand="rptBackups_ItemCommand">
                                 <ItemTemplate>
                                     <tr>
-                                        <td class="fw-bold" style="color:var(--text)"><%# Eval("Label") %></td>
-                                        <td><span class="badge badge-blue"><%# Eval("BackupType") %></span></td>
-                                        <td class="text-muted"><%# Eval("SizeDisplay") %></td>
-                                        <td><span class="badge <%# Eval("Status").ToString()=="Success" ? "badge-green" : "badge-red" %>"><%# Eval("Status") %></span></td>
-                                        <td class="text-muted text-small"><%# Eval("CreatedDisplay") %></td>
+                                        <td class="fw-bold" style="color:var(--text)"><%#: Eval("Label") %></td>
+                                        <td><span class="badge badge-blue"><%#: Eval("BackupType") %></span></td>
+                                        <td class="text-muted"><%#: Eval("SizeDisplay") %></td>
+                                        <td><span class="badge <%# Eval("Status").ToString()=="Success" ? "badge-green" : "badge-red" %>"><%#: Eval("Status") %></span></td>
+                                        <td class="text-muted text-small"><%#: Eval("CreatedDisplay") %></td>
                                         <td>
                                             <div class="action-btns">
                                                 <asp:LinkButton runat="server" CssClass="btn-sm secondary"

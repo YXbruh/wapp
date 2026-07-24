@@ -47,16 +47,25 @@
                     <span id="newQuizToggleLabel">Show</span>
                 </button>
             </div>
-            <div id="newQuizBody" style="display:none">
+            <asp:HiddenField ID="hfNewQuizOpen" runat="server" Value="0" />
+            <%-- Choosing a course reloads the chapter list, so the panel has to survive
+                 that postback instead of snapping shut mid-entry. --%>
+            <div id="newQuizBody" style="<%= hfNewQuizOpen.Value == "1" ? "display:block" : "display:none" %>">
                 <div class="newquiz-grid">
                     <div class="form-group" style="margin-bottom:0">
                         <label class="form-label"><i class="ti ti-books" aria-hidden="true"></i>Course</label>
-                        <asp:DropDownList ID="ddlNewQuizCourse" runat="server" CssClass="form-select" />
+                        <asp:DropDownList ID="ddlNewQuizCourse" runat="server" CssClass="form-select"
+                            AutoPostBack="true" CausesValidation="false"
+                            OnSelectedIndexChanged="ddlNewQuizCourse_Changed" />
                         <asp:RequiredFieldValidator ID="rfvNewCourse" runat="server"
                             ControlToValidate="ddlNewQuizCourse" ValidationGroup="NewQuizGroup"
                             InitialValue="" Display="Dynamic" CssClass="val-error"
                             ErrorMessage="Select a course."
                             Text="<i class='ti ti-alert-circle'></i> Required." />
+                    </div>
+                    <div class="form-group" style="margin-bottom:0">
+                        <label class="form-label"><i class="ti ti-book" aria-hidden="true"></i>Chapter</label>
+                        <asp:DropDownList ID="ddlNewQuizChapter" runat="server" CssClass="form-select" />
                     </div>
                     <div class="form-group" style="margin-bottom:0">
                         <label class="form-label"><i class="ti ti-list-check" aria-hidden="true"></i>Quiz Title</label>
@@ -176,6 +185,10 @@
                                 <asp:TextBox ID="tbEditTitle" runat="server" CssClass="form-input" MaxLength="200" />
                             </div>
                             <div class="form-group" style="margin-bottom:0;grid-column:1 / -1">
+                                <label class="form-label"><i class="ti ti-book" aria-hidden="true"></i>Chapter</label>
+                                <asp:DropDownList ID="ddlEditChapter" runat="server" CssClass="form-select" />
+                            </div>
+                            <div class="form-group" style="margin-bottom:0;grid-column:1 / -1">
                                 <label class="form-label"><i class="ti ti-align-left" aria-hidden="true"></i>Description</label>
                                 <asp:TextBox ID="tbEditDescription" runat="server" CssClass="form-input"
                                     TextMode="MultiLine" Rows="2" MaxLength="1000" />
@@ -223,7 +236,7 @@
                                 <i class="ti <%# GetAttachmentIcon(Eval("AttachmentType").ToString()) %>" aria-hidden="true"></i>
                                 <div class="attachment-info">
                                     <a href='<%# GetAttachmentHref(Eval("AttachmentType"), Eval("FilePath"), Eval("LinkUrl"), Eval("IsPending")) %>'
-                                       target="_blank" rel="noopener"><%# Eval("Title") %></a>
+                                       target="_blank" rel="noopener"><%#: Eval("Title") %></a>
                                     <div class="text-small text-muted">
                                         <%# GetAttachmentMeta(Eval("AttachmentType"), Eval("UploadedByName"), Eval("UploadedAt"), Eval("IsPending")) %>
                                     </div>
@@ -363,7 +376,7 @@
                                     <div class="attachment-row">
                                         <i class="ti <%# GetAttachmentIcon(Eval("AttachmentType").ToString()) %>" aria-hidden="true"></i>
                                         <div class="attachment-info">
-                                            <span style="font-size:13px;font-weight:600;color:var(--text)"><%# Eval("Title") %></span>
+                                            <span style="font-size:13px;font-weight:600;color:var(--text)"><%#: Eval("Title") %></span>
                                             <div class="text-small text-muted"><%# Eval("AttachmentType") %> &middot; pending</div>
                                         </div>
                                     </div>
@@ -446,10 +459,10 @@
                         <div class="question-row">
                             <div class="question-body">
                                 <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
-                                    <span class="badge <%# GetTypeBadge(Eval("QuestionType").ToString()) %>"><%# Eval("TypeLabel") %></span>
-                                    <span class="text-small text-muted"><%# Eval("Points") %> pts &middot; <%# Eval("QuizName") %></span>
+                                    <span class="badge <%# GetTypeBadge(Eval("QuestionType").ToString()) %>"><%#: Eval("TypeLabel") %></span>
+                                    <span class="text-small text-muted"><%# Eval("Points") %> pts &middot; <%#: Eval("QuizName") %></span>
                                 </div>
-                                <div style="font-size:13px;color:var(--text);font-weight:600"><%# Eval("QuestionText") %></div>
+                                <div style="font-size:13px;color:var(--text);font-weight:600"><%#: Eval("QuestionText") %></div>
                             </div>
                             <div class="action-btns" style="flex-shrink:0">
                                 <asp:LinkButton runat="server" CssClass="btn-sm secondary" CausesValidation="false"
@@ -546,9 +559,18 @@
     function toggleNewQuiz() {
         var body = document.getElementById('newQuizBody');
         var label = document.getElementById('newQuizToggleLabel');
+        var state = document.getElementById('<%= hfNewQuizOpen.ClientID %>');
         var open = body.style.display !== 'none';
         body.style.display = open ? 'none' : 'block';
         label.textContent = open ? 'Show' : 'Hide';
+        if (state) state.value = open ? '0' : '1';
     }
+
+    // Restore the toggle button's caption when the panel came back open from a postback.
+    (function () {
+        var body = document.getElementById('newQuizBody');
+        var label = document.getElementById('newQuizToggleLabel');
+        if (body && label && body.style.display !== 'none') label.textContent = 'Hide';
+    })();
 </script>
 </asp:Content>

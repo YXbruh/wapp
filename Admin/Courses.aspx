@@ -113,15 +113,15 @@
                             <ItemTemplate>
                                 <tr>
                                     <td>
-                                        <div class="fw-bold" style="color:var(--text)"><%# Eval("CourseName") %></div>
-                                        <div class="text-small text-muted"><%# Eval("Category") %></div>
+                                        <div class="fw-bold" style="color:var(--text)"><%#: Eval("CourseName") %></div>
+                                        <div class="text-small text-muted"><%#: Eval("Category") %></div>
                                     </td>
-                                    <td class="text-muted"><%# Eval("InstructorName") %></td>
-                                    <td><span class="badge <%# GetLevelBadge(Eval("Level").ToString()) %>"><%# Eval("Level") %></span></td>
-                                    <td><span class="badge <%# GetStatusBadge(Eval("Status").ToString()) %>"><%# Eval("Status") %></span></td>
-                                    <td class="text-muted"><%# Eval("EnrolledCount") %></td>
-                                    <td class="text-muted"><%# Eval("LabCount") %></td>
-                                    <td class="text-muted"><%# Eval("CreatedAt", "{0:dd MMM yyyy}") %></td>
+                                    <td class="text-muted"><%#: Eval("InstructorName") %></td>
+                                    <td><span class="badge <%# GetLevelBadge(Eval("Level").ToString()) %>"><%#: Eval("Level") %></span></td>
+                                    <td><span class="badge <%# GetStatusBadge(Eval("Status").ToString()) %>"><%#: Eval("Status") %></span></td>
+                                    <td class="text-muted"><%#: Eval("EnrolledCount") %></td>
+                                    <td class="text-muted"><%#: Eval("LabCount") %></td>
+                                    <td class="text-muted"><%#: Eval("CreatedAt", "{0:dd MMM yyyy}") %></td>
                                     <td>
                                         <div class="action-btns">
                                             <asp:LinkButton runat="server" CssClass="btn-sm secondary"

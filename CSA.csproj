@@ -224,7 +224,6 @@
   <ItemGroup>
     <Compile Include="App_Start\RouteConfig.cs" />
     <Compile Include="DataAccess\CodeHelper.cs" />
-    <Compile Include="DataAccess\HashHelper.cs" />
     <Compile Include="Lecturer\ClassAnalytics.aspx.cs">
       <DependentUpon>ClassAnalytics.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>

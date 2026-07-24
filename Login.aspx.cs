@@ -48,6 +48,9 @@ namespace CSA
                 if (cbRemember.Checked)
                     FormsAuthentication.SetAuthCookie(email, true);
 
+                AdminService.LogActivity(userId, "LOGIN", "Users", userId,
+                    $"Signed in as {role}");
+
                 string dest = role == "Admin" ? "~/Admin/Admin_Dashboard.aspx"
                            : role == "Lecturer" ? "~/Lecturer/Lecturer_Dashboard.aspx"
                            : "~/Student/Student_Dashboard.aspx";

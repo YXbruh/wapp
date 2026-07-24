@@ -30,7 +30,7 @@
                         CssClass='<%# GetChipClass(Eval("CategoryName").ToString()) %>'
                         CommandName="Filter"
                         CommandArgument='<%# Eval("CategoryName") %>'>
-                        <%# Eval("CategoryName") %>
+                        <%#: Eval("CategoryName") %>
                     </asp:LinkButton>
                 </ItemTemplate>
             </asp:Repeater>
@@ -49,16 +49,16 @@
                             </span>
                         </div>
                         <div class="course-body">
-                            <h3><%# Eval("CourseName") %></h3>
-                            <p><%# Eval("Description") %></p>
+                            <h3><%#: Eval("CourseName") %></h3>
+                            <p><%#: Eval("Description") %></p>
                             <div class="course-meta">
                                 <span><i class="ti ti-clock" aria-hidden="true"></i> <%# Eval("DurationHours") %>h</span>
                                 <span><i class="ti ti-terminal-2" aria-hidden="true"></i> <%# Eval("LabCount") %> labs</span>
-                                <span><i class="ti ti-users" aria-hidden="true"></i> <%# Eval("EnrolledCount") %></span>
+                                <span><i class="ti ti-users" aria-hidden="true"></i> <%#: Eval("EnrolledCount") %></span>
                             </div>
                         </div>
                         <div class="course-footer">
-                            <span class="text-muted text-small"><%# Eval("InstructorName") %></span>
+                            <span class="text-muted text-small"><%#: Eval("InstructorName") %></span>
                             <asp:LinkButton runat="server"
                                 CssClass='<%# GetActionCss((bool)Eval("IsEnrolled")) %>'
                                 CommandArgument='<%# Eval("CourseID") %>'

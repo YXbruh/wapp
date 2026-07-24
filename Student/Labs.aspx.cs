@@ -48,7 +48,7 @@ namespace CSA.Student
             object sender,
             EventArgs e)
         {
-            if (Session["UserID"] == null)
+            if (Session["UserID"] == null || Session["Role"] as string != "Student")
             {
                 Response.Redirect("~/Login.aspx");
                 return;
@@ -450,8 +450,24 @@ namespace CSA.Student
                 }
             }
 
+            // Logged only once the submission is safely committed.
+            AdminService.LogActivity(
+                UserId,
+                isCorrect
+                    ? "COMPLETE_LAB"
+                    : "ATTEMPT_LAB",
+                "LabSubmissions",
+                submissionId,
+                (isCorrect
+                    ? "Completed lab: "
+                    : "Submitted lab attempt: ") +
+                GetSelectedLabTitle());
+
             if (isCorrect)
             {
+                // Completing a lab advances the course progress bar (chapters + labs + quizzes).
+                CourseService.RecalculateProgressForLab(UserId, SelectedLabId);
+
                 string message =
                     alreadyPassed
                         ? "Correct command. This lab was already completed, so no additional XP was awarded."
@@ -694,6 +710,30 @@ namespace CSA.Student
                 ).Value = UserId;
 
                 cmd.ExecuteNonQuery();
+            }
+        }
+
+        /// <summary>Title of the lab being worked on, for log lines. "" if it vanished.</summary>
+        private string GetSelectedLabTitle()
+        {
+            using (SqlConnection con =
+                   new SqlConnection(ConnectionString))
+            using (SqlCommand cmd =
+                   new SqlCommand(
+                @"SELECT LabTitle
+                  FROM VirtualLabs
+                  WHERE LabID = @LabID",
+                con))
+            {
+                cmd.Parameters.Add(
+                    "@LabID",
+                    SqlDbType.NVarChar,
+                    10
+                ).Value = SelectedLabId;
+
+                con.Open();
+                return Convert.ToString(
+                    cmd.ExecuteScalar());
             }
         }
 

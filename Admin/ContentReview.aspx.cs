@@ -51,18 +51,20 @@ namespace CSA.Admin
             p.Total = total;
             ViewState["Pager"] = _pager;
 
-            litPending.Text = AdminService.GetPendingCount().ToString();
-
-            int approved = 0, rejected = 0;
-            foreach (DataRow row in list.Rows)
+            // A page that has emptied out (last item approved) should fall back a page
+            // rather than showing "Page 3 of 2" with nothing on it.
+            if (list.Rows.Count == 0 && p.Page > 1 && total > 0)
             {
-                string status = row["Status"].ToString();
-                if (status == "Removed") approved++;
-                else if (status == "Dismissed") rejected++;
+                p.Page = Math.Max(1, p.TotalPages);
+                list = AdminService.GetPendingContent(ddlType.SelectedValue,
+                    p.Page, p.PageSize, out total);
+                p.Total = total;
+                ViewState["Pager"] = _pager;
             }
 
-            litApproved.Text = approved.ToString();
-            litRejected.Text = rejected.ToString();
+            litPending.Text = AdminService.GetPendingCount().ToString();
+            litPublished.Text = AdminService.GetPublishedCount().ToString();
+            litReviewedToday.Text = AdminService.GetReviewedTodayCount().ToString();
 
             rptContent.DataSource = list;
             rptContent.DataBind();
@@ -90,39 +92,59 @@ namespace CSA.Admin
 
         protected void rptContent_ItemCommand(object source, RepeaterCommandEventArgs e)
         {
-            if (!int.TryParse(e.CommandArgument.ToString(), out int id)) return;
+            // Content keys are NVARCHAR ("QUZ001"), and the same key can exist in more
+            // than one table, so the type travels with it as "Type|ID".
+            string[] parts = Convert.ToString(e.CommandArgument).Split('|');
+            if (parts.Length != 2) return;
+            string type = parts[0], id = parts[1];
+
             string adminId = Session["UserID"].ToString();
             switch (e.CommandName)
             {
                 case "Preview":
-                    Response.Redirect($"~/Admin/PreviewContent.aspx?id={id}");
+                    Response.Redirect("~/Admin/PreviewContent.aspx?type=" +
+                        Server.UrlEncode(type) + "&id=" + Server.UrlEncode(id));
                     break;
                 case "Approve":
                     try
                     {
-                        AdminService.ApproveContent(id, adminId);
-                        pnlSuccess.Visible = true;
-                        litSuccess.Text = "Flag resolved - content removal action recorded.";
+                        if (AdminService.ApproveContent(type, id, adminId))
+                        {
+                            pnlSuccess.Visible = true;
+                            litSuccess.Text = type + " published — it is now visible to enrolled students.";
+                        }
+                        else
+                        {
+                            pnlError.Visible = true;
+                            litError.Text = "That content no longer exists.";
+                        }
                         LoadContent();
                     }
                     catch (Exception ex)
                     {
                         pnlError.Visible = true;
-                        litError.Text = "Error approving content: " + Server.HtmlEncode(ex.Message);
+                        litError.Text = "Error publishing content: " + Server.HtmlEncode(ex.Message);
                     }
                     break;
                 case "Reject":
                     try
                     {
-                        AdminService.RejectContent(id, adminId);
-                        pnlSuccess.Visible = true;
-                        litSuccess.Text = "Flag dismissed - no action taken.";
+                        if (AdminService.RejectContent(type, id, adminId))
+                        {
+                            pnlSuccess.Visible = true;
+                            litSuccess.Text = type + " rejected — it stays a draft with its author.";
+                        }
+                        else
+                        {
+                            pnlError.Visible = true;
+                            litError.Text = "That content no longer exists.";
+                        }
                         LoadContent();
                     }
                     catch (Exception ex)
                     {
                         pnlError.Visible = true;
-                        litError.Text = "Error dismissing flag: " + Server.HtmlEncode(ex.Message);
+                        litError.Text = "Error rejecting content: " + Server.HtmlEncode(ex.Message);
                     }
                     break;
             }

@@ -25,10 +25,23 @@ namespace CSA.Lecturer
             if (!IsPostBack)
             {
                 LoadCourseDropdown();
+                LoadSkillTagSuggestions();
                 LoadLabs();
                 PendingAttachmentService.Clear(AttachBucket);
                 LoadAttachments("");
             }
+        }
+
+        /// <summary>Feeds the Skill Tag box's datalist with tags already in use.</summary>
+        private void LoadSkillTagSuggestions()
+        {
+            DataTable tags = LabService.GetSkillTags();
+            var values = new List<string>();
+            foreach (DataRow row in tags.Rows)
+                values.Add(row["SkillTag"].ToString());
+
+            rptSkillTags.DataSource = values;
+            rptSkillTags.DataBind();
         }
 
         private void LoadCourseDropdown()
@@ -91,11 +104,17 @@ namespace CSA.Lecturer
                     ddlValidationType.SelectedValue,
                     ddlDifficulty.SelectedValue,
                     timeLimit,
-                    cbActive.Checked);
+                    cbActive.Checked,
+                    tbSkillTag.Text.Trim());
+
+                AdminService.LogActivity(CurrentInstructorId,
+                    isNew ? "CREATE_LAB" : "UPDATE_LAB", "VirtualLabs", savedId,
+                    (isNew ? "Created lab: " : "Updated lab: ") + tbLabTitle.Text.Trim());
 
                 pnlError.Visible = false;
                 pnlSuccess.Visible = true;
                 LoadLabs();
+                LoadSkillTagSuggestions();
 
                 // Flush anything staged while the lab was still unsaved.
                 int committed = PendingAttachmentService.Commit(AttachBucket, "Lab", savedId, CurrentInstructorId);
@@ -176,6 +195,7 @@ namespace CSA.Lecturer
             ddlValidationType.SelectedValue = lab["ValidationType"].ToString();
             ddlDifficulty.SelectedValue = lab["Difficulty"].ToString();
             tbTimeLimit.Text = lab["TimeLimitMinutes"] == DBNull.Value ? "" : lab["TimeLimitMinutes"].ToString();
+            tbSkillTag.Text = lab["SkillTag"] == DBNull.Value ? "" : lab["SkillTag"].ToString();
             cbActive.Checked = Convert.ToBoolean(lab["IsPublished"]);
 
             litEditorTitle.Text = "Edit Lab Scenario";
@@ -192,7 +212,7 @@ namespace CSA.Lecturer
         private void ResetForm()
         {
             tbLabTitle.Text = tbInstructions.Text = tbHint.Text =
-                tbValidationKey.Text = tbTimeLimit.Text = "";
+                tbValidationKey.Text = tbTimeLimit.Text = tbSkillTag.Text = "";
             ddlCourse.SelectedIndex = 0;
             ddlValidationType.SelectedIndex = 0;
             ddlDifficulty.SelectedIndex = 0;

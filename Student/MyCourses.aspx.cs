@@ -46,7 +46,7 @@ namespace CSA.Student
             object sender,
             EventArgs e)
         {
-            if (Session["UserID"] == null)
+            if (Session["UserID"] == null || Session["Role"] as string != "Student")
             {
                 Response.Redirect("~/Login.aspx");
                 return;
@@ -60,6 +60,10 @@ namespace CSA.Student
 
         private void LoadCoursePage()
         {
+            // Bring every enrolment's progress up to date (chapters + labs + quizzes)
+            // so the cards reflect work done on the Labs and Challenges pages too.
+            CourseService.RecalculateAllForStudent(UserId);
+
             LoadEnrolledCourses();
             LoadAvailableCourses();
 
@@ -359,6 +363,9 @@ namespace CSA.Student
 
         private void LoadCourseDetails()
         {
+            // Refresh this course's progress (chapters + labs + quizzes) before showing it.
+            CourseService.RecalculateProgress(UserId, SelectedCourseId);
+
             using (SqlConnection con =
                    new SqlConnection(ConnectionString))
             using (SqlCommand cmd =
@@ -529,19 +536,91 @@ namespace CSA.Student
                 return;
             }
 
-            MarkChapterComplete(chapterId);
-            UpdateCourseProgress();
+            bool chapterJustCompleted =
+                MarkChapterComplete(chapterId);
+
+            bool courseJustCompleted =
+                UpdateCourseProgress();
+
+            // Re-clicking Complete on a chapter already finished is not new activity,
+            // so only genuine transitions reach the log.
+            if (chapterJustCompleted)
+            {
+                AdminService.LogActivity(
+                    UserId,
+                    "COMPLETE_CHAPTER",
+                    "ChapterProgress",
+                    chapterId,
+                    "Completed chapter: " +
+                    ScalarText(
+                        @"SELECT ChapterTitle
+                          FROM Chapters
+                          WHERE ChapterID = @ID",
+                        chapterId));
+            }
+
+            if (courseJustCompleted)
+            {
+                AdminService.LogActivity(
+                    UserId,
+                    "COMPLETE_COURSE",
+                    "Enrollments",
+                    SelectedCourseId,
+                    "Completed course: " +
+                    ScalarText(
+                        @"SELECT CourseName
+                          FROM Courses
+                          WHERE CourseID = @ID",
+                        SelectedCourseId));
+            }
+
             LoadCourseDetails();
         }
 
-        private void MarkChapterComplete(
+        /// <summary>Single text value by ID, for the log lines above. "" if not found.</summary>
+        private string ScalarText(
+            string sql,
+            string id)
+        {
+            using (SqlConnection con =
+                   new SqlConnection(ConnectionString))
+            using (SqlCommand cmd =
+                   new SqlCommand(sql, con))
+            {
+                cmd.Parameters.Add(
+                    "@ID",
+                    SqlDbType.NVarChar,
+                    10
+                ).Value = id;
+
+                con.Open();
+                return Convert.ToString(
+                    cmd.ExecuteScalar());
+            }
+        }
+
+        /// <summary>
+        /// Marks a chapter complete. Returns true only when this call is what completed
+        /// it, so the caller can tell a first completion from a repeat click.
+        /// </summary>
+        private bool MarkChapterComplete(
             string chapterId)
         {
             using (SqlConnection con =
                    new SqlConnection(ConnectionString))
             using (SqlCommand cmd =
                    new SqlCommand(
-                @"IF EXISTS
+                @"DECLARE @WasCompleted INT;
+
+                  SELECT @WasCompleted =
+                      ISNULL(
+                          MAX(CAST(IsCompleted AS INT)),
+                          0)
+                  FROM ChapterProgress
+                  WHERE StudentID = @StudentID
+                    AND ChapterID = @ChapterID;
+
+                  IF EXISTS
                   (
                       SELECT 1
                       FROM ChapterProgress
@@ -577,7 +656,9 @@ namespace CSA.Student
                           1,
                           GETDATE()
                       )
-                  END",
+                  END
+
+                  SELECT @WasCompleted;",
                 con))
             {
                 cmd.Parameters.Add(
@@ -593,81 +674,19 @@ namespace CSA.Student
                 ).Value = chapterId;
 
                 con.Open();
-                cmd.ExecuteNonQuery();
+                return Convert.ToInt32(
+                    cmd.ExecuteScalar()) == 0;
             }
         }
 
-        private void UpdateCourseProgress()
+        /// <summary>
+        /// Recalculates course progress across chapters, labs and quizzes (delegates to
+        /// <see cref="CourseService.RecalculateProgress"/>). Returns true only when this
+        /// call is what took the course to 100%, so finishing is logged once.
+        /// </summary>
+        private bool UpdateCourseProgress()
         {
-            using (SqlConnection con =
-                   new SqlConnection(ConnectionString))
-            using (SqlCommand cmd =
-                   new SqlCommand(
-                @"DECLARE @Total INT;
-                  DECLARE @Completed INT;
-                  DECLARE @Progress DECIMAL(5,2);
-
-                  SELECT @Total = COUNT(*)
-                  FROM Chapters
-                  WHERE CourseID = @CourseID
-                    AND IsPublished = 1;
-
-                  SELECT @Completed = COUNT(*)
-                  FROM ChapterProgress cp
-                  INNER JOIN Chapters ch
-                      ON ch.ChapterID = cp.ChapterID
-                  WHERE cp.StudentID = @StudentID
-                    AND ch.CourseID = @CourseID
-                    AND ch.IsPublished = 1
-                    AND cp.IsCompleted = 1;
-
-                  SET @Progress =
-                      CASE
-                          WHEN @Total = 0 THEN 0
-                          ELSE CAST(
-                              @Completed * 100.0 / @Total
-                              AS DECIMAL(5,2))
-                      END;
-
-                  UPDATE Enrollments
-                  SET
-                      Progress = @Progress,
-                      Status =
-                          CASE
-                              WHEN @Progress >= 100
-                                  THEN 'Completed'
-                              WHEN @Progress > 0
-                                  THEN 'In Progress'
-                              ELSE 'Not Started'
-                          END,
-                      CompletedAt =
-                          CASE
-                              WHEN @Progress >= 100
-                                   AND CompletedAt IS NULL
-                                  THEN GETDATE()
-                              WHEN @Progress >= 100
-                                  THEN CompletedAt
-                              ELSE NULL
-                          END
-                  WHERE StudentID = @StudentID
-                    AND CourseID = @CourseID",
-                con))
-            {
-                cmd.Parameters.Add(
-                    "@StudentID",
-                    SqlDbType.NVarChar,
-                    10
-                ).Value = UserId;
-
-                cmd.Parameters.Add(
-                    "@CourseID",
-                    SqlDbType.NVarChar,
-                    10
-                ).Value = SelectedCourseId;
-
-                con.Open();
-                cmd.ExecuteNonQuery();
-            }
+            return CourseService.RecalculateProgress(UserId, SelectedCourseId);
         }
 
         public string FormatChapterContent(

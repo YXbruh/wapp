@@ -256,5 +256,101 @@ namespace CSA.Services
         {
             GetCounts(out total, out published, out draft, out _);
         }
+
+        // ====================================================================
+        // COURSE PROGRESS
+        //
+        // A student's progress in a course is measured across every published
+        // learning item — chapters, virtual labs AND quizzes — not chapters
+        // alone. An item counts as done when:
+        //   Chapter : ChapterProgress.IsCompleted = 1
+        //   Lab     : the student has at least one correct LabSubmission
+        //   Quiz    : the student has at least one passing QuizAttempt
+        // Progress = done items / total published items * 100.
+        // ====================================================================
+
+        /// <summary>
+        /// Recomputes a student's progress in one course from chapters + labs + quizzes
+        /// and stores it (with Status/CompletedAt) on the Enrollments row. Returns true
+        /// only when this call is what took the course to 100%, so a completion is logged
+        /// once rather than on every recalculation.
+        /// </summary>
+        public static bool RecalculateProgress(string studentId, string courseId)
+        {
+            object result = DBHelper.ExecuteScalar(@"
+                DECLARE @AlreadyFinished INT =
+                    ISNULL((SELECT MAX(CASE WHEN CompletedAt IS NOT NULL THEN 1 ELSE 0 END)
+                            FROM Enrollments WHERE StudentID = @StudentID AND CourseID = @CourseID), 0);
+
+                DECLARE @Total INT =
+                    (SELECT COUNT(*) FROM Chapters    WHERE CourseID = @CourseID AND IsPublished = 1)
+                  + (SELECT COUNT(*) FROM VirtualLabs WHERE CourseID = @CourseID AND IsPublished = 1)
+                  + (SELECT COUNT(*) FROM Quizzes     WHERE CourseID = @CourseID AND IsPublished = 1);
+
+                DECLARE @Completed INT =
+                    (SELECT COUNT(*)
+                       FROM ChapterProgress cp
+                       INNER JOIN Chapters ch ON ch.ChapterID = cp.ChapterID
+                      WHERE cp.StudentID = @StudentID AND ch.CourseID = @CourseID
+                        AND ch.IsPublished = 1 AND cp.IsCompleted = 1)
+                  + (SELECT COUNT(*)
+                       FROM VirtualLabs vl
+                      WHERE vl.CourseID = @CourseID AND vl.IsPublished = 1
+                        AND EXISTS (SELECT 1 FROM LabSubmissions ls
+                                     WHERE ls.LabID = vl.LabID AND ls.StudentID = @StudentID AND ls.IsCorrect = 1))
+                  + (SELECT COUNT(*)
+                       FROM Quizzes q
+                      WHERE q.CourseID = @CourseID AND q.IsPublished = 1
+                        AND EXISTS (SELECT 1 FROM QuizAttempts qa
+                                     WHERE qa.QuizID = q.QuizID AND qa.StudentID = @StudentID AND qa.IsPassed = 1));
+
+                DECLARE @Progress DECIMAL(5,2) =
+                    CASE WHEN @Total = 0 THEN 0
+                         ELSE CAST(@Completed * 100.0 / @Total AS DECIMAL(5,2)) END;
+
+                UPDATE Enrollments
+                   SET Progress = @Progress,
+                       Status = CASE WHEN @Progress >= 100 THEN 'Completed'
+                                     WHEN @Progress > 0    THEN 'In Progress'
+                                     ELSE 'Not Started' END,
+                       CompletedAt = CASE WHEN @Progress >= 100 AND CompletedAt IS NULL THEN GETDATE()
+                                          WHEN @Progress >= 100 THEN CompletedAt
+                                          ELSE NULL END
+                 WHERE StudentID = @StudentID AND CourseID = @CourseID;
+
+                SELECT CASE WHEN @Progress >= 100 AND @AlreadyFinished = 0 THEN 1 ELSE 0 END;",
+                new SqlParameter("@StudentID", studentId ?? ""),
+                new SqlParameter("@CourseID", courseId ?? ""));
+
+            return result != null && result != DBNull.Value && Convert.ToInt32(result) == 1;
+        }
+
+        /// <summary>Recalculates progress for every course the student is enrolled in.</summary>
+        public static void RecalculateAllForStudent(string studentId)
+        {
+            DataTable courses = DBHelper.ExecuteQuery(
+                "SELECT CourseID FROM Enrollments WHERE StudentID = @ID",
+                new SqlParameter("@ID", studentId ?? ""));
+            foreach (DataRow row in courses.Rows)
+                RecalculateProgress(studentId, row["CourseID"].ToString());
+        }
+
+        /// <summary>Resolves a lab's course, then recalculates that course's progress.</summary>
+        public static void RecalculateProgressForLab(string studentId, string labId)
+        {
+            object courseId = DBHelper.ExecuteScalar(
+                "SELECT CourseID FROM VirtualLabs WHERE LabID = @ID", new SqlParameter("@ID", labId ?? ""));
+            if (courseId != null && courseId != DBNull.Value)
+                RecalculateProgress(studentId, courseId.ToString());
+        }
+
+        /// <summary>Resolves a quiz's course, then recalculates that course's progress.</summary>
+        public static void RecalculateProgressForQuiz(string studentId, string quizId)
+        {
+            object courseId = DBHelper.ExecuteScalar(
+                "SELECT CourseID FROM Quizzes WHERE QuizID = @ID", new SqlParameter("@ID", quizId ?? ""));
+            if (courseId != null && courseId != DBNull.Value)
+                RecalculateProgress(studentId, courseId.ToString());
+        }
     }
 }

@@ -66,12 +66,12 @@
                             <ItemTemplate>
                                 <tr>
                                     <td>
-                                        <div class="fw-bold" style="color:var(--text)"><%# Eval("LabTitle") %></div>
-                                        <div class="text-small text-muted"><%# Eval("ShortDesc") %></div>
+                                        <div class="fw-bold" style="color:var(--text)"><%#: Eval("LabTitle") %></div>
+                                        <div class="text-small text-muted"><%#: Eval("ShortDesc") %></div>
                                     </td>
-                                    <td class="text-muted text-small"><%# Eval("CourseName") %></td>
-                                    <td><span class="badge <%# GetDiffBadge(Eval("Difficulty").ToString()) %>"><%# Eval("Difficulty") %></span></td>
-                                    <td><span class="badge badge-blue"><%# Eval("ValidationType") %></span></td>
+                                    <td class="text-muted text-small"><%#: Eval("CourseName") %></td>
+                                    <td><span class="badge <%# GetDiffBadge(Eval("Difficulty").ToString()) %>"><%#: Eval("Difficulty") %></span></td>
+                                    <td><span class="badge badge-blue"><%#: Eval("ValidationType") %></span></td>
                                     <td><span class="badge <%# (bool)Eval("IsActive") ? "badge-green":"badge-amber" %>">
                                         <%# (bool)Eval("IsActive") ? "Active":"Draft" %>
                                     </span></td>
@@ -152,6 +152,26 @@
                             <asp:ListItem Value="Intermediate">Intermediate</asp:ListItem>
                             <asp:ListItem Value="Advanced">Advanced</asp:ListItem>
                         </asp:DropDownList>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label"><i class="ti ti-tag" aria-hidden="true"></i>Skill Tag
+                            <span class="text-muted" style="font-weight:400">(optional)</span>
+                        </label>
+                        <asp:TextBox ID="tbSkillTag" runat="server" CssClass="form-input"
+                            placeholder="e.g. Network Scanning" MaxLength="100"
+                            AutoCompleteType="Disabled" autocomplete="off" list="skillTagOptions" />
+                        <datalist id="skillTagOptions">
+                            <asp:Repeater ID="rptSkillTags" runat="server">
+                                <ItemTemplate>
+                                    <option value="<%# Server.HtmlEncode(Container.DataItem.ToString()) %>"></option>
+                                </ItemTemplate>
+                            </asp:Repeater>
+                        </datalist>
+                        <div class="val-hint">
+                            <i class="ti ti-info-circle" aria-hidden="true"></i>
+                            Groups the lab by skill and drives the badges students earn on their Achievements page.
+                        </div>
                     </div>
 
                     <div class="form-group">
@@ -240,7 +260,7 @@
                                     <i class="ti <%# GetAttachmentIcon(Eval("AttachmentType").ToString()) %>" aria-hidden="true"></i>
                                     <div class="attachment-info">
                                         <a href='<%# GetAttachmentHref(Eval("AttachmentType"), Eval("FilePath"), Eval("LinkUrl"), Eval("IsPending")) %>'
-                                           target="_blank" rel="noopener"><%# Eval("Title") %></a>
+                                           target="_blank" rel="noopener"><%#: Eval("Title") %></a>
                                         <div class="text-small text-muted">
                                             <%# GetAttachmentMeta(Eval("AttachmentType"), Eval("UploadedByName"), Eval("UploadedAt"), Eval("IsPending")) %>
                                         </div>

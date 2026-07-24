@@ -60,6 +60,15 @@ namespace CSA.Lecturer
         protected global::System.Web.UI.WebControls.Literal litError;
 
         /// <summary>
+        /// hfNewQuizOpen control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.HiddenField hfNewQuizOpen;
+
+        /// <summary>
         /// ddlNewQuizCourse control.
         /// </summary>
         /// <remarks>
@@ -67,6 +76,15 @@ namespace CSA.Lecturer
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
         protected global::System.Web.UI.WebControls.DropDownList ddlNewQuizCourse;
+
+        /// <summary>
+        /// ddlNewQuizChapter control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.DropDownList ddlNewQuizChapter;
 
         /// <summary>
         /// rfvNewCourse control.
@@ -225,6 +243,11 @@ namespace CSA.Lecturer
         /// tbEditTitle control.
         /// </summary>
         protected global::System.Web.UI.WebControls.TextBox tbEditTitle;
+
+        /// <summary>
+        /// ddlEditChapter control.
+        /// </summary>
+        protected global::System.Web.UI.WebControls.DropDownList ddlEditChapter;
 
         /// <summary>
         /// tbEditDescription control.

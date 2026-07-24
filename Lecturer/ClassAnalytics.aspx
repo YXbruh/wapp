@@ -99,8 +99,8 @@
                             <ItemTemplate>
                                 <tr>
                                     <td>
-                                        <div class="fw-bold" style="color:var(--text)"><%# Eval("FullName") %></div>
-                                        <div class="text-small text-muted"><%# Eval("Email") %></div>
+                                        <div class="fw-bold" style="color:var(--text)"><%#: Eval("FullName") %></div>
+                                        <div class="text-small text-muted"><%#: Eval("Email") %></div>
                                     </td>
                                     <td>
                                         <span style="font-weight:700;color:<%# GetScoreColor(Convert.ToInt32(Eval("QuizAvg"))) %>">
@@ -115,7 +115,7 @@
                                             <%# (bool)Eval("SandboxCleared") ? "Cleared":"Pending" %>
                                         </span>
                                     </td>
-                                    <td class="text-muted text-small"><%# Eval("LastActiveDisplay") %></td>
+                                    <td class="text-muted text-small"><%#: Eval("LastActiveDisplay") %></td>
                                     <td>
                                         <a href='StudentDetail.aspx?id=<%# Eval("UserID") %>'
                                            class="btn-sm secondary">
@@ -154,8 +154,8 @@
                         <asp:Repeater ID="rptQuizBreakdown" runat="server">
                             <ItemTemplate>
                                 <tr>
-                                    <td class="fw-bold" style="color:var(--text)"><%# Eval("QuizName") %></td>
-                                    <td class="text-muted"><%# Eval("AttemptCount") %></td>
+                                    <td class="fw-bold" style="color:var(--text)"><%#: Eval("QuizName") %></td>
+                                    <td class="text-muted"><%#: Eval("AttemptCount") %></td>
                                     <td>
                                         <span style="font-weight:700;color:<%# GetScoreColor(Convert.ToInt32(Eval("AvgScore"))) %>">
                                             <%# Eval("AvgScore") %>%

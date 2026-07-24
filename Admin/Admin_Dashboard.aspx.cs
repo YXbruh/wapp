@@ -28,9 +28,9 @@ namespace CSA.Admin
                 litTotalUsers.Text = Convert.ToInt32(row["UserCount"]).ToString("N0");
                 litActiveCourses.Text = row["CourseCount"].ToString();
                 litLabsOnline.Text = row["LabCount"].ToString();
-                int alertCount = Convert.ToInt32(row["AlertCount"]);
-                litAlerts.Text = alertCount.ToString();
-                litAlertStatus.Text = alertCount > 0 ? "Needs attention" : "All clear";
+                int pendingReview = Convert.ToInt32(row["PendingReviewCount"]);
+                litAlerts.Text = pendingReview.ToString();
+                litAlertStatus.Text = pendingReview > 0 ? "Needs review" : "All clear";
             }
 
             rptUserChart.DataSource = GetChartPercent("Users by Role");

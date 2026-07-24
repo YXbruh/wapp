@@ -103,15 +103,6 @@ namespace CSA.Admin
             string adminId = Session["UserID"].ToString();
             if (!int.TryParse(hfEditID.Value, out int editId)) editId = 0;
 
-            DateTime? expiry = null;
-            if (!string.IsNullOrWhiteSpace(tbExpiry.Text))
-            {
-                if (DateTime.TryParseExact(tbExpiry.Text, "yyyy-MM-dd",
-                    System.Globalization.CultureInfo.InvariantCulture,
-                    System.Globalization.DateTimeStyles.None, out DateTime exp))
-                    expiry = exp;
-            }
-
             try
             {
                 if (editId == 0)
@@ -119,7 +110,7 @@ namespace CSA.Admin
                     AdminService.CreateAnnouncement(
                         tbTitle.Text.Trim(), tbMessage.Text.Trim(),
                         ddlAudience.SelectedValue, ddlPriority.SelectedValue,
-                        expiry, adminId);
+                        adminId);
                     pnlSuccess.Visible = true;
                     litSuccess.Text = "Announcement published successfully.";
                     
@@ -140,7 +131,7 @@ namespace CSA.Admin
                 {
                     AdminService.UpdateAnnouncement(editId,
                         tbTitle.Text.Trim(), tbMessage.Text.Trim(),
-                        ddlAudience.SelectedValue, ddlPriority.SelectedValue, expiry);
+                        ddlAudience.SelectedValue, ddlPriority.SelectedValue);
                     pnlSuccess.Visible = true;
                     litSuccess.Text = "Announcement updated.";
                     ResetForm();
@@ -166,8 +157,6 @@ namespace CSA.Admin
                     DataRow row = dt.Rows[0];
                     tbTitle.Text = row["Title"].ToString();
                     tbMessage.Text = row["Body"].ToString();
-                    tbExpiry.Text = row["ExpiresAt"] != DBNull.Value
-                        ? Convert.ToDateTime(row["ExpiresAt"]).ToString("yyyy-MM-dd") : "";
                     hfEditID.Value = id.ToString();
                     litFormTitle.Text = "Edit Announcement";
                     lbCancelEdit.Visible = true;
@@ -196,7 +185,7 @@ namespace CSA.Admin
 
         private void ResetForm()
         {
-            tbTitle.Text = tbMessage.Text = tbExpiry.Text = "";
+            tbTitle.Text = tbMessage.Text = "";
             ddlAudience.SelectedIndex = 0;
             ddlPriority.SelectedIndex = 0;
             hfEditID.Value = "0";

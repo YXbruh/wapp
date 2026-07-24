@@ -177,6 +177,24 @@ namespace CSA.Lecturer
         protected global::System.Web.UI.WebControls.TextBox tbHint;
 
         /// <summary>
+        /// tbSkillTag control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.TextBox tbSkillTag;
+
+        /// <summary>
+        /// rptSkillTags control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Repeater rptSkillTags;
+
+        /// <summary>
         /// tbValidationKey control.
         /// </summary>
         /// <remarks>

@@ -44,7 +44,7 @@ namespace CSA.DataAccess
             string sql = @"
                 SELECT  LabID, CourseID, LabTitle, Scenario, HintText,
                         ExpectedCommand, ValidationType, Difficulty,
-                        TimeLimitMinutes, IsPublished
+                        TimeLimitMinutes, SkillTag, IsPublished
                 FROM    VirtualLabs
                 WHERE   LabID = @LabID;";
 
@@ -52,6 +52,19 @@ namespace CSA.DataAccess
                 new SqlParameter("@LabID", labId));
 
             return dt.Rows.Count > 0 ? dt.Rows[0] : null;
+        }
+
+        /// <summary>
+        /// Skill tags already in use, so the editor can offer them for reuse instead of
+        /// letting near-duplicates ("Web Security" / "web sec") pile up.
+        /// </summary>
+        public static DataTable GetSkillTags()
+        {
+            return DBHelper.ExecuteQuery(@"
+                SELECT DISTINCT SkillTag
+                FROM   VirtualLabs
+                WHERE  SkillTag IS NOT NULL AND SkillTag <> ''
+                ORDER BY SkillTag;");
         }
 
         /// <summary>
@@ -63,6 +76,20 @@ namespace CSA.DataAccess
             string title, string instructions, string hint,
             string validationKey, string validationType,
             string difficulty, int? timeLimitMinutes, bool isActive)
+            => Save(labId, instructorId, courseId, title, instructions, hint,
+                    validationKey, validationType, difficulty, timeLimitMinutes,
+                    isActive, null);
+
+        /// <summary>
+        /// Inserts or updates a lab, including the skill it tags. A blank
+        /// <paramref name="skillTag"/> stores NULL (untagged). Returns the LabID.
+        /// </summary>
+        public static string Save(
+            string labId, string instructorId, string courseId,
+            string title, string instructions, string hint,
+            string validationKey, string validationType,
+            string difficulty, int? timeLimitMinutes, bool isActive,
+            string skillTag)
         {
             bool isNew = string.IsNullOrEmpty(labId);
 
@@ -76,6 +103,7 @@ namespace CSA.DataAccess
                 new SqlParameter("@ValidationType",   validationType),
                 new SqlParameter("@Difficulty",       difficulty),
                 new SqlParameter("@TimeLimitMinutes", (object)timeLimitMinutes ?? DBNull.Value),
+                new SqlParameter("@SkillTag",         string.IsNullOrWhiteSpace(skillTag) ? (object)DBNull.Value : skillTag.Trim()),
                 new SqlParameter("@IsPublished",      isActive),
                 new SqlParameter("@CreatedByID",      instructorId)
             };
@@ -90,10 +118,10 @@ namespace CSA.DataAccess
                 string insert = @"
                     INSERT INTO VirtualLabs
                         (LabID, CourseID, LabTitle, Scenario, HintText, ExpectedCommand,
-                         ValidationType, Difficulty, TimeLimitMinutes, IsPublished, CreatedByID)
+                         ValidationType, Difficulty, TimeLimitMinutes, SkillTag, IsPublished, CreatedByID)
                     VALUES
                         (@LabID, @CourseID, @LabTitle, @Scenario, @HintText, @ExpectedCommand,
-                         @ValidationType, @Difficulty, @TimeLimitMinutes, @IsPublished, @CreatedByID);";
+                         @ValidationType, @Difficulty, @TimeLimitMinutes, @SkillTag, @IsPublished, @CreatedByID);";
 
                 DBHelper.ExecuteNonQuery(insert, pInsert);
                 return labId;
@@ -110,6 +138,7 @@ namespace CSA.DataAccess
                         ValidationType   = @ValidationType,
                         Difficulty       = @Difficulty,
                         TimeLimitMinutes = @TimeLimitMinutes,
+                        SkillTag         = @SkillTag,
                         IsPublished      = @IsPublished,
                         UpdatedAt        = GETDATE()
                     WHERE LabID = @LabID AND CreatedByID = @CreatedByID;";

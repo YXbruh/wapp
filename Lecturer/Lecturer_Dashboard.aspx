@@ -69,7 +69,7 @@
                     <ItemTemplate>
                         <div style="margin-bottom:14px">
                             <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px">
-                                <span style="font-weight:600;color:var(--text)"><%# Eval("CourseName") %></span>
+                                <span style="font-weight:600;color:var(--text)"><%#: Eval("CourseName") %></span>
                                 <span style="color:var(--accent2);font-weight:700"><%# Eval("CompletionPct") %>%</span>
                             </div>
                             <div class="progress-bar" style="height:6px">
@@ -96,7 +96,7 @@
                     <ItemTemplate>
                         <div style="margin-bottom:14px">
                             <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px">
-                                <span style="font-weight:600;color:var(--text)"><%# Eval("QuizName") %></span>
+                                <span style="font-weight:600;color:var(--text)"><%#: Eval("QuizName") %></span>
                                 <span style="font-weight:700;color:<%# GetScoreColor(Convert.ToInt32(Eval("AvgScore"))) %>">
                                     <%# Eval("AvgScore") %>%
                                 </span>
@@ -107,7 +107,7 @@
                                 </div>
                             </div>
                             <div style="font-size:11px;color:var(--text3);margin-top:3px">
-                                <%# Eval("AttemptCount") %> attempts &middot; <%# Eval("CourseName") %>
+                                <%# Eval("AttemptCount") %> attempts &middot; <%#: Eval("CourseName") %>
                             </div>
                         </div>
                     </ItemTemplate>
@@ -142,16 +142,16 @@
                             <ItemTemplate>
                                 <tr>
                                     <td>
-                                        <div class="fw-bold" style="color:var(--text)"><%# Eval("Title") %></div>
-                                        <div class="text-small text-muted"><%# Eval("Subtitle") %></div>
+                                        <div class="fw-bold" style="color:var(--text)"><%#: Eval("Title") %></div>
+                                        <div class="text-small text-muted"><%#: Eval("Subtitle") %></div>
                                     </td>
-                                    <td class="text-muted"><%# Eval("CourseName") %></td>
-                                    <td><span class="badge <%# GetTypeBadge(Eval("ContentType").ToString()) %>"><%# Eval("ContentType") %></span></td>
+                                    <td class="text-muted"><%#: Eval("CourseName") %></td>
+                                    <td><span class="badge <%# GetTypeBadge(Eval("ContentType").ToString()) %>"><%#: Eval("ContentType") %></span></td>
                                     <td><span class="badge <%# Eval("IsPublished").ToString()=="True" ? "badge-green" : "badge-amber" %>">
                                         <%# Eval("IsPublished").ToString()=="True" ? "Published" : "Draft" %>
                                     </span></td>
-                                    <td class="text-muted"><%# Eval("ViewCount") %></td>
-                                    <td class="text-muted text-small"><%# Eval("UpdatedDisplay") %></td>
+                                    <td class="text-muted"><%#: Eval("ViewCount") %></td>
+                                    <td class="text-muted text-small"><%#: Eval("UpdatedDisplay") %></td>
                                     <td>
                                         <a href='ManageContent.aspx?id=<%# Eval("ContentID") %>' class="btn-sm secondary">
                                             <i class="ti ti-edit"></i> Edit

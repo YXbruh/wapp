@@ -95,10 +95,10 @@
                                           OnItemCommand="rptCategories_ItemCommand">
                                 <ItemTemplate>
                                     <tr>
-                                        <td class="fw-bold" style="color:var(--text)"><%# Eval("CategoryName") %></td>
-                                        <td class="text-muted"><%# Eval("Description") %></td>
-                                        <td class="text-muted"><%# Eval("CourseCount") %></td>
-                                        <td class="text-muted text-small"><%# Eval("CreatedDisplay") %></td>
+                                        <td class="fw-bold" style="color:var(--text)"><%#: Eval("CategoryName") %></td>
+                                        <td class="text-muted"><%#: Eval("Description") %></td>
+                                        <td class="text-muted"><%#: Eval("CourseCount") %></td>
+                                        <td class="text-muted text-small"><%#: Eval("CreatedDisplay") %></td>
                                         <td>
                                             <div class="action-btns">
                                                 <asp:LinkButton runat="server" CssClass="btn-sm secondary"

@@ -60,13 +60,13 @@ namespace CSA.Admin
         protected global::System.Web.UI.WebControls.Literal litError;
 
         /// <summary>
-        /// litFlagID control.
+        /// litContentID control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.Literal litFlagID;
+        protected global::System.Web.UI.WebControls.Literal litContentID;
 
         /// <summary>
         /// litContentType control.
@@ -87,22 +87,22 @@ namespace CSA.Admin
         protected global::System.Web.UI.WebControls.Literal litTitle;
 
         /// <summary>
-        /// litReason control.
+        /// litStatus control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.Literal litReason;
+        protected global::System.Web.UI.WebControls.Literal litStatus;
 
         /// <summary>
-        /// litReportedBy control.
+        /// litSubmittedBy control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.Literal litReportedBy;
+        protected global::System.Web.UI.WebControls.Literal litSubmittedBy;
 
         /// <summary>
         /// litCourse control.
@@ -139,5 +139,77 @@ namespace CSA.Admin
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
         protected global::System.Web.UI.WebControls.LinkButton btnReject;
+
+        /// <summary>litSubmittedAt control.</summary>
+        protected global::System.Web.UI.WebControls.Literal litSubmittedAt;
+
+        /// <summary>litBodyLabel control.</summary>
+        protected global::System.Web.UI.WebControls.Literal litBodyLabel;
+
+        /// <summary>pnlChapterMeta control.</summary>
+        protected global::System.Web.UI.WebControls.Panel pnlChapterMeta;
+
+        /// <summary>litChSortOrder control.</summary>
+        protected global::System.Web.UI.WebControls.Literal litChSortOrder;
+
+        /// <summary>pnlQuizMeta control.</summary>
+        protected global::System.Web.UI.WebControls.Panel pnlQuizMeta;
+
+        /// <summary>litQQuestionCount control.</summary>
+        protected global::System.Web.UI.WebControls.Literal litQQuestionCount;
+
+        /// <summary>litQTotalMarks control.</summary>
+        protected global::System.Web.UI.WebControls.Literal litQTotalMarks;
+
+        /// <summary>litQPassMark control.</summary>
+        protected global::System.Web.UI.WebControls.Literal litQPassMark;
+
+        /// <summary>litQMaxAttempts control.</summary>
+        protected global::System.Web.UI.WebControls.Literal litQMaxAttempts;
+
+        /// <summary>litQDuration control.</summary>
+        protected global::System.Web.UI.WebControls.Literal litQDuration;
+
+        /// <summary>pnlLabMeta control.</summary>
+        protected global::System.Web.UI.WebControls.Panel pnlLabMeta;
+
+        /// <summary>litLDifficulty control.</summary>
+        protected global::System.Web.UI.WebControls.Literal litLDifficulty;
+
+        /// <summary>litLSkillTag control.</summary>
+        protected global::System.Web.UI.WebControls.Literal litLSkillTag;
+
+        /// <summary>litLPoints control.</summary>
+        protected global::System.Web.UI.WebControls.Literal litLPoints;
+
+        /// <summary>litLTimeLimit control.</summary>
+        protected global::System.Web.UI.WebControls.Literal litLTimeLimit;
+
+        /// <summary>litLValidation control.</summary>
+        protected global::System.Web.UI.WebControls.Literal litLValidation;
+
+        /// <summary>litLExpected control.</summary>
+        protected global::System.Web.UI.WebControls.Literal litLExpected;
+
+        /// <summary>pnlLabHint control.</summary>
+        protected global::System.Web.UI.WebControls.Panel pnlLabHint;
+
+        /// <summary>litLHint control.</summary>
+        protected global::System.Web.UI.WebControls.Literal litLHint;
+
+        /// <summary>pnlQuestions control.</summary>
+        protected global::System.Web.UI.WebControls.Panel pnlQuestions;
+
+        /// <summary>litQuestionsHeading control.</summary>
+        protected global::System.Web.UI.WebControls.Literal litQuestionsHeading;
+
+        /// <summary>rptQuestions control.</summary>
+        protected global::System.Web.UI.WebControls.Repeater rptQuestions;
+
+        /// <summary>pnlAttachments control.</summary>
+        protected global::System.Web.UI.WebControls.Panel pnlAttachments;
+
+        /// <summary>rptAttachments control.</summary>
+        protected global::System.Web.UI.WebControls.Repeater rptAttachments;
     }
 }

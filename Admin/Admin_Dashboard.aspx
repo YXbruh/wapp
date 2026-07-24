@@ -52,7 +52,7 @@
                 <div class="metric-sub">available</div>
             </div>
             <div class="metric">
-                <div class="metric-label">Alerts</div>
+                <div class="metric-label">Pending Review</div>
                 <div class="metric-val" style="color:var(--danger)">
                     <asp:Literal ID="litAlerts" runat="server" Text="0" />
                 </div>
@@ -70,8 +70,8 @@
                     <ItemTemplate>
                         <div style="margin-bottom:8px">
                             <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text2);margin-bottom:2px">
-                                <span><%# Eval("Label") %></span>
-                                <span><%# Eval("Value") %></span>
+                                <span><%#: Eval("Label") %></span>
+                                <span><%#: Eval("Value") %></span>
                             </div>
                             <div class="chart-bar-bg">
                                 <div class="chart-bar-fill" style="width:<%# Eval("Percent") %>%"></div>
@@ -86,8 +86,8 @@
                     <ItemTemplate>
                         <div style="margin-bottom:8px">
                             <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text2);margin-bottom:2px">
-                                <span><%# Eval("Label") %></span>
-                                <span><%# Eval("Value") %></span>
+                                <span><%#: Eval("Label") %></span>
+                                <span><%#: Eval("Value") %></span>
                             </div>
                             <div class="chart-bar-bg">
                                 <div class="chart-bar-fill" style="width:<%# Eval("Percent") %>%"></div>
@@ -102,8 +102,8 @@
                     <ItemTemplate>
                         <div style="margin-bottom:8px">
                             <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text2);margin-bottom:2px">
-                                <span><%# Eval("Label") %></span>
-                                <span><%# Eval("Value") %></span>
+                                <span><%#: Eval("Label") %></span>
+                                <span><%#: Eval("Value") %></span>
                             </div>
                             <div class="chart-bar-bg">
                                 <div class="chart-bar-fill" style="width:<%# Eval("Percent") %>%"></div>
@@ -167,8 +167,8 @@
                             <ItemTemplate>
                                 <tr>
                                     <td>
-                                        <div class="fw-bold" style="color:var(--text)"><%# Eval("FullName") %></div>
-                                        <div class="text-small text-muted"><%# Eval("Email") %></div>
+                                        <div class="fw-bold" style="color:var(--text)"><%#: Eval("FullName") %></div>
+                                        <div class="text-small text-muted"><%#: Eval("Email") %></div>
                                     </td>
                                     <td>
                                         <span class="badge <%# GetRoleBadge(Eval("Role").ToString()) %>">
@@ -181,7 +181,7 @@
                                         </span>
                                     </td>
                                     <td class="text-muted"><%# Eval("EnrolledCount") %> courses</td>
-                                    <td class="text-muted"><%# Eval("CreatedAt", "{0:dd MMM yyyy}") %></td>
+                                    <td class="text-muted"><%#: Eval("CreatedAt", "{0:dd MMM yyyy}") %></td>
                                     <td>
                                         <div class="action-btns">
                                             <asp:LinkButton runat="server" CssClass="btn-sm secondary"

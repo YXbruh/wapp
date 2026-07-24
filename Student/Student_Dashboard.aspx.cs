@@ -31,7 +31,7 @@ namespace CSA.Student
             object sender,
             EventArgs e)
         {
-            if (Session["UserID"] == null)
+            if (Session["UserID"] == null || Session["Role"] as string != "Student")
             {
                 Response.Redirect("~/Login.aspx");
                 return;

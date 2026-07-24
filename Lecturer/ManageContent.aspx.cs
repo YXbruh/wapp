@@ -177,6 +177,9 @@ namespace CSA.Lecturer
                     conn.Open();
                     cmd.ExecuteNonQuery();
                 }
+                AdminService.LogActivity(userId, "CREATE_CHAPTER", "Chapters", newId,
+                    "Created chapter: " + title);
+
                 // Flush anything staged while the chapter was still unsaved.
                 int committed = PendingAttachmentService.Commit(AttachBucket, "Chapter", newId, userId);
                 ShowSuccess(committed > 0
@@ -215,6 +218,9 @@ namespace CSA.Lecturer
                     conn.Open();
                     cmd.ExecuteNonQuery();
                 }
+                AdminService.LogActivity(userId, "UPDATE_CHAPTER", "Chapters", editId,
+                    "Updated chapter: " + title);
+
                 int committed = PendingAttachmentService.Commit(AttachBucket, "Chapter", editId, userId);
                 ShowSuccess(committed > 0
                     ? $"Chapter updated with {committed} new attachment(s)."

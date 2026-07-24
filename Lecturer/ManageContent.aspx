@@ -132,7 +132,7 @@
                                 <i class="ti <%# GetAttachmentIcon(Eval("AttachmentType").ToString()) %>" aria-hidden="true"></i>
                                 <div class="attachment-info">
                                     <a href='<%# GetAttachmentHref(Eval("AttachmentType"), Eval("FilePath"), Eval("LinkUrl"), Eval("IsPending")) %>'
-                                       target="_blank" rel="noopener"><%# Eval("Title") %></a>
+                                       target="_blank" rel="noopener"><%#: Eval("Title") %></a>
                                     <div class="text-small text-muted">
                                         <%# GetAttachmentMeta(Eval("AttachmentType"), Eval("UploadedByName"), Eval("UploadedAt"), Eval("IsPending")) %>
                                     </div>
@@ -216,13 +216,13 @@
                                 <ItemTemplate>
                                     <tr>
                                         <td>
-                                            <div class="fw-bold" style="color:var(--text)"><%# Eval("Title") %></div>
+                                            <div class="fw-bold" style="color:var(--text)"><%#: Eval("Title") %></div>
                                         </td>
-                                        <td class="text-muted text-small"><%# Eval("CourseName") %></td>
+                                        <td class="text-muted text-small"><%#: Eval("CourseName") %></td>
                                         <td><span class="badge <%# (bool)Eval("IsPublished") ? "badge-green":"badge-amber" %>">
                                             <%# (bool)Eval("IsPublished") ? "Published":"Draft" %>
                                         </span></td>
-                                        <td class="text-muted text-small"><%# Eval("UpdatedDisplay") %></td>
+                                        <td class="text-muted text-small"><%#: Eval("UpdatedDisplay") %></td>
                                         <td>
                                             <div class="action-btns">
                                                 <asp:LinkButton runat="server" CssClass="btn-sm secondary"

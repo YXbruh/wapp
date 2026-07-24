@@ -122,14 +122,14 @@
                             <ItemTemplate>
                                 <tr>
                                     <td>
-                                        <div class="fw-bold" style="color:var(--text)"><%# Eval("FullName") %></div>
-                                        <div class="text-small text-muted"><%# Eval("Email") %></div>
+                                        <div class="fw-bold" style="color:var(--text)"><%#: Eval("FullName") %></div>
+                                        <div class="text-small text-muted"><%#: Eval("Email") %></div>
                                     </td>
-                                    <td><span class="badge <%# GetRoleBadge(Eval("Role").ToString()) %>"><%# Eval("Role") %></span></td>
+                                    <td><span class="badge <%# GetRoleBadge(Eval("Role").ToString()) %>"><%#: Eval("Role") %></span></td>
                                     <td><span class="badge <%# (bool)Eval("IsActive") ? "badge-green" : "badge-amber" %>"><%# (bool)Eval("IsActive") ? "Active" : "Inactive" %></span></td>
-                                    <td class="text-muted"><%# Eval("EnrolledCount") %></td>
-                                    <td class="text-muted"><%# Eval("LastLoginDate", "{0:dd MMM yyyy}") %></td>
-                                    <td class="text-muted"><%# Eval("CreatedAt", "{0:dd MMM yyyy}") %></td>
+                                    <td class="text-muted"><%#: Eval("EnrolledCount") %></td>
+                                    <td class="text-muted"><%#: Eval("LastLoginDate", "{0:dd MMM yyyy}") %></td>
+                                    <td class="text-muted"><%#: Eval("CreatedAt", "{0:dd MMM yyyy}") %></td>
                                     <td>
                                         <div class="action-btns">
                                             <asp:LinkButton runat="server" CssClass="btn-sm secondary"

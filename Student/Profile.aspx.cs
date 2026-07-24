@@ -11,7 +11,7 @@ namespace CSA.Student
 
         protected void Page_Load(object sender, EventArgs e)
         {
-            if (Session["UserID"] == null)
+            if (Session["UserID"] == null || Session["Role"] as string != "Student")
             {
                 Response.Redirect("~/Login.aspx");
                 return;

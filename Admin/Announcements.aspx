@@ -113,15 +113,15 @@
                                         <div style="flex:1;min-width:0;">
                                             <div style="display:flex;align-items:center;gap:8px;">
                                                 <asp:Label ID="lblName" runat="server"
-                                                    Text='<%# Eval("FullName") %>'
+                                                    Text='<%#: Eval("FullName") %>'
                                                     style="font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" />
                                                 <asp:Label ID="lblRole" runat="server"
-                                                    Text='<%# Eval("RoleName") %>'
+                                                    Text='<%#: Eval("RoleName") %>'
                                                     CssClass="badge"
                                                     style="font-size:10px;padding:2px 6px;white-space:nowrap;" />
                                             </div>
                                             <asp:Label ID="lblEmail" runat="server"
-                                                Text='<%# Eval("Email") %>'
+                                                Text='<%#: Eval("Email") %>'
                                                 style="font-size:12px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;" />
                                         </div>
                                     </div>
@@ -158,15 +158,6 @@
                         Text="<i class='ti ti-alert-circle'></i> Required." />
                 </div>
 
-                <div class="form-group">
-                    <label class="form-label" for="<%= tbExpiry.ClientID %>">
-                        <i class="ti ti-calendar" aria-hidden="true"></i>Expiry Date
-                        <span class="text-muted" style="font-weight:400">(optional)</span>
-                    </label>
-                    <asp:TextBox ID="tbExpiry" runat="server" CssClass="form-input"
-                        TextMode="Date" />
-                </div>
-
                 <asp:Button ID="btnPublish" runat="server" CssClass="btn-primary"
                     ValidationGroup="AnnGroup" OnClick="btnPublish_Click"
                     Text="Publish Announcement" />
@@ -193,7 +184,6 @@
                                 <th scope="col">Audience</th>
                                 <th scope="col">Priority</th>
                                 <th scope="col">Published</th>
-                                <th scope="col">Expires</th>
                                 <th scope="col">Actions</th>
                             </tr>
                         </thead>
@@ -203,15 +193,14 @@
                                 <ItemTemplate>
                                     <tr>
                                         <td>
-                                            <div class="fw-bold" style="color:var(--text)"><%# Eval("Title") %></div>
+                                            <div class="fw-bold" style="color:var(--text)"><%#: Eval("Title") %></div>
                                             <div class="text-small text-muted" style="max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
-                                                <%# Eval("MessagePreview") %>
+                                                <%#: Eval("MessagePreview") %>
                                             </div>
                                         </td>
-                                        <td><span class="badge badge-blue"><%# Eval("Audience") %></span></td>
-                                        <td><span class="badge <%# GetPriorityBadge(Eval("Priority").ToString()) %>"><%# Eval("Priority") %></span></td>
-                                        <td class="text-muted text-small"><%# Eval("PublishedAt", "{0:dd MMM yyyy}") %></td>
-                                        <td class="text-muted text-small"><%# Eval("ExpiresAt", "{0:dd MMM yyyy}") %></td>
+                                        <td><span class="badge badge-blue"><%#: Eval("Audience") %></span></td>
+                                        <td><span class="badge <%# GetPriorityBadge(Eval("Priority").ToString()) %>"><%#: Eval("Priority") %></span></td>
+                                        <td class="text-muted text-small"><%#: Eval("PublishedAt", "{0:dd MMM yyyy}") %></td>
                                         <td>
                                             <div class="action-btns">
                                                 <asp:LinkButton runat="server" CssClass="btn-sm secondary"

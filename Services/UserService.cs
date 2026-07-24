@@ -46,6 +46,10 @@ namespace CSA.Services
             fullName = row["FullName"].ToString();
             role = row["RoleName"].ToString();
 
+            // Transparently upgrade legacy SHA-256 hashes to PBKDF2 on a correct login.
+            if (PasswordHelper.NeedsUpgrade(storedHash))
+                UpdatePassword(userId, password);
+
             DBHelper.ExecuteNonQuery(
                 "UPDATE Users SET LastLoginDate = GETDATE() WHERE UserID = @ID",
                 new SqlParameter("@ID", userId));

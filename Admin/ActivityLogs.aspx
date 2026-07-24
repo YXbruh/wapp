@@ -103,12 +103,12 @@
                                         </span>
                                     </td>
                                     <td>
-                                        <div style="color:var(--text);font-weight:600"><%# Eval("UserName") %></div>
-                                        <div class="text-small text-muted"><%# Eval("UserEmail") %></div>
+                                        <div style="color:var(--text);font-weight:600"><%#: Eval("UserName") %></div>
+                                        <div class="text-small text-muted"><%#: Eval("UserEmail") %></div>
                                     </td>
-                                    <td class="fw-bold" style="color:var(--text)"><%# Eval("Action") %></td>
-                                    <td class="text-muted" style="max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><%# Eval("Details") %></td>
-                                    <td class="text-muted text-small"><%# Eval("OccurredAt", "{0:dd MMM yyyy HH:mm}") %></td>
+                                    <td class="fw-bold" style="color:var(--text)"><%#: Eval("Action") %></td>
+                                    <td class="text-muted" style="max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><%#: Eval("Details") %></td>
+                                    <td class="text-muted text-small"><%#: Eval("OccurredAt", "{0:dd MMM yyyy HH:mm}") %></td>
                                 </tr>
                             </ItemTemplate>
                         </asp:Repeater>

@@ -1,20 +1,21 @@
 ﻿-- ============================================================
--- CyberShield Academy - DUMMY DATA (ALL 24 TABLES)
+-- CyberShield Academy - DUMMY DATA (ALL 21 TABLES)
 -- >>> Run this INSIDE your CyberShieldAcademy.mdf, AFTER the schema. <<<
 --
 -- All main-entity IDs are explicit codes (PREFIX+3letters+3digits).
 -- Log/child tables (ChapterProgress, QuizAnswers, Feedback, ActivityLog,
--- Announcements, ContentFlags, ErrorLogs, AuditLog, DatabaseBackups,
--- SecurityAlerts) use INT IDENTITY, so no IDs are supplied for them.
+-- Announcements, AuditLog, DatabaseBackups) use INT IDENTITY, so no IDs are
+-- supplied for them.
 --
--- Passwords are salted SHA-256 (salt$hash). Verify with HashHelper.Verify().
+-- Seed passwords use the legacy salted SHA-256 format (salt$hash), still accepted by
+-- PasswordHelper.Verify(). They are transparently re-hashed to PBKDF2 on first login.
 -- LOGIN (email / password):
 --   admin@cybershield.edu       / Admin@123     (Admin)
 --   farah.aziz@cybershield.edu  / Lecturer@123  (Lecturer)
 --   daniel.wong@cybershield.edu / Lecturer@123  (Lecturer)
 --   aiman.hakim@mail.com + other students / Student@123
 --
--- Script is RE-RUNNABLE: it clears all 24 tables first (children before
+-- Script is RE-RUNNABLE: it clears all 21 tables first (children before
 -- parents), then re-inserts everything.
 -- ============================================================
 
@@ -22,10 +23,9 @@
 DELETE FROM Attachments;      DELETE FROM QuizAnswers;
 DELETE FROM LabSubmissions;
 DELETE FROM ChapterProgress;  DELETE FROM Feedback;
-DELETE FROM UserAchievements; DELETE FROM ContentFlags;
-DELETE FROM SecurityAlerts;   DELETE FROM ActivityLog;
-DELETE FROM Announcements;    DELETE FROM ErrorLogs;
-DELETE FROM AuditLog;         DELETE FROM DatabaseBackups;
+DELETE FROM UserAchievements; DELETE FROM ActivityLog;
+DELETE FROM Announcements;    DELETE FROM AuditLog;
+DELETE FROM DatabaseBackups;
 DELETE FROM QuizAttempts;     DELETE FROM QuizQuestions;
 DELETE FROM Quizzes;          DELETE FROM VirtualLabs;
 DELETE FROM Enrollments;      DELETE FROM Chapters;
@@ -299,27 +299,16 @@ INSERT INTO ActivityLog (UserID, Description, ActivityType, ReferenceID, Created
 ('USROWV824', 'Created lab: Find the Injection Point', 'LabCreate', NULL, DATEADD(DAY,-8,GETDATE())),
 ('USRGMP204', 'Logged in', 'Login', NULL, DATEADD(HOUR,-5,GETDATE())),
 ('USRRBX787', 'Attempted CIA Triad Quiz (failed)', 'QuizFail', NULL, DATEADD(DAY,-2,GETDATE())),
-('USRAME107', 'Reviewed pending content flags', 'AdminAction', NULL, DATEADD(HOUR,-2,GETDATE()));
+('USRAME107', 'Reviewed pending content submissions', 'AdminAction', NULL, DATEADD(HOUR,-2,GETDATE()));
 GO
 
 
 -- ANNOUNCEMENTS
-INSERT INTO Announcements (Title, Body, PublishedByID, IsActive, PublishedAt, ExpiresAt, Audience, Priority) VALUES
-('Welcome to CyberShield Academy', 'The new semester is live. Browse the course catalogue and enrol to start earning points and badges.', 'USRAME107', 1, DATEADD(DAY,-14,GETDATE()), NULL, 'All', 'Normal'),
-('Scheduled Maintenance This Saturday', 'The platform will be unavailable from 2:00 AM to 4:00 AM for database maintenance. Save your work before then.', 'USRAME107', 1, DATEADD(DAY,-2,GETDATE()), DATEADD(DAY,5,GETDATE()), 'All', 'High'),
-('New Lab: Stealth SYN Scan', 'An advanced Nmap lab has been added to Network Scanning 101. Complete it to earn 30 points.', 'USRDGK804', 1, DATEADD(DAY,-1,GETDATE()), NULL, 'Students', 'Normal'),
-('Grading Deadline Reminder', 'Please finish reviewing quiz attempts for your courses by Friday.', 'USRAME107', 0, DATEADD(DAY,-30,GETDATE()), DATEADD(DAY,-20,GETDATE()), 'Lecturers', 'Normal');
-GO
-
-
--- CONTENT FLAGS
--- NOTE: ContentFlags.ContentID is INT in the schema, so it cannot hold the
--- NVARCHAR code IDs (e.g. 'CHPFFQ984'). Placeholder numbers are used here.
--- If you want real linkage, change ContentID to NVARCHAR(10) like AuditLog.RecordID.
-INSERT INTO ContentFlags (ReportedByID, ContentType, ContentID, Reason, Status, ReviewedByID, ReviewedAt, FlaggedAt) VALUES
-('USRGMP204', 'Chapter', 2, 'Possible typo in the CIA triad diagram.', 'Pending', NULL, NULL, DATEADD(DAY,-1,GETDATE())),
-('USRRBX787', 'Quiz', 1, 'Question 3 wording is confusing.', 'Reviewed', 'USRAME107', DATEADD(HOUR,-20,GETDATE()), DATEADD(DAY,-3,GETDATE())),
-('USRJOY656', 'Lab', 5, 'Regex validation rejects a valid payload.', 'Resolved', 'USRAME107', DATEADD(HOUR,-4,GETDATE()), DATEADD(DAY,-2,GETDATE()));
+INSERT INTO Announcements (Title, Body, PublishedByID, IsActive, PublishedAt, Audience, Priority) VALUES
+('Welcome to CyberShield Academy', 'The new semester is live. Browse the course catalogue and enrol to start earning points and badges.', 'USRAME107', 1, DATEADD(DAY,-14,GETDATE()), 'All', 'Normal'),
+('Scheduled Maintenance This Saturday', 'The platform will be unavailable from 2:00 AM to 4:00 AM for database maintenance. Save your work before then.', 'USRAME107', 1, DATEADD(DAY,-2,GETDATE()), 'All', 'High'),
+('New Lab: Stealth SYN Scan', 'An advanced Nmap lab has been added to Network Scanning 101. Complete it to earn 30 points.', 'USRDGK804', 1, DATEADD(DAY,-1,GETDATE()), 'Students', 'Normal'),
+('Grading Deadline Reminder', 'Please finish reviewing quiz attempts for your courses by Friday.', 'USRAME107', 0, DATEADD(DAY,-30,GETDATE()), 'Lecturers', 'Normal');
 GO
 
 
@@ -331,15 +320,6 @@ INSERT INTO SystemConfiguration (ConfigID, ConfigKey, ConfigValue, Description) 
 ('CFGTLT620','DefaultPassMark','50','Default quiz pass percentage'),
 ('CFGYDM327','MaintenanceMode','false','Show maintenance page when true');
 GO
-
--- ERROR LOGS
-INSERT INTO ErrorLogs (ErrorType, Message, PageURL, UserID, UserAgent, Severity, IsResolved, OccurredAt) VALUES
-('NullReferenceException', 'Object reference not set to an instance of an object.', '/Lecturer/QuizEditor.aspx', 'USRDGK804', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0', 'Error', 1, DATEADD(DAY,-3,GETDATE())),
-('SqlException', 'Timeout expired while connecting to the database.', '/Student/Dashboard.aspx', 'USRJWY112', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Edge/126.0', 'Critical', 1, DATEADD(DAY,-2,GETDATE())),
-('HttpException', 'The file /Student/Report.aspx does not exist.', '/Student/Report.aspx', NULL, 'Mozilla/5.0 (Macintosh; Intel Mac OS X) Safari/17.4', 'Warning', 0, DATEADD(HOUR,-6,GETDATE())),
-('FormatException', 'Input string was not in a correct format.', '/Lecturer/TerminalSandbox.aspx', 'USROWV824', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Firefox/128.0', 'Warning', 0, DATEADD(HOUR,-1,GETDATE()));
-GO
-
 
 -- AUDIT LOG  (admin actions, append-only)
 INSERT INTO AuditLog (PerformedByID, Action, TableAffected, RecordID, BeforeValue, AfterValue, IPAddress, OccurredAt) VALUES
@@ -359,15 +339,7 @@ INSERT INTO DatabaseBackups (BackupLabel, BackupType, FilePath, FileSize, Status
 GO
 
 
--- SECURITY ALERTS
-INSERT INTO SecurityAlerts (AlertType, Description, Severity, IPAddress, AlertStatus, AffectedUserID, ReviewedByID, ReviewedAt, DetectedAt) VALUES
-('Multiple Failed Logins', '5 failed login attempts within 10 minutes.', 'Medium', '203.0.113.45', 'Resolved', 'USRRBX787', 'USRAME107', DATEADD(DAY,-2,GETDATE()), DATEADD(DAY,-3,GETDATE())),
-('SQL Injection Attempt', 'Suspicious payload detected in the login form input.', 'High', '198.51.100.23', 'Open', 'USRFEI001', NULL, NULL, DATEADD(HOUR,-12,GETDATE())),
-('Unusual Login Location', 'Login from a new country for this account.', 'Low', '192.0.2.88', 'Dismissed', 'USRJOY656', 'USRAME107', DATEADD(HOUR,-1,GETDATE()), DATEADD(DAY,-1,GETDATE()));
-GO
-
-
--- ---------- VERIFY: row count for all 24 tables ----------
+-- ---------- VERIFY: row count for all 21 tables ----------
 SELECT 'Roles' t, COUNT(*) n FROM Roles
 UNION ALL SELECT 'Users',               COUNT(*) FROM Users
 UNION ALL SELECT 'CourseCategories',    COUNT(*) FROM CourseCategories
@@ -387,12 +359,9 @@ UNION ALL SELECT 'UserAchievements',    COUNT(*) FROM UserAchievements
 UNION ALL SELECT 'Feedback',            COUNT(*) FROM Feedback
 UNION ALL SELECT 'ActivityLog',         COUNT(*) FROM ActivityLog
 UNION ALL SELECT 'Announcements',       COUNT(*) FROM Announcements
-UNION ALL SELECT 'ContentFlags',        COUNT(*) FROM ContentFlags
 UNION ALL SELECT 'SystemConfiguration', COUNT(*) FROM SystemConfiguration
-UNION ALL SELECT 'ErrorLogs',           COUNT(*) FROM ErrorLogs
 UNION ALL SELECT 'AuditLog',            COUNT(*) FROM AuditLog
 UNION ALL SELECT 'DatabaseBackups',     COUNT(*) FROM DatabaseBackups
-UNION ALL SELECT 'SecurityAlerts',      COUNT(*) FROM SecurityAlerts
 ORDER BY t;
 GO
 SELECT UserID, StudentID, FullName, RoleID FROM Users;

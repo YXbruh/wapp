@@ -91,15 +91,15 @@
                                 <div class="fb-top">
                                     <div class="fb-avatar"><%# GetInitials(Eval("StudentName").ToString()) %></div>
                                     <div class="fb-meta">
-                                        <div class="fb-name"><%# Eval("StudentName") %></div>
-                                        <div class="fb-sub"><%# Eval("QuizName") %> &middot; <%# Eval("CourseName") %></div>
+                                        <div class="fb-name"><%#: Eval("StudentName") %></div>
+                                        <div class="fb-sub"><%#: Eval("QuizName") %> &middot; <%#: Eval("CourseName") %></div>
                                     </div>
                                     <div class="fb-right">
-                                        <div class="fb-time"><%# Eval("TimeAgo") %></div>
+                                        <div class="fb-time"><%#: Eval("TimeAgo") %></div>
                                         <div class="fb-stars"><%# BuildStars(Convert.ToInt32(Eval("StarRating"))) %></div>
                                     </div>
                                 </div>
-                                <div class="fb-preview"><%# Eval("CommentPreview") %></div>
+                                <div class="fb-preview"><%#: Eval("CommentPreview") %></div>
                                 <div style="margin-top:6px;display:flex;gap:6px">
                                     <span class="badge <%# Eval("IsRead").ToString()=="False" ? "badge-amber":"badge-green" %>">
                                         <%# Eval("IsRead").ToString()=="False" ? "Unread":"Read" %>

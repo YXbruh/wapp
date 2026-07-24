@@ -84,11 +84,26 @@ namespace CSA.Services
             };
         }
 
+        /// <summary>
+        /// Chapters of one course, ordered the way students see them, for the quiz's
+        /// Chapter picker. Columns: ChapterID, DisplayName ("3. Firewall Basics").
+        /// </summary>
+        public static DataTable GetChaptersForCourse(string courseId)
+        {
+            return DBHelper.ExecuteQuery(@"
+                SELECT  ChapterID,
+                        CAST(SortOrder AS NVARCHAR(10)) + '. ' + ChapterTitle AS DisplayName
+                FROM    Chapters
+                WHERE   CourseID = @CourseID
+                ORDER BY SortOrder, ChapterTitle;",
+                new SqlParameter("@CourseID", courseId ?? ""));
+        }
+
         /// <summary>Full details of one quiz, for the edit form. Null if not owned.</summary>
         public static DataRow GetQuizById(string quizId, string instructorId)
         {
             DataTable dt = DBHelper.ExecuteQuery(@"
-                SELECT QuizID, CourseID, Title, Description, StartDate, EndDate,
+                SELECT QuizID, CourseID, ChapterID, Title, Description, StartDate, EndDate,
                        DurationMinutes, TotalMarks, MaxAttempts, PassMark, IsPublished
                 FROM   Quizzes
                 WHERE  QuizID = @QuizID AND CreatedByID = @InstructorID;",
@@ -107,10 +122,23 @@ namespace CSA.Services
             decimal passMark, int maxAttempts,
             string description, DateTime? startDate, DateTime? endDate,
             int? durationMinutes, int? totalMarks)
+            => UpdateQuiz(quizId, instructorId, title, passMark, maxAttempts,
+                          description, startDate, endDate, durationMinutes, totalMarks, null);
+
+        /// <summary>
+        /// Updates an existing quiz, including which chapter it belongs to. A blank
+        /// <paramref name="chapterId"/> stores NULL, i.e. a course-wide quiz.
+        /// </summary>
+        public static int UpdateQuiz(
+            string quizId, string instructorId, string title,
+            decimal passMark, int maxAttempts,
+            string description, DateTime? startDate, DateTime? endDate,
+            int? durationMinutes, int? totalMarks, string chapterId)
         {
             string sql = @"
                 UPDATE Quizzes
-                SET    Title           = @Title,
+                SET    ChapterID       = @ChapterID,
+                       Title           = @Title,
                        Description     = @Description,
                        StartDate       = @StartDate,
                        EndDate         = @EndDate,
@@ -124,6 +152,7 @@ namespace CSA.Services
             return DBHelper.ExecuteNonQuery(sql,
                 new SqlParameter("@QuizID", quizId),
                 new SqlParameter("@InstructorID", instructorId),
+                new SqlParameter("@ChapterID", string.IsNullOrWhiteSpace(chapterId) ? (object)DBNull.Value : chapterId),
                 new SqlParameter("@Title", title),
                 new SqlParameter("@Description", string.IsNullOrWhiteSpace(description) ? (object)DBNull.Value : description),
                 new SqlParameter("@StartDate", startDate.HasValue ? (object)startDate.Value : DBNull.Value),
@@ -172,20 +201,33 @@ namespace CSA.Services
             decimal passMark, int maxAttempts,
             string description, DateTime? startDate, DateTime? endDate, int? durationMinutes,
             int? totalMarks)
+            => CreateQuiz(instructorId, courseId, null, title, passMark, maxAttempts,
+                          description, startDate, endDate, durationMinutes, totalMarks);
+
+        /// <summary>
+        /// Creates a quiz attached to a specific chapter of the course. A blank
+        /// <paramref name="chapterId"/> stores NULL, i.e. a course-wide quiz.
+        /// </summary>
+        public static string CreateQuiz(
+            string instructorId, string courseId, string chapterId, string title,
+            decimal passMark, int maxAttempts,
+            string description, DateTime? startDate, DateTime? endDate, int? durationMinutes,
+            int? totalMarks)
         {
             string quizId = IdGenerator.NewId("QUZ");
 
             string sql = @"
                 INSERT INTO Quizzes
-                    (QuizID, CourseID, Title, Description, StartDate, EndDate, DurationMinutes,
+                    (QuizID, CourseID, ChapterID, Title, Description, StartDate, EndDate, DurationMinutes,
                      TotalMarks, MaxAttempts, PassMark, CreatedByID, IsPublished)
                 VALUES
-                    (@QuizID, @CourseID, @Title, @Description, @StartDate, @EndDate, @DurationMinutes,
+                    (@QuizID, @CourseID, @ChapterID, @Title, @Description, @StartDate, @EndDate, @DurationMinutes,
                      @TotalMarks, @MaxAttempts, @PassMark, @CreatedByID, 0);";
 
             DBHelper.ExecuteNonQuery(sql,
                 new SqlParameter("@QuizID", quizId),
                 new SqlParameter("@CourseID", courseId),
+                new SqlParameter("@ChapterID", string.IsNullOrWhiteSpace(chapterId) ? (object)DBNull.Value : chapterId),
                 new SqlParameter("@Title", title),
                 new SqlParameter("@Description", string.IsNullOrWhiteSpace(description) ? (object)DBNull.Value : description),
                 new SqlParameter("@StartDate", startDate.HasValue ? (object)startDate.Value : DBNull.Value),

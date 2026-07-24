@@ -127,17 +127,17 @@
                             <asp:Repeater ID="rptQuizAttempts" runat="server">
                                 <ItemTemplate>
                                     <tr>
-                                        <td class="fw-bold" style="color:var(--text)"><%# Eval("QuizName") %></td>
+                                        <td class="fw-bold" style="color:var(--text)"><%#: Eval("QuizName") %></td>
                                         <td>
                                             <span style="font-weight:700;color:<%# GetScoreColor(Convert.ToInt32(Eval("Score"))) %>">
                                                 <%# Eval("Score") %>%
                                             </span>
                                         </td>
-                                        <td class="text-muted"><%# Eval("AttemptCount") %></td>
+                                        <td class="text-muted"><%#: Eval("AttemptCount") %></td>
                                         <td><span class="badge <%# Convert.ToInt32(Eval("Score")) >= 50 ? "badge-green":"badge-red" %>">
                                             <%# Convert.ToInt32(Eval("Score")) >= 50 ? "Pass":"Fail" %>
                                         </span></td>
-                                        <td class="text-muted text-small"><%# Eval("LastAttemptDisplay") %></td>
+                                        <td class="text-muted text-small"><%#: Eval("LastAttemptDisplay") %></td>
                                     </tr>
                                 </ItemTemplate>
                             </asp:Repeater>
@@ -159,8 +159,8 @@
                                 <i class="ti ti-terminal-2" aria-hidden="true"></i>
                             </div>
                             <div style="flex:1;min-width:0">
-                                <div style="font-size:13px;font-weight:600;color:var(--text)"><%# Eval("LabName") %></div>
-                                <div class="text-small text-muted"><%# Eval("CompletedDisplay") %></div>
+                                <div style="font-size:13px;font-weight:600;color:var(--text)"><%#: Eval("LabName") %></div>
+                                <div class="text-small text-muted"><%#: Eval("CompletedDisplay") %></div>
                             </div>
                             <span class="badge <%# GetLabStatusBadge(Eval("Status").ToString()) %>">
                                 <i class="ti <%# GetLabStatusIcon(Eval("Status").ToString()) %>"></i>

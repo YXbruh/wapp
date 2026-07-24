@@ -59,6 +59,49 @@ namespace CSA.Lecturer
                 ddlNewQuizCourse.Items.Add(new ListItem(name, id));
                 ddlFilterCourse.Items.Add(new ListItem(name, id));
             }
+
+            LoadNewQuizChapters();
+        }
+
+        /// <summary>
+        /// Fills a chapter picker from one course. A quiz may sit outside any chapter,
+        /// so the blank entry stays selectable — it stores ChapterID as NULL.
+        /// </summary>
+        private static void FillChapterDropdown(DropDownList list, string courseId, string selected)
+        {
+            list.Items.Clear();
+
+            if (string.IsNullOrEmpty(courseId))
+            {
+                list.Items.Add(new ListItem("— Select a course first —", ""));
+                return;
+            }
+
+            DataTable chapters = QuizService.GetChaptersForCourse(courseId);
+            list.Items.Add(new ListItem(
+                chapters.Rows.Count == 0
+                    ? "— This course has no chapters yet —"
+                    : "— Whole course (no chapter) —", ""));
+
+            foreach (DataRow row in chapters.Rows)
+            {
+                list.Items.Add(new ListItem(
+                    row["DisplayName"].ToString(),
+                    row["ChapterID"].ToString()));
+            }
+
+            if (!string.IsNullOrEmpty(selected) && list.Items.FindByValue(selected) != null)
+                list.SelectedValue = selected;
+        }
+
+        private void LoadNewQuizChapters()
+        {
+            FillChapterDropdown(ddlNewQuizChapter, ddlNewQuizCourse.SelectedValue, null);
+        }
+
+        protected void ddlNewQuizCourse_Changed(object sender, EventArgs e)
+        {
+            LoadNewQuizChapters();
         }
 
         private void LoadQuizDropdown()
@@ -196,10 +239,14 @@ namespace CSA.Lecturer
                 string newId = QuizService.CreateQuiz(
                     CurrentInstructorId,
                     newCourseId,
+                    ddlNewQuizChapter.SelectedValue,
                     tbNewQuizTitle.Text.Trim(),
                     passMark, maxAttempts,
                     tbNewQuizDescription.Text.Trim(),
                     startDate, endDate, duration, totalMarks);
+
+                AdminService.LogActivity(CurrentInstructorId, "CREATE_QUIZ", "Quizzes",
+                    newId, "Created quiz: " + tbNewQuizTitle.Text.Trim());
 
                 // Point the course filter at the new quiz's course, otherwise the quiz
                 // picker (which lists one course at a time) would not contain it.
@@ -218,6 +265,7 @@ namespace CSA.Lecturer
                 tbNewPassMark.Text = "50";
                 tbNewMaxAttempts.Text = "3";
                 ddlNewQuizCourse.SelectedIndex = 0;
+                LoadNewQuizChapters();
 
                 // Flush anything staged before the quiz existed.
                 int committed = PendingAttachmentService.Commit(AttachBucket, "Quiz", newId, CurrentInstructorId);
@@ -251,6 +299,10 @@ namespace CSA.Lecturer
             { pnlEditQuiz.Visible = false; return; }
 
             pnlEditQuiz.Visible = true;
+
+            FillChapterDropdown(ddlEditChapter,
+                Convert.ToString(quiz["CourseID"]),
+                quiz["ChapterID"] == DBNull.Value ? "" : Convert.ToString(quiz["ChapterID"]));
 
             tbEditTitle.Text = Convert.ToString(quiz["Title"]);
             tbEditDescription.Text = quiz["Description"] == DBNull.Value ? "" : Convert.ToString(quiz["Description"]);
@@ -325,7 +377,7 @@ namespace CSA.Lecturer
 
             int rows = QuizService.UpdateQuiz(quizId, CurrentInstructorId, title,
                 passMark, maxAttempts, tbEditDescription.Text.Trim(),
-                startDate, endDate, duration, totalMarks);
+                startDate, endDate, duration, totalMarks, ddlEditChapter.SelectedValue);
 
             if (rows == 0)
             { ShowError("Quiz not found, or it doesn't belong to you."); return; }

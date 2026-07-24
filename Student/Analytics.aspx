@@ -62,7 +62,7 @@
                     <ItemTemplate>
                         <div style="margin-bottom:16px">
                             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-                                <span style="font-size:13px;font-weight:600;color:var(--text)"><%# Eval("CourseName") %></span>
+                                <span style="font-size:13px;font-weight:600;color:var(--text)"><%#: Eval("CourseName") %></span>
                                 <span style="font-size:12px;color:var(--accent2);font-weight:700"><%# Eval("Progress") %>%</span>
                             </div>
                             <div class="progress-bar" style="height:6px">
@@ -70,7 +70,7 @@
                             </div>
                             <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3);margin-top:4px">
                                 <span><%# Eval("CompletedModules") %> / <%# Eval("TotalModules") %> modules</span>
-                                <span class="badge <%# Eval("StatusBadgeClass") %>"><%# Eval("StatusLabel") %></span>
+                                <span class="badge <%# Eval("StatusBadgeClass") %>"><%#: Eval("StatusLabel") %></span>
                             </div>
                         </div>
                     </ItemTemplate>
@@ -87,7 +87,7 @@
                     <ItemTemplate>
                         <div style="margin-bottom:16px">
                             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-                                <span style="font-size:13px;font-weight:600;color:var(--text)"><%# Eval("QuizName") %></span>
+                                <span style="font-size:13px;font-weight:600;color:var(--text)"><%#: Eval("QuizName") %></span>
                                 <span style="font-size:12px;color:var(--accent2);font-weight:700"><%# Eval("Score") %>%</span>
                             </div>
                             <div class="progress-bar" style="height:6px">
@@ -116,7 +116,7 @@
                             <i class="ti ti-terminal-2" aria-hidden="true"></i>
                         </div>
                         <div style="flex:1;min-width:0">
-                            <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px"><%# Eval("CourseName") %></div>
+                            <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px"><%#: Eval("CourseName") %></div>
                             <div class="progress-bar" style="height:5px">
                                 <div class="progress-fill" style="width:<%# Eval("LabProgressPct") %>%"></div>
                             </div>

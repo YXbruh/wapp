@@ -359,7 +359,6 @@ CREATE TABLE Announcements (
     PublishedByID  NVARCHAR(10)  NOT NULL,
     IsActive       BIT           NOT NULL DEFAULT 1,
     PublishedAt    DATETIME      NOT NULL DEFAULT GETDATE(),
-    ExpiresAt      DATETIME      NULL,
     Audience       NVARCHAR(50)  NOT NULL DEFAULT 'All',
     Priority       NVARCHAR(20)  NOT NULL DEFAULT 'Normal',
     CONSTRAINT FK_Ann_Publisher FOREIGN KEY (PublishedByID) REFERENCES Users(UserID)
@@ -367,25 +366,7 @@ CREATE TABLE Announcements (
 GO
 
 -- ============================================================
--- 19. CONTENT FLAGS / REPORTS
--- ============================================================
-CREATE TABLE ContentFlags (
-    FlagID        INT           NOT NULL IDENTITY(1,1) PRIMARY KEY,
-    ReportedByID  NVARCHAR(10)  NOT NULL,
-    ContentType   NVARCHAR(50)  NOT NULL,
-    ContentID     INT           NOT NULL,
-    Reason        NVARCHAR(1000) NULL,
-    Status        NVARCHAR(20)  NOT NULL DEFAULT 'Pending',
-    ReviewedByID  NVARCHAR(10)  NULL,
-    ReviewedAt    DATETIME      NULL,
-    FlaggedAt     DATETIME      NOT NULL DEFAULT GETDATE(),
-    CONSTRAINT FK_CF_Reporter FOREIGN KEY (ReportedByID) REFERENCES Users(UserID),
-    CONSTRAINT FK_CF_Reviewer FOREIGN KEY (ReviewedByID) REFERENCES Users(UserID)
-);
-GO
-
--- ============================================================
--- 20. SYSTEM CONFIGURATION
+-- 19. SYSTEM CONFIGURATION
 -- ============================================================
 CREATE TABLE SystemConfiguration (
     ConfigID    NVARCHAR(10)  NOT NULL PRIMARY KEY,
@@ -397,24 +378,7 @@ CREATE TABLE SystemConfiguration (
 GO
 
 -- ============================================================
--- 21. ERROR LOGS
--- ============================================================
-CREATE TABLE ErrorLogs (
-    ErrorID    INT           NOT NULL IDENTITY(1,1) PRIMARY KEY,
-    ErrorType  NVARCHAR(100) NULL,
-    Message    NVARCHAR(MAX) NULL,
-    PageURL    NVARCHAR(500) NULL,
-    UserID     NVARCHAR(10)  NULL,
-    UserAgent  NVARCHAR(500) NULL,
-    Severity   NVARCHAR(20)  NOT NULL DEFAULT 'Error',
-    IsResolved BIT           NOT NULL DEFAULT 0,
-    OccurredAt DATETIME      NOT NULL DEFAULT GETDATE(),
-    CONSTRAINT FK_EL_User FOREIGN KEY (UserID) REFERENCES Users(UserID)
-);
-GO
-
--- ============================================================
--- 22. AUDIT LOG
+-- 20. AUDIT LOG
 -- ============================================================
 CREATE TABLE AuditLog (
     AuditID       INT           NOT NULL IDENTITY(1,1) PRIMARY KEY,
@@ -431,7 +395,7 @@ CREATE TABLE AuditLog (
 GO
 
 -- ============================================================
--- 23. DATABASE BACKUPS
+-- 21. DATABASE BACKUPS
 -- ============================================================
 CREATE TABLE DatabaseBackups (
     BackupID    INT           NOT NULL IDENTITY(1,1) PRIMARY KEY,
@@ -443,25 +407,6 @@ CREATE TABLE DatabaseBackups (
     CreatedByID NVARCHAR(10)  NOT NULL,
     CreatedAt   DATETIME      NOT NULL DEFAULT GETDATE(),
     CONSTRAINT FK_DB_User FOREIGN KEY (CreatedByID) REFERENCES Users(UserID)
-);
-GO
-
--- ============================================================
--- 24. SECURITY ALERTS
--- ============================================================
-CREATE TABLE SecurityAlerts (
-    AlertID       INT           NOT NULL IDENTITY(1,1) PRIMARY KEY,
-    AlertType     NVARCHAR(100) NOT NULL,
-    Description   NVARCHAR(500) NULL,
-    Severity      NVARCHAR(20)  NOT NULL DEFAULT 'Low',
-    IPAddress     NVARCHAR(50)  NULL,
-    AlertStatus   NVARCHAR(20)  NOT NULL DEFAULT 'Open',
-    AffectedUserID NVARCHAR(10) NOT NULL,
-    ReviewedByID  NVARCHAR(10)  NULL,
-    ReviewedAt    DATETIME      NULL,
-    DetectedAt    DATETIME      NOT NULL DEFAULT GETDATE(),
-    CONSTRAINT FK_SA_User     FOREIGN KEY (AffectedUserID) REFERENCES Users(UserID),
-    CONSTRAINT FK_SA_Reviewer FOREIGN KEY (ReviewedByID)  REFERENCES Users(UserID)
 );
 GO
 

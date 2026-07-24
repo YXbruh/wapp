@@ -77,7 +77,7 @@ namespace CSA.Student
 
         protected void Page_Load(object sender, EventArgs e)
         {
-            if (Session["UserID"] == null)
+            if (Session["UserID"] == null || Session["Role"] as string != "Student")
             {
                 Response.Redirect("~/Login.aspx");
                 return;
@@ -1202,6 +1202,30 @@ namespace CSA.Student
                     }
                 }
             }
+
+            // A passing attempt advances the course progress bar (chapters + labs + quizzes).
+            CourseService.RecalculateProgressForQuiz(UserId, QuizId);
+
+            // Logged only once the attempt is safely committed.
+            string quizTitle =
+                Convert.ToString(Scalar(
+                    @"SELECT Title
+                      FROM Quizzes
+                      WHERE QuizID = @QuizID",
+                    new SqlParameter(
+                        "@QuizID",
+                        QuizId)));
+
+            AdminService.LogActivity(
+                UserId,
+                "COMPLETE_QUIZ",
+                "QuizAttempts",
+                attemptId,
+                string.Format(
+                    "{0} quiz: {1} ({2:0.#}%)",
+                    passed ? "Passed" : "Attempted",
+                    quizTitle,
+                    score));
         }
 
         private string GetUnavailableMessage(

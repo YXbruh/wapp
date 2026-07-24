@@ -17,13 +17,42 @@ namespace CSA.Services
                     (SELECT COUNT(*) FROM Users) AS UserCount,
                     (SELECT COUNT(*) FROM Courses WHERE IsPublished = 1) AS CourseCount,
                     (SELECT COUNT(*) FROM VirtualLabs WHERE IsPublished = 1) AS LabCount,
-                    (SELECT COUNT(*) FROM SecurityAlerts WHERE AlertStatus = 'Open') AS AlertCount");
+                    (SELECT COUNT(*) FROM Chapters     WHERE IsPublished = 0)
+                  + (SELECT COUNT(*) FROM Quizzes      WHERE IsPublished = 0)
+                  + (SELECT COUNT(*) FROM VirtualLabs  WHERE IsPublished = 0) AS PendingReviewCount");
             return dt;
         }
 
         // ========================================================================
         // CONTENT REVIEW
+        //
+        // Lecturers author chapters, quizzes and labs as drafts (IsPublished = 0).
+        // Nothing reaches students until an admin reviews it here and publishes it,
+        // so "pending" simply means the draft rows across those three tables.
         // ========================================================================
+
+        /// <summary>
+        /// Draft chapters, quizzes and labs, unioned into one reviewable list.
+        /// ContentID is the table's own NVARCHAR key (e.g. "QUZ001"), not an int.
+        /// </summary>
+        private const string PendingContentCte = @"
+            WITH Pending AS (
+                SELECT 'Chapter' AS ContentType, ch.ChapterID AS ContentID,
+                       ch.ChapterTitle AS Title, LEFT(ISNULL(ch.Content, ''), 200) AS Preview,
+                       ch.CourseID, ch.CreatedByID, ch.UpdatedAt AS SubmittedAt
+                FROM   Chapters ch WHERE ch.IsPublished = 0
+                UNION ALL
+                SELECT 'Quiz', q.QuizID,
+                       q.Title, LEFT(ISNULL(q.Description, ''), 200),
+                       q.CourseID, q.CreatedByID, q.UpdatedAt
+                FROM   Quizzes q WHERE q.IsPublished = 0
+                UNION ALL
+                SELECT 'Lab', vl.LabID,
+                       vl.LabTitle, LEFT(ISNULL(vl.Scenario, ''), 200),
+                       vl.CourseID, vl.CreatedByID, vl.UpdatedAt
+                FROM   VirtualLabs vl WHERE vl.IsPublished = 0
+            )";
+
         public static DataTable GetPendingContent(string contentType)
         {
             return GetPendingContent(contentType, 0, 0, out _);
@@ -32,38 +61,23 @@ namespace CSA.Services
         public static DataTable GetPendingContent(string contentType,
             int page, int pageSize, out int total)
         {
-            string where = "WHERE (@Type = '' OR cf.ContentType = @Type)";
+            const string where = "WHERE (@Type = '' OR p.ContentType = @Type)";
 
-            string countSql = "SELECT COUNT(*) FROM ContentFlags cf " + where;
-            total = Convert.ToInt32(DBHelper.ExecuteScalar(countSql,
+            total = Convert.ToInt32(DBHelper.ExecuteScalar(
+                PendingContentCte + " SELECT COUNT(*) FROM Pending p " + where,
                 new SqlParameter("@Type", contentType ?? "")));
 
             int offset = Math.Max(0, (page - 1) * pageSize);
 
-            string sql = $@"
-                SELECT cf.FlagID, cf.ContentType, cf.ContentID, cf.Reason, cf.Status, cf.FlaggedAt,
-                       u.FullName AS ReportedBy,
-                       CASE cf.ContentType
-                           WHEN 'Chapter' THEN ch.ChapterTitle
-                           WHEN 'Quiz' THEN q.Title
-                           WHEN 'Lab' THEN vl.LabTitle
-                           ELSE 'Unknown'
-                       END AS Title,
-                       CASE cf.ContentType
-                           WHEN 'Chapter' THEN LEFT(ch.Content, 100)
-                           WHEN 'Quiz' THEN q.Description
-                           WHEN 'Lab' THEN LEFT(vl.Scenario, 100)
-                           ELSE ''
-                       END AS Preview,
-                       c.CourseName
-                FROM ContentFlags cf
-                JOIN Users u ON cf.ReportedByID = u.UserID
-                LEFT JOIN Chapters ch ON cf.ContentType = 'Chapter' AND CAST(cf.ContentID AS NVARCHAR(10)) = ch.ChapterID
-                LEFT JOIN Quizzes q ON cf.ContentType = 'Quiz' AND CAST(cf.ContentID AS NVARCHAR(10)) = q.QuizID
-                LEFT JOIN VirtualLabs vl ON cf.ContentType = 'Lab' AND CAST(cf.ContentID AS NVARCHAR(10)) = vl.LabID
-                LEFT JOIN Courses c ON (ch.CourseID = c.CourseID OR q.CourseID = c.CourseID OR vl.CourseID = c.CourseID)
+            string sql = PendingContentCte + $@"
+                SELECT p.ContentType, p.ContentID, p.Title, p.Preview, p.SubmittedAt,
+                       u.FullName AS SubmittedBy,
+                       ISNULL(c.CourseName, '—') AS CourseName
+                FROM   Pending p
+                JOIN   Users u ON p.CreatedByID = u.UserID
+                LEFT JOIN Courses c ON p.CourseID = c.CourseID
                 {where}
-                ORDER BY cf.FlaggedAt DESC";
+                ORDER BY p.SubmittedAt DESC, p.ContentID";
 
             if (pageSize > 0)
                 sql += " OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
@@ -81,29 +95,152 @@ namespace CSA.Services
             return DBHelper.ExecuteQuery(sql, pars.ToArray());
         }
 
-        public static void ApproveContent(int flagId, string adminId)
+        /// <summary>
+        /// One piece of content in full, for the preview page. Returns null when the
+        /// type is unknown or the row no longer exists.
+        /// </summary>
+        public static DataRow GetContentDetail(string contentType, string contentId)
         {
-            DBHelper.ExecuteNonQuery(
-                @"UPDATE ContentFlags SET Status = 'Removed', ReviewedByID = @AdminID, ReviewedAt = GETDATE()
-                  WHERE FlagID = @ID",
-                new SqlParameter("@ID", flagId),
-                new SqlParameter("@AdminID", adminId));
-            LogAudit(adminId, "APPROVE_CONTENT", "ContentFlags", flagId.ToString(), "", "");
+            string sql;
+            switch (contentType)
+            {
+                case "Chapter":
+                    sql = @"SELECT 'Chapter' AS ContentType, ch.ChapterID AS ContentID,
+                                   ch.ChapterTitle AS Title, ISNULL(ch.Content, '') AS Body,
+                                   ch.IsPublished, ch.UpdatedAt AS SubmittedAt, ch.CreatedAt,
+                                   ch.SortOrder,
+                                   u.FullName AS SubmittedBy, ISNULL(c.CourseName, '—') AS CourseName
+                            FROM   Chapters ch
+                            JOIN   Users u ON ch.CreatedByID = u.UserID
+                            LEFT JOIN Courses c ON ch.CourseID = c.CourseID
+                            WHERE  ch.ChapterID = @ID";
+                    break;
+                case "Quiz":
+                    sql = @"SELECT 'Quiz' AS ContentType, q.QuizID AS ContentID,
+                                   q.Title, ISNULL(q.Description, '') AS Body,
+                                   q.IsPublished, q.UpdatedAt AS SubmittedAt, q.CreatedAt,
+                                   q.TotalMarks, q.PassMark, q.MaxAttempts, q.DurationMinutes,
+                                   q.StartDate, q.EndDate,
+                                   (SELECT COUNT(*) FROM QuizQuestions qq WHERE qq.QuizID = q.QuizID) AS QuestionCount,
+                                   u.FullName AS SubmittedBy, ISNULL(c.CourseName, '—') AS CourseName
+                            FROM   Quizzes q
+                            JOIN   Users u ON q.CreatedByID = u.UserID
+                            LEFT JOIN Courses c ON q.CourseID = c.CourseID
+                            WHERE  q.QuizID = @ID";
+                    break;
+                case "Lab":
+                    sql = @"SELECT 'Lab' AS ContentType, vl.LabID AS ContentID,
+                                   vl.LabTitle AS Title, ISNULL(vl.Scenario, '') AS Body,
+                                   vl.IsPublished, vl.UpdatedAt AS SubmittedAt, vl.CreatedAt,
+                                   vl.Difficulty, vl.SkillTag, vl.PointsReward, vl.TimeLimitMinutes,
+                                   vl.ValidationType, vl.ExpectedCommand, ISNULL(vl.HintText, '') AS HintText,
+                                   u.FullName AS SubmittedBy, ISNULL(c.CourseName, '—') AS CourseName
+                            FROM   VirtualLabs vl
+                            JOIN   Users u ON vl.CreatedByID = u.UserID
+                            LEFT JOIN Courses c ON vl.CourseID = c.CourseID
+                            WHERE  vl.LabID = @ID";
+                    break;
+                default:
+                    return null;
+            }
+
+            DataTable dt = DBHelper.ExecuteQuery(sql, new SqlParameter("@ID", contentId ?? ""));
+            return dt.Rows.Count > 0 ? dt.Rows[0] : null;
         }
 
-        public static void RejectContent(int flagId, string adminId)
+        /// <summary>
+        /// Full question list for a quiz, so an admin can review the actual questions,
+        /// options and correct answers before publishing. Ordered as the author arranged them.
+        /// </summary>
+        public static DataTable GetQuizQuestionsForReview(string quizId)
         {
-            DBHelper.ExecuteNonQuery(
-                @"UPDATE ContentFlags SET Status = 'Dismissed', ReviewedByID = @AdminID, ReviewedAt = GETDATE()
-                  WHERE FlagID = @ID",
-                new SqlParameter("@ID", flagId),
-                new SqlParameter("@AdminID", adminId));
-            LogAudit(adminId, "REJECT_CONTENT", "ContentFlags", flagId.ToString(), "", "");
+            return DBHelper.ExecuteQuery(
+                @"SELECT QuestionText, QuestionType, OptionA, OptionB, OptionC, OptionD,
+                         CorrectAnswer, ISNULL(Explanation, '') AS Explanation, Points, SortOrder
+                  FROM   QuizQuestions
+                  WHERE  QuizID = @ID
+                  ORDER BY SortOrder, QuestionID",
+                new SqlParameter("@ID", quizId ?? ""));
         }
 
+        /// <summary>Table and key column backing a content type, or null if unknown.</summary>
+        private static bool TryResolveContentTable(string contentType,
+            out string table, out string keyColumn)
+        {
+            switch (contentType)
+            {
+                case "Chapter": table = "Chapters";     keyColumn = "ChapterID"; return true;
+                case "Quiz":    table = "Quizzes";      keyColumn = "QuizID";    return true;
+                case "Lab":     table = "VirtualLabs";  keyColumn = "LabID";     return true;
+                default:        table = null;           keyColumn = null;        return false;
+            }
+        }
+
+        /// <summary>
+        /// Approves a submission: the draft goes live for students. Returns false when
+        /// the content type is unknown or the row has since been deleted.
+        /// </summary>
+        public static bool ApproveContent(string contentType, string contentId, string adminId)
+        {
+            return SetContentPublished(contentType, contentId, adminId, true);
+        }
+
+        /// <summary>
+        /// Rejects a submission: it stays (or returns to) a draft that only its author
+        /// can see, and the decision is recorded in the audit log.
+        /// </summary>
+        public static bool RejectContent(string contentType, string contentId, string adminId)
+        {
+            return SetContentPublished(contentType, contentId, adminId, false);
+        }
+
+        private static bool SetContentPublished(string contentType, string contentId,
+            string adminId, bool publish)
+        {
+            // The type only ever picks a hard-coded table name — never a caller string.
+            if (!TryResolveContentTable(contentType, out string table, out string key))
+                return false;
+
+            int rows = DBHelper.ExecuteNonQuery(
+                $@"UPDATE {table} SET IsPublished = @Published, UpdatedAt = GETDATE()
+                   WHERE {key} = @ID",
+                new SqlParameter("@Published", publish ? 1 : 0),
+                new SqlParameter("@ID", contentId ?? ""));
+
+            if (rows == 0) return false;
+
+            LogAudit(adminId, publish ? "PUBLISH_CONTENT" : "REJECT_CONTENT",
+                     table, contentId, "", contentType);
+            return true;
+        }
+
+        /// <summary>Drafts still waiting on an admin decision.</summary>
         public static int GetPendingCount()
         {
-            object r = DBHelper.ExecuteScalar("SELECT COUNT(*) FROM ContentFlags WHERE Status = 'Pending'");
+            object r = DBHelper.ExecuteScalar(@"
+                SELECT (SELECT COUNT(*) FROM Chapters    WHERE IsPublished = 0)
+                     + (SELECT COUNT(*) FROM Quizzes     WHERE IsPublished = 0)
+                     + (SELECT COUNT(*) FROM VirtualLabs WHERE IsPublished = 0)");
+            return r != null ? Convert.ToInt32(r) : 0;
+        }
+
+        /// <summary>Content already approved and visible to students.</summary>
+        public static int GetPublishedCount()
+        {
+            object r = DBHelper.ExecuteScalar(@"
+                SELECT (SELECT COUNT(*) FROM Chapters    WHERE IsPublished = 1)
+                     + (SELECT COUNT(*) FROM Quizzes     WHERE IsPublished = 1)
+                     + (SELECT COUNT(*) FROM VirtualLabs WHERE IsPublished = 1)");
+            return r != null ? Convert.ToInt32(r) : 0;
+        }
+
+        /// <summary>Review decisions an admin has recorded today, from the audit trail.</summary>
+        public static int GetReviewedTodayCount()
+        {
+            object r = DBHelper.ExecuteScalar(@"
+                SELECT COUNT(*) FROM AuditLog
+                WHERE Action IN ('PUBLISH_CONTENT', 'REJECT_CONTENT')
+                  AND CAST(OccurredAt AS DATE) = CAST(GETDATE() AS DATE)");
             return r != null ? Convert.ToInt32(r) : 0;
         }
 
@@ -129,7 +266,7 @@ namespace CSA.Services
             string sql = $@"
                 SELECT a.AnnouncementID, a.Title, a.Body,
                        LEFT(a.Body, 80) AS MessagePreview,
-                       a.IsActive, a.PublishedAt, a.ExpiresAt,
+                       a.IsActive, a.PublishedAt,
                        a.Audience, a.Priority,
                        u.FullName AS PublishedBy
                 FROM Announcements a
@@ -160,33 +297,33 @@ namespace CSA.Services
                 new SqlParameter("@ID", id));
         }
 
+        // Announcements are delivered by email the moment they are published, so there
+        // is nothing left on the site to expire — the row is purely a sent-record.
         public static void CreateAnnouncement(string title, string body, string audience,
-            string priority, DateTime? expiry, string adminId)
+            string priority, string adminId)
         {
             DBHelper.ExecuteNonQuery(
-                @"INSERT INTO Announcements (Title, Body, PublishedByID, IsActive, PublishedAt, ExpiresAt, Audience, Priority)
-                  VALUES (@Title, @Body, @AdminID, 1, GETDATE(), @Expiry, @Audience, @Priority)",
+                @"INSERT INTO Announcements (Title, Body, PublishedByID, IsActive, PublishedAt, Audience, Priority)
+                  VALUES (@Title, @Body, @AdminID, 1, GETDATE(), @Audience, @Priority)",
                 new SqlParameter("@Title", title),
                 new SqlParameter("@Body", body),
                 new SqlParameter("@AdminID", adminId),
-                new SqlParameter("@Expiry", (object)expiry ?? DBNull.Value),
                 new SqlParameter("@Audience", audience ?? "All"),
                 new SqlParameter("@Priority", priority ?? "Normal"));
             LogAudit(adminId, "CREATE_ANNOUNCEMENT", "Announcements", "0", "", title);
         }
 
         public static void UpdateAnnouncement(int id, string title, string body,
-            string audience, string priority, DateTime? expiry)
+            string audience, string priority)
         {
             DBHelper.ExecuteNonQuery(
                 @"UPDATE Announcements SET Title = @Title, Body = @Body,
-                        Audience = @Audience, Priority = @Priority,
-                        ExpiresAt = @Expiry WHERE AnnouncementID = @ID",
+                        Audience = @Audience, Priority = @Priority
+                  WHERE AnnouncementID = @ID",
                 new SqlParameter("@Title", title),
                 new SqlParameter("@Body", body),
                 new SqlParameter("@Audience", audience ?? "All"),
                 new SqlParameter("@Priority", priority ?? "Normal"),
-                new SqlParameter("@Expiry", (object)expiry ?? DBNull.Value),
                 new SqlParameter("@ID", id));
         }
 
@@ -203,11 +340,21 @@ namespace CSA.Services
         public static DataTable GetLogs(string keyword, string severity,
             string dateFrom, string dateTo, int page, int pageSize, out int total)
         {
+            string sevWhere = "";
+            if (!string.IsNullOrEmpty(severity))
+            {
+                if (severity == "Critical")
+                    sevWhere = " AND (al.Action LIKE '%DELETE%' OR al.Action LIKE '%ERROR%')";
+                else if (severity == "Warning")
+                    sevWhere = " AND (al.Action LIKE '%CREATE%' OR al.Action LIKE '%UPDATE%') AND al.Action NOT LIKE '%DELETE%' AND al.Action NOT LIKE '%ERROR%'";
+                else
+                    sevWhere = " AND al.Action NOT LIKE '%CREATE%' AND al.Action NOT LIKE '%UPDATE%' AND al.Action NOT LIKE '%DELETE%' AND al.Action NOT LIKE '%ERROR%'";
+            }
+
             string where = "1=1";
             if (!string.IsNullOrEmpty(keyword))
-                where += " AND (al.Action LIKE @Keyword OR al.IPAddress LIKE @Keyword OR u.FullName LIKE @Keyword)";
-            if (!string.IsNullOrEmpty(severity))
-                where += " AND al.Action LIKE @SevPattern";
+                where += " AND (al.Action LIKE @Keyword OR al.AfterValue LIKE @Keyword OR al.IPAddress LIKE @Keyword OR u.FullName LIKE @Keyword)";
+            where += sevWhere;
             if (!string.IsNullOrEmpty(dateFrom))
                 where += " AND al.OccurredAt >= @DateFrom";
             if (!string.IsNullOrEmpty(dateTo))
@@ -216,18 +363,16 @@ namespace CSA.Services
             string countSql = "SELECT COUNT(*) FROM AuditLog al JOIN Users u ON al.PerformedByID = u.UserID WHERE " + where;
             total = Convert.ToInt32(DBHelper.ExecuteScalar(countSql,
                 new SqlParameter("@Keyword", "%" + keyword + "%"),
-                new SqlParameter("@SevPattern", "%" + severity + "%"),
                 new SqlParameter("@DateFrom", (object)dateFrom ?? DBNull.Value),
                 new SqlParameter("@DateTo", (object)dateTo ?? DBNull.Value)));
+
+            string severityExpr = "CASE WHEN al.Action LIKE '%DELETE%' OR al.Action LIKE '%ERROR%' THEN 'Critical' WHEN al.Action LIKE '%UPDATE%' OR al.Action LIKE '%CREATE%' THEN 'Warning' ELSE 'Info' END";
 
             string sql = $@"
                 SELECT al.AuditID, al.Action, al.TableAffected, al.RecordID, al.IPAddress, al.OccurredAt,
                        u.FullName AS UserName, u.Email AS UserEmail,
-                       CASE WHEN al.Action LIKE '%DELETE%' OR al.Action LIKE '%ERROR%' THEN 'Critical'
-                            WHEN al.Action LIKE '%UPDATE%' OR al.Action LIKE '%CREATE%' THEN 'Warning'
-                            ELSE 'Info'
-                       END AS Severity,
-                       al.Action AS Details
+                       {severityExpr} AS Severity,
+                       ISNULL(NULLIF(al.AfterValue, ''), al.Action) AS Details
                 FROM AuditLog al
                 JOIN Users u ON al.PerformedByID = u.UserID
                 WHERE {where}
@@ -236,7 +381,6 @@ namespace CSA.Services
 
             return DBHelper.ExecuteQuery(sql,
                 new SqlParameter("@Keyword", "%" + keyword + "%"),
-                new SqlParameter("@SevPattern", "%" + severity + "%"),
                 new SqlParameter("@DateFrom", (object)dateFrom ?? DBNull.Value),
                 new SqlParameter("@DateTo", (object)dateTo ?? DBNull.Value),
                 new SqlParameter("@Offset", (page - 1) * pageSize),
@@ -245,13 +389,50 @@ namespace CSA.Services
 
         public static int CountBySeverity(string severity)
         {
-            string pattern = severity == "Info" ? "%CREATE%LOGIN%"
-                : severity == "Warning" ? "%UPDATE%"
-                : "%DELETE%ERROR%";
+            string where;
+            if (severity == "Critical")
+                where = "(Action LIKE '%DELETE%' OR Action LIKE '%ERROR%')";
+            else if (severity == "Warning")
+                where = "(Action LIKE '%CREATE%' OR Action LIKE '%UPDATE%') AND Action NOT LIKE '%DELETE%' AND Action NOT LIKE '%ERROR%'";
+            else
+                where = "Action NOT LIKE '%CREATE%' AND Action NOT LIKE '%UPDATE%' AND Action NOT LIKE '%DELETE%' AND Action NOT LIKE '%ERROR%'";
+
             object r = DBHelper.ExecuteScalar(
-                "SELECT COUNT(*) FROM AuditLog WHERE Action LIKE @Pattern AND CAST(OccurredAt AS DATE) = CAST(GETDATE() AS DATE)",
-                new SqlParameter("@Pattern", pattern));
+                $"SELECT COUNT(*) FROM AuditLog WHERE {where} AND CAST(OccurredAt AS DATE) = CAST(GETDATE() AS DATE)");
             return r != null ? Convert.ToInt32(r) : 0;
+        }
+
+        /// <summary>
+        /// Records something a user did, for the admin Activity Logs page: a sign-in, a
+        /// student finishing a chapter/quiz/lab/course, a lecturer authoring content.
+        /// <paramref name="details"/> is the readable line the page shows, so write it as
+        /// a sentence ("Completed chapter: Cross-Site Scripting").
+        ///
+        /// Logging must never break the action being logged, so failures are swallowed.
+        /// </summary>
+        public static void LogActivity(string userId, string action, string table,
+            string recordId, string details)
+        {
+            if (string.IsNullOrEmpty(userId)) return;
+
+            try
+            {
+                LogAudit(userId, action, table, recordId ?? "", "", details ?? "",
+                         CurrentIpAddress());
+            }
+            catch
+            {
+                // An unwritable audit row is not worth failing a student's submission over.
+            }
+        }
+
+        /// <summary>Caller's IP, or "" outside a request.</summary>
+        private static string CurrentIpAddress()
+        {
+            var ctx = System.Web.HttpContext.Current;
+            if (ctx == null) return "";
+            try { return ctx.Request.UserHostAddress ?? ""; }
+            catch { return ""; }
         }
 
         public static void LogAudit(string performedById, string action, string table,
@@ -362,74 +543,6 @@ namespace CSA.Services
             catch { return false; }
         }
 
-        // ========================================================================
-        // SECURITY ALERTS
-        // ========================================================================
-        public static DataTable GetAlerts(string keyword, string severity, string status)
-        {
-            return GetAlerts(keyword, severity, status, 0, 0, out _);
-        }
-
-        public static DataTable GetAlerts(string keyword, string severity, string status,
-            int page, int pageSize, out int total)
-        {
-            string where = @"WHERE (sa.AlertType LIKE @Keyword OR sa.Description LIKE @Keyword OR @Keyword = '')
-                  AND (@Severity = '' OR sa.Severity = @Severity)
-                  AND (@Status = '' OR sa.AlertStatus = @Status)";
-
-            string countSql = "SELECT COUNT(*) FROM SecurityAlerts sa " + where;
-            total = Convert.ToInt32(DBHelper.ExecuteScalar(countSql,
-                new SqlParameter("@Keyword", "%" + keyword + "%"),
-                new SqlParameter("@Severity", severity ?? ""),
-                new SqlParameter("@Status", status ?? "")));
-
-            int offset = Math.Max(0, (page - 1) * pageSize);
-
-            string sql = $@"
-                SELECT sa.AlertID, sa.AlertType, sa.Description, sa.Severity, sa.IPAddress,
-                       sa.AlertStatus, sa.DetectedAt,
-                       u.FullName AS AffectedUser, u.Email AS AffectedEmail,
-                       FORMAT(sa.DetectedAt, 'dd MMM yyyy HH:mm') AS DetectedDisplay
-                FROM SecurityAlerts sa
-                JOIN Users u ON sa.AffectedUserID = u.UserID
-                {where}
-                ORDER BY sa.DetectedAt DESC";
-
-            if (pageSize > 0)
-                sql += " OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
-
-            var pars = new System.Collections.Generic.List<SqlParameter>
-            {
-                new SqlParameter("@Keyword", "%" + keyword + "%"),
-                new SqlParameter("@Severity", severity ?? ""),
-                new SqlParameter("@Status", status ?? "")
-            };
-            if (pageSize > 0)
-            {
-                pars.Add(new SqlParameter("@Offset", offset));
-                pars.Add(new SqlParameter("@PageSize", pageSize));
-            }
-
-            return DBHelper.ExecuteQuery(sql, pars.ToArray());
-        }
-
-        public static void SetAlertStatus(int alertId, string status, string adminId)
-        {
-            DBHelper.ExecuteNonQuery(
-                "UPDATE SecurityAlerts SET AlertStatus = @Status, ReviewedByID = @AdminID, ReviewedAt = GETDATE() WHERE AlertID = @ID",
-                new SqlParameter("@ID", alertId),
-                new SqlParameter("@Status", status),
-                new SqlParameter("@AdminID", adminId));
-            LogAudit(adminId, $"ALERT_{status.ToUpper()}", "SecurityAlerts", alertId.ToString(), "", status);
-        }
-
-        public static DataTable GetAlertById(int alertId)
-        {
-            return DBHelper.ExecuteQuery(
-                "SELECT * FROM SecurityAlerts WHERE AlertID = @ID",
-                new SqlParameter("@ID", alertId));
-        }
-
         public static DataTable GetChartData()
         {
             return DBHelper.ExecuteQuery(@"
@@ -448,123 +561,22 @@ namespace CSA.Services
                 GROUP BY CASE WHEN IsPublished = 1 THEN 'Published' ELSE 'Draft' END");
         }
 
-        public static int GetResolvedTodayCount()
-        {
-            object r = DBHelper.ExecuteScalar(
-                "SELECT COUNT(*) FROM SecurityAlerts WHERE AlertStatus = 'Resolved' AND CAST(ReviewedAt AS DATE) = CAST(GETDATE() AS DATE)");
-            return r != null ? Convert.ToInt32(r) : 0;
-        }
-
-        // ========================================================================
-        // ERROR LOGS
-        // ========================================================================
-        public static DataTable GetErrorLogs(string keyword, string severity, string dateFrom, string dateTo, int page, int pageSize, out int total)
-        {
-            string where = "1=1";
-            if (!string.IsNullOrEmpty(keyword))
-                where += " AND (el.Message LIKE @Keyword OR el.ErrorType LIKE @Keyword OR el.PageURL LIKE @Keyword)";
-            if (!string.IsNullOrEmpty(severity))
-                where += " AND el.Severity = @Severity";
-            if (!string.IsNullOrEmpty(dateFrom))
-                where += " AND el.OccurredAt >= @DateFrom";
-            if (!string.IsNullOrEmpty(dateTo))
-                where += " AND el.OccurredAt < DATEADD(DAY, 1, @DateTo)";
-
-            string countSql = "SELECT COUNT(*) FROM ErrorLogs el WHERE " + where;
-            total = Convert.ToInt32(DBHelper.ExecuteScalar(countSql,
-                new SqlParameter("@Keyword", "%" + keyword + "%"),
-                new SqlParameter("@Severity", severity ?? ""),
-                new SqlParameter("@DateFrom", (object)dateFrom ?? DBNull.Value),
-                new SqlParameter("@DateTo", (object)dateTo ?? DBNull.Value)));
-
-            string sql = $@"
-                SELECT el.ErrorID, el.ErrorType, el.Message, el.PageURL, el.Severity, el.IsResolved, el.OccurredAt,
-                       u.FullName AS UserName,
-                       el.UserAgent,
-                       LEFT(el.Message, 200) AS MessagePreview
-                FROM ErrorLogs el
-                LEFT JOIN Users u ON el.UserID = u.UserID
-                WHERE {where}
-                ORDER BY el.OccurredAt DESC
-                OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
-
-            return DBHelper.ExecuteQuery(sql,
-                new SqlParameter("@Keyword", "%" + keyword + "%"),
-                new SqlParameter("@Severity", severity ?? ""),
-                new SqlParameter("@DateFrom", (object)dateFrom ?? DBNull.Value),
-                new SqlParameter("@DateTo", (object)dateTo ?? DBNull.Value),
-                new SqlParameter("@Offset", (page - 1) * pageSize),
-                new SqlParameter("@PageSize", pageSize));
-        }
-
-        public static int GetErrorLogCountBySeverity(string severity)
-        {
-            object r = DBHelper.ExecuteScalar(
-                "SELECT COUNT(*) FROM ErrorLogs WHERE Severity = @Sev AND CAST(OccurredAt AS DATE) = CAST(GETDATE() AS DATE)",
-                new SqlParameter("@Sev", severity));
-            return r != null ? Convert.ToInt32(r) : 0;
-        }
-
-        public static int GetErrorLogUnresolvedCount()
-        {
-            object r = DBHelper.ExecuteScalar("SELECT COUNT(*) FROM ErrorLogs WHERE IsResolved = 0");
-            return r != null ? Convert.ToInt32(r) : 0;
-        }
-
-        public static int GetAlertCountByStatus(string status)
-        {
-            object r = DBHelper.ExecuteScalar(
-                "SELECT COUNT(*) FROM SecurityAlerts WHERE AlertStatus = @Status",
-                new SqlParameter("@Status", status));
-            return r != null ? Convert.ToInt32(r) : 0;
-        }
-
-        public static int GetAlertCountBySeverity(string severity)
-        {
-            object r = DBHelper.ExecuteScalar(
-                "SELECT COUNT(*) FROM SecurityAlerts WHERE Severity = @Severity",
-                new SqlParameter("@Severity", severity));
-            return r != null ? Convert.ToInt32(r) : 0;
-        }
-
-        public static string ExportAlertsCsv(string keyword, string severity, string status)
-        {
-            DataTable dt = GetAlerts(keyword, severity, status);
-            var sb = new System.Text.StringBuilder();
-            sb.AppendLine("AlertID,AlertType,Severity,Status,AffectedUser,AffectedEmail,DetectedAt,Description");
-            foreach (DataRow row in dt.Rows)
-            {
-                sb.AppendLine($"{row["AlertID"]},\"{row["AlertType"]}\",\"{row["Severity"]}\",\"{row["AlertStatus"]}\",\"{row["AffectedUser"]}\",\"{row["AffectedEmail"]}\",{row["DetectedAt"]},\"{((string)row["Description"]).Replace("\"", "\"\"")}\"");
-            }
-            return sb.ToString();
-        }
-
-        public static void MarkErrorResolved(int errorId, string adminId)
-        {
-            DBHelper.ExecuteNonQuery(
-                "UPDATE ErrorLogs SET IsResolved = 1 WHERE ErrorID = @ID",
-                new SqlParameter("@ID", errorId));
-            LogAudit(adminId, "RESOLVE_ERROR", "ErrorLogs", errorId.ToString(), "", "");
-        }
-
         public static DataTable GetEmailsByAudience(string audience)
         {
-            string where = "";
-            if (audience == "Students")
-                where = "WHERE u.RoleID = (SELECT RoleID FROM Roles WHERE RoleName = 'Student')";
-            else if (audience == "Lecturers")
-                where = "WHERE u.RoleID = (SELECT RoleID FROM Roles WHERE RoleName = 'Lecturer')";
-            else if (audience == "Admins")
-                where = "WHERE u.RoleID = (SELECT RoleID FROM Roles WHERE RoleName = 'Admin')";
-            // "All" or unknown -> no where clause (all users)
+            // "All" (or anything unrecognised) means every active user.
+            string roleName = null;
+            if (audience == "Students") roleName = "Student";
+            else if (audience == "Lecturers") roleName = "Lecturer";
+            else if (audience == "Admins") roleName = "Admin";
 
-            return DBHelper.ExecuteQuery($@"
+            return DBHelper.ExecuteQuery(@"
                 SELECT DISTINCT u.Email
                 FROM Users u
                 JOIN Roles r ON u.RoleID = r.RoleID
-                {where}
-                AND u.IsActive = 1
-                AND u.Email IS NOT NULL AND u.Email <> ''");
+                WHERE (@Role IS NULL OR r.RoleName = @Role)
+                  AND u.IsActive = 1
+                  AND u.Email IS NOT NULL AND u.Email <> ''",
+                new SqlParameter("@Role", (object)roleName ?? DBNull.Value));
         }
 
         public static DataTable GetAllUsers()

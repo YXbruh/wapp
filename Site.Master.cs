@@ -46,6 +46,20 @@ namespace CSA
             }
         }
 
+        /// <summary>
+        /// CSRF hardening: tie the page's ViewState to the current session so a postback
+        /// whose ViewState/EventValidation was forged under a different session fails
+        /// validation. Only applied once the user is authenticated — an anonymous session
+        /// is empty and its SessionID is regenerated on every request, which would break
+        /// the login/register postbacks. Must be set during Init, before ViewState loads.
+        /// </summary>
+        protected override void OnInit(EventArgs e)
+        {
+            base.OnInit(e);
+            if (Session != null && Session["UserID"] != null)
+                Page.ViewStateUserKey = Session.SessionID;
+        }
+
         protected void Page_Load(
             object sender,
             EventArgs e)
