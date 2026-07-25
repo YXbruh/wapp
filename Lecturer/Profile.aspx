@@ -145,7 +145,7 @@
                 <div class="form-group">
                     <label class="form-label"><i class="ti ti-lock" aria-hidden="true"></i>Current Password</label>
                     <asp:TextBox ID="tbCurrentPwd" runat="server" CssClass="form-input"
-                        TextMode="Password" placeholder="••••••••" MaxLength="100" />
+                        TextMode="Password" placeholder="Password" MaxLength="100" />
                     <asp:RequiredFieldValidator ID="rfvCurrentPwd" runat="server"
                         ControlToValidate="tbCurrentPwd" ValidationGroup="PwdGroup"
                         Display="Dynamic" CssClass="val-error"
