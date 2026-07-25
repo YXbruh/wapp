@@ -1,4 +1,5 @@
 using System;
+using System.Data.SqlClient;
 using System.Web.UI;
 using System.Web.UI.WebControls;
 using CSA.Services;
@@ -88,21 +89,31 @@ namespace CSA.Admin
         {
             if (!Page.IsValid) return;
 
+            string editID = hfEditID.Value;
+            bool isEdit = !string.IsNullOrEmpty(editID) && editID != "0";
+            string name = tbName.Text.Trim();
+            string description = tbDescription.Text.Trim();
+
+            if (name.Length > 100)
+            { SetMessage("Category name cannot exceed 100 characters.", false); return; }
+            if (description.Length > 500)
+            { SetMessage("Description cannot exceed 500 characters.", false); return; }
+            if (CourseService.CategoryNameExists(name, isEdit ? editID : null))
+            { SetMessage("A category with that name already exists.", false); return; }
+
             try
             {
-                string editID = hfEditID.Value;
-                bool isEdit = !string.IsNullOrEmpty(editID) && editID != "0";
-
                 if (isEdit)
                 {
-                    CourseService.UpdateCategory(editID, tbName.Text.Trim(), tbDescription.Text.Trim());
-                    AdminService.LogAudit(Session["UserID"].ToString(), "UPDATE_CATEGORY", "Categories", editID, "", tbName.Text.Trim());
+                    CourseService.UpdateCategory(editID, name, description);
+                    AdminService.LogAudit(Session["UserID"].ToString(), "UPDATE_CATEGORY", "Categories", editID, "", name);
                     SetMessage("Category updated.", true);
                 }
                 else
                 {
-                    CourseService.CreateCategory(tbName.Text.Trim(), tbDescription.Text.Trim());
-                    AdminService.LogAudit(Session["UserID"].ToString(), "CREATE_CATEGORY", "Categories", "0", "", tbName.Text.Trim());
+                    // Log the generated id rather than a placeholder "0".
+                    string newId = CourseService.CreateCategory(name, description);
+                    AdminService.LogAudit(Session["UserID"].ToString(), "CREATE_CATEGORY", "Categories", newId, "", name);
                     SetMessage("Category created.", true);
                 }
 
@@ -113,9 +124,15 @@ namespace CSA.Admin
                 lbCancelEdit.Visible = false;
                 LoadCategories();
             }
-            catch (Exception ex)
+            catch (SqlException ex)
             {
-                SetMessage("Error: " + Server.HtmlEncode(ex.Message), false);
+                SetMessage(ex.Number == 2601 || ex.Number == 2627
+                    ? "A category with that name already exists."
+                    : "Could not save the category. Please try again.", false);
+            }
+            catch (Exception)
+            {
+                SetMessage("Could not save the category. Please try again.", false);
             }
         }
 
@@ -144,9 +161,9 @@ namespace CSA.Admin
                     SetMessage("Category deleted.", true);
                     LoadCategories();
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
-                    SetMessage("Error: " + Server.HtmlEncode(ex.Message), false);
+                    SetMessage("Cannot delete this category because courses are still assigned to it. Reassign those courses first.", false);
                 }
             }
         }

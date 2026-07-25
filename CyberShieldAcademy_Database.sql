@@ -25,7 +25,14 @@ CREATE TABLE Users (
     LastLoginDate  DATETIME      NULL,
     IsActive       BIT           NOT NULL DEFAULT 1,
     CreatedAt      DATETIME      NOT NULL DEFAULT GETDATE(),
-    CONSTRAINT FK_Users_Roles FOREIGN KEY (RoleID) REFERENCES Roles(RoleID)
+    CONSTRAINT FK_Users_Roles FOREIGN KEY (RoleID) REFERENCES Roles(RoleID),
+    -- Optional text columns must be NULL when unset, never ''. StudentID carries a
+    -- filtered unique index (below) and '' is a real value to that index, so a second
+    -- user saved with a blank Student ID would collide with the first and could not be
+    -- created or edited at all. These CHECKs stop an empty string ever being stored.
+    CONSTRAINT CK_Users_StudentID_NotBlank  CHECK (StudentID   IS NULL OR LEN(StudentID)   > 0),
+    CONSTRAINT CK_Users_Department_NotBlank CHECK (Department  IS NULL OR LEN(Department)  > 0),
+    CONSTRAINT CK_Users_Phone_NotBlank      CHECK (PhoneNumber IS NULL OR LEN(PhoneNumber) > 0)
 );
 GO
 
@@ -62,7 +69,10 @@ CREATE TABLE Courses (
     CreatedAt     DATETIME      NOT NULL DEFAULT GETDATE(),
     UpdatedAt     DATETIME      NOT NULL DEFAULT GETDATE(),
     CONSTRAINT FK_Courses_Category   FOREIGN KEY (CategoryID)   REFERENCES CourseCategories(CategoryID),
-    CONSTRAINT FK_Courses_Instructor FOREIGN KEY (InstructorID) REFERENCES Users(UserID)
+    CONSTRAINT FK_Courses_Instructor FOREIGN KEY (InstructorID) REFERENCES Users(UserID),
+    -- A course cannot run for a negative number of hours. Previously unchecked, so a
+    -- typo such as -5 was accepted straight into the table.
+    CONSTRAINT CK_Courses_Duration CHECK (DurationHours >= 0 AND DurationHours <= 1000)
 );
 GO
 
@@ -410,6 +420,77 @@ CREATE TABLE DatabaseBackups (
 );
 GO
 
+
+
+-- ============================================================
+-- 22. PERFORMANCE INDEXES
+--
+-- Primary keys are indexed automatically, but foreign-key columns are not. Without
+-- these every join and every "count the child rows" subquery on the dashboards
+-- (enrolments per course, attempts per quiz, progress per student) is a full table
+-- scan. Each index is guarded so this script stays re-runnable.
+-- ============================================================
+
+-- Enrolments: joined from almost every student and course screen.
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_Enrollments_StudentID')
+    CREATE NONCLUSTERED INDEX IX_Enrollments_StudentID ON Enrollments(StudentID) INCLUDE (CourseID, Progress, Status);
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_Enrollments_CourseID')
+    CREATE NONCLUSTERED INDEX IX_Enrollments_CourseID ON Enrollments(CourseID);
+GO
+
+-- Users: role filtering on the admin list, and the login lookup by email.
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_Users_RoleID')
+    CREATE NONCLUSTERED INDEX IX_Users_RoleID ON Users(RoleID);
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_Users_Email')
+    CREATE NONCLUSTERED INDEX IX_Users_Email ON Users(Email) INCLUDE (FullName, IsActive, PasswordHash);
+GO
+
+-- Courses: instructor/category joins and the published-course catalogue.
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_Courses_InstructorID')
+    CREATE NONCLUSTERED INDEX IX_Courses_InstructorID ON Courses(InstructorID);
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_Courses_CategoryID')
+    CREATE NONCLUSTERED INDEX IX_Courses_CategoryID ON Courses(CategoryID);
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_Courses_IsPublished')
+    CREATE NONCLUSTERED INDEX IX_Courses_IsPublished ON Courses(IsPublished) INCLUDE (CourseName, Level, CreatedAt);
+GO
+
+-- Chapters and chapter progress: drive the course progress calculation.
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_Chapters_CourseID')
+    CREATE NONCLUSTERED INDEX IX_Chapters_CourseID ON Chapters(CourseID) INCLUDE (IsPublished, SortOrder);
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_ChapterProgress_StudentID')
+    CREATE NONCLUSTERED INDEX IX_ChapterProgress_StudentID ON ChapterProgress(StudentID) INCLUDE (ChapterID, IsCompleted);
+GO
+
+-- Quizzes: question loading, attempt counting and the max-attempts check.
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_Quizzes_CourseID')
+    CREATE NONCLUSTERED INDEX IX_Quizzes_CourseID ON Quizzes(CourseID) INCLUDE (IsPublished);
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_QuizQuestions_QuizID')
+    CREATE NONCLUSTERED INDEX IX_QuizQuestions_QuizID ON QuizQuestions(QuizID) INCLUDE (SortOrder, Points);
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_QuizAttempts_Student_Quiz')
+    CREATE NONCLUSTERED INDEX IX_QuizAttempts_Student_Quiz ON QuizAttempts(StudentID, QuizID) INCLUDE (Score, IsPassed, AttemptedAt);
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_QuizAnswers_AttemptID')
+    CREATE NONCLUSTERED INDEX IX_QuizAnswers_AttemptID ON QuizAnswers(AttemptID);
+GO
+
+-- Labs: the lab list and the "has this student already passed?" check.
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_VirtualLabs_CourseID')
+    CREATE NONCLUSTERED INDEX IX_VirtualLabs_CourseID ON VirtualLabs(CourseID) INCLUDE (IsPublished);
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_LabSubmissions_Student_Lab')
+    CREATE NONCLUSTERED INDEX IX_LabSubmissions_Student_Lab ON LabSubmissions(StudentID, LabID) INCLUDE (IsCorrect, PointsEarned);
+GO
+
+-- Feedback, achievements, attachments and the audit trail.
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_Feedback_StudentID')
+    CREATE NONCLUSTERED INDEX IX_Feedback_StudentID ON Feedback(StudentID);
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_Feedback_CourseID')
+    CREATE NONCLUSTERED INDEX IX_Feedback_CourseID ON Feedback(CourseID);
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_UserAchievements_UserID')
+    CREATE NONCLUSTERED INDEX IX_UserAchievements_UserID ON UserAchievements(UserID);
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_Attachments_Parents')
+    CREATE NONCLUSTERED INDEX IX_Attachments_Parents ON Attachments(ChapterID, LabID, QuizID, QuestionID);
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_AuditLog_OccurredAt')
+    CREATE NONCLUSTERED INDEX IX_AuditLog_OccurredAt ON AuditLog(OccurredAt DESC) INCLUDE (PerformedByID, Action);
+GO
 
 
 PRINT '=== CyberShield Academy schema created successfully! ===';

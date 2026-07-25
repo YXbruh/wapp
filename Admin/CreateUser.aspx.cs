@@ -1,5 +1,6 @@
 using System;
 using System.Data;
+using System.Data.SqlClient;
 using System.Web.UI;
 using CSA.Services;
 
@@ -27,30 +28,58 @@ namespace CSA.Admin
         {
             if (!Page.IsValid) return;
 
+            string fullName = tbFullName.Text.Trim();
+            string email = tbEmail.Text.Trim();
+            string studentId = tbStudentID.Text.Trim();
+
+            // Check the rules up front so the user gets a plain message instead of a
+            // raw constraint violation surfacing from the INSERT.
+            if (!UserService.ValidateFields(fullName, email, tbPhone.Text,
+                    tbDepartment.Text, studentId, out string validationError))
+            { ShowError(validationError); return; }
+
+            if (UserService.EmailExists(email))
+            { ShowError("An account with that email already exists."); return; }
+
+            if (UserService.StudentIdExists(studentId))
+            { ShowError("That Student ID is already assigned to another user."); return; }
+
             try
             {
                 string userId = UserService.Create(
-                    tbFullName.Text.Trim(),
-                    tbEmail.Text.Trim(),
+                    fullName,
+                    email,
                     tbPassword.Text,
                     ddlRole.SelectedValue,
-                    tbStudentID.Text.Trim(),
+                    studentId,
                     tbPhone.Text.Trim(),
                     tbDepartment.Text.Trim());
 
+                // Record the id that was actually created; "0" made the audit trail
+                // impossible to trace back to a row.
                 AdminService.LogAudit(Session["UserID"].ToString(),
-                    "CREATE_USER", "Users", "0", "", tbFullName.Text.Trim());
+                    "CREATE_USER", "Users", userId, "", fullName);
 
                 pnlSuccess.Visible = true;
-                litSuccess.Text = $"User '{tbFullName.Text.Trim()}' created successfully. <a href='Users.aspx' style='color:var(--accent3)'>Back to Users</a>";
+                pnlError.Visible = false;
+                litSuccess.Text = $"User '{Server.HtmlEncode(fullName)}' created successfully. <a href='Users.aspx' style='color:var(--accent3)'>Back to Users</a>";
                 tbFullName.Text = tbEmail.Text = tbPassword.Text = tbStudentID.Text = tbPhone.Text = tbDepartment.Text = "";
             }
-            catch (Exception ex)
+            catch (SqlException ex)
             {
-                pnlError.Visible = true;
-                litError.Text = "Error creating user: " + Server.HtmlEncode(ex.Message);
-                pnlSuccess.Visible = false;
+                ShowError(UserService.DescribeSqlError(ex, "create the user"));
             }
+            catch (Exception)
+            {
+                ShowError("Could not create the user. Please try again or contact an administrator.");
+            }
+        }
+
+        private void ShowError(string message)
+        {
+            pnlError.Visible = true;
+            litError.Text = Server.HtmlEncode(message);
+            pnlSuccess.Visible = false;
         }
 
         protected void lbLogout_Click(object sender, EventArgs e)

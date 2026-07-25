@@ -1,13 +1,9 @@
-﻿using System;
 using System.Web.UI;
 
 namespace CSA
 {
+    /// <summary>Static marketing page; all content lives in the markup.</summary>
     public partial class About : Page
     {
-        protected void Page_Load(object sender, EventArgs e)
-        {
-
-        }
     }
 }

@@ -50,7 +50,6 @@ namespace CSA.Lecturer
                 litQuizAvg.Text = Math.Round(Convert.ToDecimal(m["QuizAvg"])) + "%";
                 litLabsDone.Text = m["LabsDone"].ToString();
                 litLabsTotal.Text = m["LabsTotal"].ToString();
-                litChallenges.Text = m["ChallengesDone"].ToString();
 
                 int labsDone = Convert.ToInt32(m["LabsDone"]);
                 litSandbox.Text = labsDone > 0 ? "Cleared ✓" : "Pending";

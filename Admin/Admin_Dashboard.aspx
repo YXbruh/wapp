@@ -74,7 +74,7 @@
                                 <span><%#: Eval("Value") %></span>
                             </div>
                             <div class="chart-bar-bg">
-                                <div class="chart-bar-fill" style="width:<%# Eval("Percent") %>%"></div>
+                                <div class="chart-bar-fill" style='<%# "width:" + Eval("Percent") + "%" %>'></div>
                             </div>
                         </div>
                     </ItemTemplate>
@@ -90,7 +90,7 @@
                                 <span><%#: Eval("Value") %></span>
                             </div>
                             <div class="chart-bar-bg">
-                                <div class="chart-bar-fill" style="width:<%# Eval("Percent") %>%"></div>
+                                <div class="chart-bar-fill" style='<%# "width:" + Eval("Percent") + "%" %>'></div>
                             </div>
                         </div>
                     </ItemTemplate>
@@ -106,7 +106,7 @@
                                 <span><%#: Eval("Value") %></span>
                             </div>
                             <div class="chart-bar-bg">
-                                <div class="chart-bar-fill" style="width:<%# Eval("Percent") %>%"></div>
+                                <div class="chart-bar-fill" style='<%# "width:" + Eval("Percent") + "%" %>'></div>
                             </div>
                         </div>
                     </ItemTemplate>

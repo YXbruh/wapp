@@ -34,39 +34,48 @@ namespace CSA.Admin
 
             if (!int.TryParse(tbDuration.Text, out int duration))
             {
-                pnlError.Visible = true;
-                litError.Text = "Duration must be a valid number.";
-                pnlSuccess.Visible = false;
+                ShowError("Duration must be a valid number.");
                 return;
             }
+
+            string name = tbName.Text.Trim();
+            if (!CourseService.ValidateCourse(name, tbDescription.Text, duration, out string validationError))
+            { ShowError(validationError); return; }
 
             try
             {
                 string courseId = CourseService.Create(
-                    tbName.Text.Trim(),
+                    name,
                     tbDescription.Text.Trim(),
                     ddlCategory.SelectedValue,
                     ddlInstructor.SelectedValue,
                     ddlLevel.SelectedValue,
                     duration);
 
+                // Log the real course id so the audit row points at an actual record.
                 AdminService.LogAudit(Session["UserID"].ToString(),
-                    "CREATE_COURSE", "Courses", "0", "", tbName.Text.Trim());
+                    "CREATE_COURSE", "Courses", courseId, "", name);
 
                 pnlSuccess.Visible = true;
-                litSuccess.Text = $"Course '{tbName.Text.Trim()}' created successfully. <a href='Courses.aspx' style='color:var(--accent3)'>Back to Courses</a>";
+                pnlError.Visible = false;
+                litSuccess.Text = $"Course '{Server.HtmlEncode(name)}' created successfully. <a href='Courses.aspx' style='color:var(--accent3)'>Back to Courses</a>";
                 tbName.Text = tbDescription.Text = "";
                 ddlCategory.SelectedIndex = 0;
                 ddlInstructor.SelectedIndex = 0;
                 ddlLevel.SelectedIndex = 0;
                 tbDuration.Text = "0";
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                pnlError.Visible = true;
-                litError.Text = "Error creating course: " + Server.HtmlEncode(ex.Message);
-                pnlSuccess.Visible = false;
+                ShowError("Could not create the course. Please try again or contact an administrator.");
             }
+        }
+
+        private void ShowError(string message)
+        {
+            pnlError.Visible = true;
+            litError.Text = Server.HtmlEncode(message);
+            pnlSuccess.Visible = false;
         }
 
         protected void lbLogout_Click(object sender, EventArgs e)

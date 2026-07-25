@@ -50,7 +50,7 @@
             <asp:HiddenField ID="hfNewQuizOpen" runat="server" Value="0" />
             <%-- Choosing a course reloads the chapter list, so the panel has to survive
                  that postback instead of snapping shut mid-entry. --%>
-            <div id="newQuizBody" style="<%= hfNewQuizOpen.Value == "1" ? "display:block" : "display:none" %>">
+            <div id="newQuizBody" style='<%= hfNewQuizOpen.Value == "1" ? "display:block" : "display:none" %>'>
                 <div class="newquiz-grid">
                     <div class="form-group" style="margin-bottom:0">
                         <label class="form-label"><i class="ti ti-books" aria-hidden="true"></i>Course</label>

@@ -7,6 +7,81 @@ namespace CSA.Services
 {
     public static class UserService
     {
+        // Column limits from the Users table, enforced before the INSERT/UPDATE so an
+        // over-long value returns a message instead of an unhandled truncation SqlException.
+        public const int MaxFullNameLength = 150;
+        public const int MaxEmailLength = 255;
+        public const int MaxPhoneLength = 50;
+        public const int MaxDepartmentLength = 100;
+        public const int MaxStudentIdLength = 20;
+
+        /// <summary>
+        /// Returns DBNull for blank text, otherwise the trimmed value.
+        ///
+        /// Optional columns must be stored as NULL, never as "". StudentID carries a
+        /// filtered unique index (WHERE StudentID IS NOT NULL), and an empty string is a
+        /// real value to that index - so a second user saved with a blank Student ID
+        /// collided with the first and could not be created or edited at all.
+        /// </summary>
+        private static object NullIfBlank(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? (object)DBNull.Value : value.Trim();
+        }
+
+        /// <summary>
+        /// Validates the shared user field rules. Returns false with a message when a
+        /// required field is missing or a value is longer than its column allows.
+        /// </summary>
+        public static bool ValidateFields(string fullName, string email, string phone,
+            string department, string studentId, out string errorMsg)
+        {
+            errorMsg = "";
+
+            if (string.IsNullOrWhiteSpace(fullName))
+            { errorMsg = "Full name is required."; return false; }
+            if (fullName.Trim().Length > MaxFullNameLength)
+            { errorMsg = $"Full name cannot exceed {MaxFullNameLength} characters."; return false; }
+
+            if (string.IsNullOrWhiteSpace(email))
+            { errorMsg = "Email is required."; return false; }
+            if (email.Trim().Length > MaxEmailLength)
+            { errorMsg = $"Email cannot exceed {MaxEmailLength} characters."; return false; }
+
+            if (phone != null && phone.Trim().Length > MaxPhoneLength)
+            { errorMsg = $"Phone number cannot exceed {MaxPhoneLength} characters."; return false; }
+
+            if (department != null && department.Trim().Length > MaxDepartmentLength)
+            { errorMsg = $"Department cannot exceed {MaxDepartmentLength} characters."; return false; }
+
+            if (studentId != null && studentId.Trim().Length > MaxStudentIdLength)
+            { errorMsg = $"Student ID cannot exceed {MaxStudentIdLength} characters."; return false; }
+
+            return true;
+        }
+
+        /// <summary>True when another account already uses this email.</summary>
+        public static bool EmailExists(string email, string excludeUserId = null)
+        {
+            object count = DBHelper.ExecuteScalar(
+                @"SELECT COUNT(*) FROM Users
+                  WHERE Email = @Email AND (@Exclude = '' OR UserID <> @Exclude)",
+                new SqlParameter("@Email", (email ?? "").Trim()),
+                new SqlParameter("@Exclude", excludeUserId ?? ""));
+            return count != null && Convert.ToInt32(count) > 0;
+        }
+
+        /// <summary>True when another account already uses this Student ID (blank is always free).</summary>
+        public static bool StudentIdExists(string studentId, string excludeUserId = null)
+        {
+            if (string.IsNullOrWhiteSpace(studentId)) return false;
+            object count = DBHelper.ExecuteScalar(
+                @"SELECT COUNT(*) FROM Users
+                  WHERE StudentID = @SID AND (@Exclude = '' OR UserID <> @Exclude)",
+                new SqlParameter("@SID", studentId.Trim()),
+                new SqlParameter("@Exclude", excludeUserId ?? ""));
+            return count != null && Convert.ToInt32(count) > 0;
+        }
+
         public static DataTable GetAllRoles()
         {
             return DBHelper.ExecuteQuery("SELECT RoleID, RoleName FROM Roles");
@@ -60,31 +135,63 @@ namespace CSA.Services
         // ----- REGISTER -----
         public static bool Register(string fullName, string email, string password, out string errorMsg)
         {
-            errorMsg = "";
-            object exists = DBHelper.ExecuteScalar(
-                "SELECT COUNT(*) FROM Users WHERE Email = @Email",
-                new SqlParameter("@Email", email));
-            if (exists != null && Convert.ToInt32(exists) > 0)
+            if (!ValidateFields(fullName, email, null, null, null, out errorMsg))
+                return false;
+
+            if (EmailExists(email))
             { errorMsg = "An account with that email already exists."; return false; }
 
-            string hash = PasswordHelper.Hash(password);
             string studentRoleId = GetRoleIdByName("Student");
             if (string.IsNullOrEmpty(studentRoleId))
             { errorMsg = "Student role is not configured. Contact an administrator."; return false; }
 
+            string hash = PasswordHelper.Hash(password);
+
             // UserID is a NOT NULL primary key with no default, so it must be supplied.
             string userId = IdGenerator.NewId("USR");
 
-            DBHelper.ExecuteNonQuery(
-                @"INSERT INTO Users (UserID, FullName, Email, PasswordHash, RoleID, IsActive, CreatedAt)
-                  VALUES (@UserID, @Name, @Email, @Hash, @RoleID, 1, GETDATE())",
-                new SqlParameter("@UserID", userId),
-                new SqlParameter("@Name", fullName),
-                new SqlParameter("@Email", email),
-                new SqlParameter("@Hash", hash),
-                new SqlParameter("@RoleID", studentRoleId));
+            try
+            {
+                DBHelper.ExecuteNonQuery(
+                    @"INSERT INTO Users (UserID, FullName, Email, PasswordHash, RoleID, IsActive, CreatedAt)
+                      VALUES (@UserID, @Name, @Email, @Hash, @RoleID, 1, GETDATE())",
+                    new SqlParameter("@UserID", userId),
+                    new SqlParameter("@Name", fullName.Trim()),
+                    new SqlParameter("@Email", email.Trim()),
+                    new SqlParameter("@Hash", hash),
+                    new SqlParameter("@RoleID", studentRoleId));
+            }
+            catch (SqlException ex)
+            {
+                // Never surface raw SQL text: it leaks the .mdf path and index names.
+                errorMsg = DescribeSqlError(ex, "create your account");
+                return false;
+            }
 
             return true;
+        }
+
+        /// <summary>
+        /// Turns a SqlException into a message that is safe to show a user.
+        /// 2601/2627 = unique index / unique constraint, 8152 = value too long for its column.
+        /// </summary>
+        internal static string DescribeSqlError(SqlException ex, string action)
+        {
+            switch (ex.Number)
+            {
+                case 2601:
+                case 2627:
+                    return ex.Message.IndexOf("StudentID", StringComparison.OrdinalIgnoreCase) >= 0
+                        ? "That Student ID is already assigned to another user."
+                        : "An account with that email already exists.";
+                case 8152:
+                case 2628:
+                    return "One of the values entered is too long for its field.";
+                case 547:
+                    return "That change conflicts with existing linked records.";
+                default:
+                    return $"Could not {action}. Please try again or contact an administrator.";
+            }
         }
 
         // ----- USER CRUD -----
@@ -159,9 +266,9 @@ namespace CSA.Services
                 new SqlParameter("@Email", email),
                 new SqlParameter("@Hash", hash),
                 new SqlParameter("@RoleID", roleId),
-                new SqlParameter("@StudentID", (object)studentId ?? DBNull.Value),
-                new SqlParameter("@Phone", (object)phone ?? DBNull.Value),
-                new SqlParameter("@Dept", (object)department ?? DBNull.Value));
+                new SqlParameter("@StudentID", NullIfBlank(studentId)),
+                new SqlParameter("@Phone", NullIfBlank(phone)),
+                new SqlParameter("@Dept", NullIfBlank(department)));
             return userId;
         }
 
@@ -176,9 +283,9 @@ namespace CSA.Services
                 new SqlParameter("@Email", email),
                 new SqlParameter("@RoleID", roleId),
                 new SqlParameter("@Active", isActive),
-                new SqlParameter("@Phone", (object)phone ?? DBNull.Value),
-                new SqlParameter("@Dept", (object)department ?? DBNull.Value),
-                new SqlParameter("@StudentID", (object)studentId ?? DBNull.Value),
+                new SqlParameter("@Phone", NullIfBlank(phone)),
+                new SqlParameter("@Dept", NullIfBlank(department)),
+                new SqlParameter("@StudentID", NullIfBlank(studentId)),
                 new SqlParameter("@ID", userId));
         }
 
@@ -227,9 +334,27 @@ namespace CSA.Services
             sb.AppendLine("UserID,FullName,Email,Role,IsActive,LastLogin,CreatedAt");
             foreach (DataRow row in dt.Rows)
             {
-                sb.AppendLine($"{row["UserID"]},\"{row["FullName"]}\",\"{row["Email"]}\",{row["Role"]},{row["IsActive"]},{row["LastLoginDate"]},{row["CreatedAt"]}");
+                sb.AppendLine(string.Join(",", new[]
+                {
+                    CsvField(row["UserID"]),   CsvField(row["FullName"]), CsvField(row["Email"]),
+                    CsvField(row["Role"]),     CsvField(row["IsActive"]),
+                    CsvField(row["LastLoginDate"]), CsvField(row["CreatedAt"])
+                }));
             }
             return sb.ToString();
+        }
+
+        /// <summary>
+        /// Quotes a value for CSV: doubles any embedded quote (a name containing " would
+        /// otherwise break the column layout) and prefixes a leading =, +, - or @ with a
+        /// single quote so spreadsheets treat it as text rather than a formula.
+        /// </summary>
+        internal static string CsvField(object value)
+        {
+            string text = value == null || value == DBNull.Value ? "" : value.ToString();
+            if (text.Length > 0 && "=+-@\t\r".IndexOf(text[0]) >= 0)
+                text = "'" + text;
+            return "\"" + text.Replace("\"", "\"\"") + "\"";
         }
     }
 }

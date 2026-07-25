@@ -52,16 +52,18 @@ namespace CSA.Admin
         {
             if (!int.TryParse(tbDuration.Text, out int duration))
             {
-                pnlError.Visible = true;
-                litError.Text = "Duration must be a valid number.";
-                pnlSuccess.Visible = false;
+                ShowError("Duration must be a valid number.");
                 return;
             }
+
+            string name = tbName.Text.Trim();
+            if (!CourseService.ValidateCourse(name, tbDescription.Text, duration, out string validationError))
+            { ShowError(validationError); return; }
 
             try
             {
                 CourseService.Update(_courseId,
-                    tbName.Text.Trim(),
+                    name,
                     tbDescription.Text.Trim(),
                     ddlCategory.SelectedValue,
                     ddlInstructor.SelectedValue,
@@ -69,18 +71,23 @@ namespace CSA.Admin
                     duration);
 
                 AdminService.LogAudit(Session["UserID"].ToString(),
-                    "UPDATE_COURSE", "Courses", "0", "", tbName.Text.Trim());
+                    "UPDATE_COURSE", "Courses", _courseId, "", name);
 
                 pnlSuccess.Visible = true;
                 litSuccess.Text = "Course updated successfully.";
                 pnlError.Visible = false;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                pnlError.Visible = true;
-                litError.Text = "Error: " + Server.HtmlEncode(ex.Message);
-                pnlSuccess.Visible = false;
+                ShowError("Could not update the course. Please try again or contact an administrator.");
             }
+        }
+
+        private void ShowError(string message)
+        {
+            pnlError.Visible = true;
+            litError.Text = Server.HtmlEncode(message);
+            pnlSuccess.Visible = false;
         }
 
         protected void lbLogout_Click(object sender, EventArgs e)

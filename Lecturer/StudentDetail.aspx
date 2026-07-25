@@ -100,11 +100,6 @@
                 <div class="metric-sub">out of <asp:Literal ID="litLabsTotal" runat="server" Text="0"/></div>
             </div>
             <div class="metric">
-                <div class="metric-label">Challenges Done</div>
-                <div class="metric-val"><asp:Literal ID="litChallenges" runat="server" Text="0"/></div>
-                <div class="metric-sub">completed</div>
-            </div>
-            <div class="metric">
                 <div class="metric-label">Sandbox Status</div>
                 <div class="metric-val" style="font-size:14px">
                     <asp:Literal ID="litSandbox" runat="server" Text="Pending"/>
@@ -129,7 +124,7 @@
                                     <tr>
                                         <td class="fw-bold" style="color:var(--text)"><%#: Eval("QuizName") %></td>
                                         <td>
-                                            <span style="font-weight:700;color:<%# GetScoreColor(Convert.ToInt32(Eval("Score"))) %>">
+                                            <span style='<%# "font-weight:700;color:" + GetScoreColor(Convert.ToInt32(Eval("Score"))) %>'>
                                                 <%# Eval("Score") %>%
                                             </span>
                                         </td>

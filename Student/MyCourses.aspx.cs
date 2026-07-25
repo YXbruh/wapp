@@ -259,12 +259,23 @@ namespace CSA.Student
 
                 using (SqlCommand cmd =
                        new SqlCommand(
+                    // The second EXISTS enforces at the data layer what the page guard
+                    // already enforces at the UI layer: only Student-role accounts can
+                    // hold an enrollment. Nothing in the schema prevented a lecturer row.
                     @"IF NOT EXISTS
                       (
                           SELECT 1
                           FROM Enrollments
                           WHERE StudentID = @StudentID
                             AND CourseID = @CourseID
+                      )
+                      AND EXISTS
+                      (
+                          SELECT 1
+                          FROM Users u
+                          INNER JOIN Roles r ON u.RoleID = r.RoleID
+                          WHERE u.UserID = @StudentID
+                            AND r.RoleName = 'Student'
                       )
                       BEGIN
                           INSERT INTO Enrollments

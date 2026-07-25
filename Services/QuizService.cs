@@ -163,15 +163,6 @@ namespace CSA.Services
                 new SqlParameter("@PassMark", passMark));
         }
 
-        /// <summary>Course a quiz belongs to, or "" if the quiz is unknown.</summary>
-        public static string GetCourseIdForQuiz(string quizId)
-        {
-            object courseId = DBHelper.ExecuteScalar(
-                "SELECT CourseID FROM Quizzes WHERE QuizID = @QuizID;",
-                new SqlParameter("@QuizID", quizId));
-            return courseId == null || courseId == DBNull.Value ? "" : courseId.ToString();
-        }
-
         /// <summary>
         /// Creates a new quiz and returns the generated QuizID.
         /// </summary>

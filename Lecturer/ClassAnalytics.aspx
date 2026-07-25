@@ -24,7 +24,7 @@
     <main class="dash-content">
         <div class="dash-header">
             <h2>Class Analytics</h2>
-            <p>Class-wide performance across quizzes, labs, and challenges.</p>
+            <p>Class-wide performance across quizzes and labs.</p>
         </div>
 
         <!-- Course filter -->
@@ -88,7 +88,6 @@
                             <th>Student</th>
                             <th>Quiz Avg</th>
                             <th>Labs Done</th>
-                            <th>Challenges</th>
                             <th>Sandbox</th>
                             <th>Last Active</th>
                             <th>Detail</th>
@@ -103,12 +102,11 @@
                                         <div class="text-small text-muted"><%#: Eval("Email") %></div>
                                     </td>
                                     <td>
-                                        <span style="font-weight:700;color:<%# GetScoreColor(Convert.ToInt32(Eval("QuizAvg"))) %>">
+                                        <span style='<%# "font-weight:700;color:" + GetScoreColor(Convert.ToInt32(Eval("QuizAvg"))) %>'>
                                             <%# Eval("QuizAvg") %>%
                                         </span>
                                     </td>
                                     <td class="text-muted"><%# Eval("LabsDone") %> / <%# Eval("LabsTotal") %></td>
-                                    <td class="text-muted"><%# Eval("ChallengesDone") %> / <%# Eval("ChallengesTotal") %></td>
                                     <td>
                                         <span class="badge <%# (bool)Eval("SandboxCleared") ? "badge-green":"badge-amber" %>">
                                             <i class="ti <%# (bool)Eval("SandboxCleared") ? "ti-circle-check":"ti-clock" %>"></i>
@@ -157,7 +155,7 @@
                                     <td class="fw-bold" style="color:var(--text)"><%#: Eval("QuizName") %></td>
                                     <td class="text-muted"><%#: Eval("AttemptCount") %></td>
                                     <td>
-                                        <span style="font-weight:700;color:<%# GetScoreColor(Convert.ToInt32(Eval("AvgScore"))) %>">
+                                        <span style='<%# "font-weight:700;color:" + GetScoreColor(Convert.ToInt32(Eval("AvgScore"))) %>'>
                                             <%# Eval("AvgScore") %>%
                                         </span>
                                     </td>
@@ -166,7 +164,7 @@
                                     <td>
                                         <div style="display:flex;align-items:center;gap:8px">
                                             <div class="progress-bar" style="width:80px;height:5px">
-                                                <div class="progress-fill" style="width:<%# Eval("PassRate") %>%"></div>
+                                                <div class="progress-fill" style='<%# "width:" + Eval("PassRate") + "%" %>'></div>
                                             </div>
                                             <span class="text-small text-muted"><%# Eval("PassRate") %>%</span>
                                         </div>

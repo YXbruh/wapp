@@ -977,6 +977,19 @@ namespace CSA.Student
 
             string strategy = Convert.ToString(question["MatchStrategy"]);
 
+            // A blank expected answer can never be satisfied. Without this guard
+            // "Contains" matched everything (IndexOf("") returns 0) and Regex matched
+            // every submission, so an unfinished question marked all students correct.
+            if (string.IsNullOrWhiteSpace(expected))
+            {
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(submitted))
+            {
+                return false;
+            }
+
             if (strategy == "Contains")
             {
                 return submitted.IndexOf(
@@ -988,12 +1001,19 @@ namespace CSA.Student
             {
                 try
                 {
+                    // The pattern is lecturer-authored free text. A timeout stops a
+                    // catastrophically backtracking pattern from pinning the worker thread.
                     return Regex.IsMatch(
                         submitted,
                         expected,
-                        RegexOptions.IgnoreCase);
+                        RegexOptions.IgnoreCase,
+                        TimeSpan.FromMilliseconds(250));
                 }
                 catch (ArgumentException)
+                {
+                    return false;
+                }
+                catch (RegexMatchTimeoutException)
                 {
                     return false;
                 }

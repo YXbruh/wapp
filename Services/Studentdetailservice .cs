@@ -55,8 +55,8 @@ namespace CSA.Services
         }
 
         /// <summary>
-        /// Headline metrics for the four metric cards.
-        /// Columns: QuizAvg, LabsDone, LabsTotal, ChallengesDone.
+        /// Headline metrics for the metric cards.
+        /// Columns: QuizAvg, LabsDone, LabsTotal.
         /// All scoped to this lecturer's courses.
         /// </summary>
         public static DataRow GetMetrics(string studentId, string instructorId)
@@ -90,14 +90,7 @@ namespace CSA.Services
                      INNER JOIN Enrollments e
                          ON e.CourseID = vl.CourseID AND e.StudentID = @StudentID
                      WHERE  vl.IsPublished = 1
-                       AND  vl.CreatedByID = @InstructorID) AS LabsTotal,
-
-                    -- challenge attempts made (any submission) in this lecturer's labs
-                    (SELECT COUNT(DISTINCT ls.LabID)
-                     FROM   LabSubmissions ls
-                     INNER JOIN VirtualLabs vl ON ls.LabID = vl.LabID
-                     WHERE  ls.StudentID = @StudentID
-                       AND  vl.CreatedByID = @InstructorID) AS ChallengesDone;",
+                       AND  vl.CreatedByID = @InstructorID) AS LabsTotal;",
                 new SqlParameter("@StudentID", studentId),
                 new SqlParameter("@InstructorID", instructorId));
 

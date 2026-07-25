@@ -392,15 +392,20 @@ namespace CSA.Services
         public static void CreateAnnouncement(string title, string body, string audience,
             string priority, string adminId)
         {
-            DBHelper.ExecuteNonQuery(
+            // AnnouncementID is IDENTITY, so read it back with SCOPE_IDENTITY() and audit
+            // the real key instead of a placeholder "0".
+            object newId = DBHelper.ExecuteScalar(
                 @"INSERT INTO Announcements (Title, Body, PublishedByID, IsActive, PublishedAt, Audience, Priority)
-                  VALUES (@Title, @Body, @AdminID, 1, GETDATE(), @Audience, @Priority)",
+                  VALUES (@Title, @Body, @AdminID, 1, GETDATE(), @Audience, @Priority);
+                  SELECT CAST(SCOPE_IDENTITY() AS INT);",
                 new SqlParameter("@Title", title),
                 new SqlParameter("@Body", body),
                 new SqlParameter("@AdminID", adminId),
                 new SqlParameter("@Audience", audience ?? "All"),
                 new SqlParameter("@Priority", priority ?? "Normal"));
-            LogAudit(adminId, "CREATE_ANNOUNCEMENT", "Announcements", "0", "", title);
+
+            string recordId = newId == null || newId == DBNull.Value ? "" : newId.ToString();
+            LogAudit(adminId, "CREATE_ANNOUNCEMENT", "Announcements", recordId, "", title);
         }
 
         public static void UpdateAnnouncement(int id, string title, string body,
@@ -604,16 +609,18 @@ namespace CSA.Services
                     new SqlParameter("@Label", string.IsNullOrEmpty(label) ? "Manual backup" : label));
 
                 var fi = new System.IO.FileInfo(filePath);
-                DBHelper.ExecuteNonQuery(
+                object backupId = DBHelper.ExecuteScalar(
                     @"INSERT INTO DatabaseBackups (BackupLabel, BackupType, FilePath, FileSize, Status, CreatedByID, CreatedAt)
-                      VALUES (@Label, @Type, @Path, @Size, 'Success', @UserID, GETDATE())",
+                      VALUES (@Label, @Type, @Path, @Size, 'Success', @UserID, GETDATE());
+                      SELECT CAST(SCOPE_IDENTITY() AS INT);",
                     new SqlParameter("@Label", string.IsNullOrEmpty(label) ? "Manual backup" : label),
                     new SqlParameter("@Type", type),
                     new SqlParameter("@Path", filePath),
                     new SqlParameter("@Size", fi.Length),
                     new SqlParameter("@UserID", adminId));
 
-                LogAudit(adminId, "CREATE_BACKUP", "DatabaseBackups", "0", "", filePath);
+                string backupRecordId = backupId == null || backupId == DBNull.Value ? "" : backupId.ToString();
+                LogAudit(adminId, "CREATE_BACKUP", "DatabaseBackups", backupRecordId, "", filePath);
                 return true;
             }
             catch (Exception ex)

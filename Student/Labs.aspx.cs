@@ -418,21 +418,29 @@ namespace CSA.Student
                 {
                     try
                     {
+                        // Points are only granted the first time a lab is passed, so the
+                        // submission row must record what was actually awarded. Storing the
+                        // full reward on every repeat pass made SUM(PointsEarned) disagree
+                        // with Users.TotalPoints and overstated progress reports.
+                        int pointsAwarded =
+                            isCorrect && !alreadyPassed
+                                ? pointsReward
+                                : 0;
+
                         InsertSubmission(
                             con,
                             transaction,
                             submissionId,
                             submittedCommand,
                             isCorrect,
-                            pointsReward);
+                            pointsAwarded);
 
-                        if (isCorrect &&
-                            !alreadyPassed)
+                        if (pointsAwarded > 0)
                         {
                             AwardPoints(
                                 con,
                                 transaction,
-                                pointsReward);
+                                pointsAwarded);
                         }
 
                         AddActivity(
@@ -594,7 +602,7 @@ namespace CSA.Student
             string submissionId,
             string submittedCommand,
             bool isCorrect,
-            int pointsReward)
+            int pointsAwarded)
         {
             using (SqlCommand cmd =
                    new SqlCommand(
@@ -675,10 +683,7 @@ namespace CSA.Student
                 cmd.Parameters.Add(
                     "@PointsEarned",
                     SqlDbType.Int
-                ).Value =
-                    isCorrect
-                        ? pointsReward
-                        : 0;
+                ).Value = pointsAwarded;
 
                 cmd.ExecuteNonQuery();
             }

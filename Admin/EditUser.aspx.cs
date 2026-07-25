@@ -1,5 +1,6 @@
 using System;
 using System.Data;
+using System.Data.SqlClient;
 using System.Web.UI;
 using CSA.Services;
 
@@ -65,16 +66,31 @@ namespace CSA.Admin
         {
             if (!Page.IsValid) return;
 
+            string fullName = tbFullName.Text.Trim();
+            string email = tbEmail.Text.Trim();
+            string studentId = tbStudentID.Text.Trim();
+
+            if (!UserService.ValidateFields(fullName, email, tbPhone.Text,
+                    tbDepartment.Text, studentId, out string validationError))
+            { ShowError(validationError); return; }
+
+            // Exclude this user so saving the form unchanged is not treated as a clash.
+            if (UserService.EmailExists(email, _userId))
+            { ShowError("Another account already uses that email."); return; }
+
+            if (UserService.StudentIdExists(studentId, _userId))
+            { ShowError("That Student ID is already assigned to another user."); return; }
+
             try
             {
                 UserService.Update(_userId,
-                    tbFullName.Text.Trim(),
-                    tbEmail.Text.Trim(),
+                    fullName,
+                    email,
                     ddlRole.SelectedValue,
                     cbActive.Checked,
                     tbPhone.Text.Trim(),
                     tbDepartment.Text.Trim(),
-                    tbStudentID.Text.Trim());
+                    studentId);
 
                 string pw = tbNewPassword.Text.Trim();
                 bool pwReset = false;
@@ -83,14 +99,15 @@ namespace CSA.Admin
                 {
                     UserService.UpdatePassword(_userId, pw);
                     AdminService.LogAudit(Session["UserID"].ToString(),
-                        "RESET_PASSWORD", "Users", "0", "", "Password reset by admin");
+                        "RESET_PASSWORD", "Users", _userId, "", "Password reset by admin");
                     pwReset = true;
-                    pwEmailed = SendNewPasswordEmail(tbEmail.Text.Trim(), tbFullName.Text.Trim(), pw);
+                    pwEmailed = SendNewPasswordEmail(email, fullName, pw);
                 }
 
                 AdminService.LogAudit(Session["UserID"].ToString(),
-                    "UPDATE_USER", "Users", "0", "", tbFullName.Text.Trim());
+                    "UPDATE_USER", "Users", _userId, "", fullName);
 
+                pnlError.Visible = false;
                 pnlSuccess.Visible = true;
                 if (pwReset)
                     litSuccess.Text = pwEmailed
@@ -100,12 +117,21 @@ namespace CSA.Admin
                     litSuccess.Text = "User updated successfully.";
                 litGeneratedPw.Text = "";
             }
-            catch (Exception ex)
+            catch (SqlException ex)
             {
-                pnlError.Visible = true;
-                litError.Text = "Error updating user: " + Server.HtmlEncode(ex.Message);
-                pnlSuccess.Visible = false;
+                ShowError(UserService.DescribeSqlError(ex, "update the user"));
             }
+            catch (Exception)
+            {
+                ShowError("Could not update the user. Please try again or contact an administrator.");
+            }
+        }
+
+        private void ShowError(string message)
+        {
+            pnlError.Visible = true;
+            litError.Text = Server.HtmlEncode(message);
+            pnlSuccess.Visible = false;
         }
 
         // Sends the newly reset password to the user, using the same SMTP setup and

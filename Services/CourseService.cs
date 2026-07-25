@@ -173,6 +173,46 @@ namespace CSA.Services
             return DBHelper.ExecuteQuery(sql, pars.ToArray());
         }
 
+        /// <summary>True when another category already uses this name (CategoryName is UNIQUE).</summary>
+        public static bool CategoryNameExists(string name, string excludeCategoryId = null)
+        {
+            object count = DBHelper.ExecuteScalar(
+                @"SELECT COUNT(*) FROM CourseCategories
+                  WHERE CategoryName = @Name AND (@Exclude = '' OR CategoryID <> @Exclude)",
+                new SqlParameter("@Name", (name ?? "").Trim()),
+                new SqlParameter("@Exclude", excludeCategoryId ?? ""));
+            return count != null && Convert.ToInt32(count) > 0;
+        }
+
+        // Courses table limits, checked before the INSERT/UPDATE so an over-long value
+        // returns a message rather than an unhandled truncation SqlException.
+        public const int MaxCourseNameLength = 200;
+        public const int MaxCourseDescriptionLength = 2000;
+        public const int MaxDurationHours = 1000;
+
+        /// <summary>Shared validation for the create and edit course forms.</summary>
+        public static bool ValidateCourse(string name, string description, int durationHours,
+            out string errorMsg)
+        {
+            errorMsg = "";
+
+            if (string.IsNullOrWhiteSpace(name))
+            { errorMsg = "Course name is required."; return false; }
+            if (name.Trim().Length > MaxCourseNameLength)
+            { errorMsg = $"Course name cannot exceed {MaxCourseNameLength} characters."; return false; }
+            if (description != null && description.Trim().Length > MaxCourseDescriptionLength)
+            { errorMsg = $"Description cannot exceed {MaxCourseDescriptionLength} characters."; return false; }
+
+            // A course cannot run for a negative number of hours; this was previously
+            // unchecked and -5 was accepted straight into the database.
+            if (durationHours < 0)
+            { errorMsg = "Duration cannot be negative."; return false; }
+            if (durationHours > MaxDurationHours)
+            { errorMsg = $"Duration cannot exceed {MaxDurationHours} hours."; return false; }
+
+            return true;
+        }
+
         public static string CreateCategory(string name, string description)
         {
             string id = IdGenerator.NewId("CAT");
@@ -228,7 +268,13 @@ namespace CSA.Services
             sb.AppendLine("CourseID,CourseName,Level,Instructor,Category,EnrolledCount,Status,CreatedAt");
             foreach (DataRow row in dt.Rows)
             {
-                sb.AppendLine($"{row["CourseID"]},\"{row["CourseName"]}\",\"{row["Level"]}\",\"{row["InstructorName"]}\",\"{row["Category"]}\",{row["EnrolledCount"]},{row["Status"]},{row["CreatedAt"]}");
+                sb.AppendLine(string.Join(",", new[]
+                {
+                    UserService.CsvField(row["CourseID"]),   UserService.CsvField(row["CourseName"]),
+                    UserService.CsvField(row["Level"]),      UserService.CsvField(row["InstructorName"]),
+                    UserService.CsvField(row["Category"]),   UserService.CsvField(row["EnrolledCount"]),
+                    UserService.CsvField(row["Status"]),     UserService.CsvField(row["CreatedAt"])
+                }));
             }
             return sb.ToString();
         }

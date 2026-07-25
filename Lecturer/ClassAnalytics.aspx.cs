@@ -23,12 +23,6 @@ namespace CSA.Lecturer
                     LoadData(instructorId, null, null);
                 }
             }
-            else
-            {
-                litTotal.Text = "0";
-                litAvgQuiz.Text = "0";
-
-            }
         }
 
         private string GetConnectionString()
@@ -38,11 +32,8 @@ namespace CSA.Lecturer
 
         private void LoadCourseDropdown(string instructorId)
         {
-            //string userId = Session["UserID"].ToString();                                              //Bypass login for testing
             ddlCourse.Items.Clear();
             ddlCourse.Items.Add(new System.Web.UI.WebControls.ListItem("All Courses", ""));
-            // TODO: foreach (var c in CourseService.GetByInstructor(userId))
-            //           ddlCourse.Items.Add(new ListItem(c.CourseName, c.CourseID.ToString()));
 
             string query = "SELECT CourseID, CourseName FROM Courses WHERE InstructorID = @InstructorID AND IsPublished = 1 ORDER BY CourseName";
             using (SqlConnection conn = new SqlConnection(GetConnectionString()))
@@ -276,8 +267,6 @@ namespace CSA.Lecturer
                         ISNULL(sq.QuizAvg, 0) AS QuizAvg,
                         ISNULL(sl.PassedLabs, 0) AS LabsDone,
                         ISNULL(sl.TotalLabs, 0) AS LabsTotal,
-                        0 AS ChallengesDone,      -- not implemented yet
-                        0 AS ChallengesTotal,
                         CASE WHEN ISNULL(sl.PassedLabs, 0) > 0 THEN 1 ELSE 0 END AS SandboxCleared,
                         ISNULL(u.LastLoginDate, u.CreatedAt) AS LastActive
                     FROM Users u
@@ -302,8 +291,6 @@ namespace CSA.Lecturer
                     QuizAvg = Convert.ToInt32(Math.Round(Convert.ToDecimal(reader["QuizAvg"]), 0)),
                     LabsDone = Convert.ToInt32(reader["LabsDone"]),
                     LabsTotal = Convert.ToInt32(reader["LabsTotal"]),
-                    ChallengesDone = 0,
-                    ChallengesTotal = 0,
                     SandboxCleared = Convert.ToBoolean(reader["SandboxCleared"]),
                     LastActive = Convert.ToDateTime(reader["LastActive"])
                 });
@@ -401,8 +388,6 @@ namespace CSA.Lecturer
             public int QuizAvg { get; set; }
             public int LabsDone { get; set; }
             public int LabsTotal { get; set; }
-            public int ChallengesDone { get; set; }
-            public int ChallengesTotal { get; set; }
             public bool SandboxCleared { get; set; }
             public DateTime LastActive { get; set; }
 

@@ -63,7 +63,6 @@ namespace CSA.Services
         public static DataTable GetByChapter(string chapterId) => GetByParent("ChapterID", chapterId);
         public static DataTable GetByLab(string labId) => GetByParent("LabID", labId);
         public static DataTable GetByQuiz(string quizId) => GetByParent("QuizID", quizId);
-        public static DataTable GetByQuestion(string questionId) => GetByParent("QuestionID", questionId);
 
         /// <summary>Maps an entity type ("Chapter"/"Lab"/"Quiz"/"Question") to its column.</summary>
         private static string ParentColumn(string entityType)
@@ -73,7 +72,12 @@ namespace CSA.Services
                 case "Chapter":  return "ChapterID";
                 case "Lab":      return "LabID";
                 case "Question": return "QuestionID";
-                default:         return "QuizID";
+                case "Quiz":     return "QuizID";
+                // Falling through to QuizID filed the row under the wrong parent silently.
+                // The column name is concatenated into SQL, so an unknown value must stop here.
+                default:
+                    throw new ArgumentException(
+                        $"Unknown attachment parent type '{entityType}'.", nameof(entityType));
             }
         }
 

@@ -73,7 +73,7 @@
                                 <span style="color:var(--accent2);font-weight:700"><%# Eval("CompletionPct") %>%</span>
                             </div>
                             <div class="progress-bar" style="height:6px">
-                                <div class="progress-fill" style="width:<%# Eval("CompletionPct") %>%"></div>
+                                <div class="progress-fill" style='<%# "width:" + Eval("CompletionPct") + "%" %>'></div>
                             </div>
                             <div style="font-size:11px;color:var(--text3);margin-top:3px">
                                 <%# Eval("CompletedCount") %> / <%# Eval("TotalStudents") %> students completed
@@ -97,13 +97,13 @@
                         <div style="margin-bottom:14px">
                             <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px">
                                 <span style="font-weight:600;color:var(--text)"><%#: Eval("QuizName") %></span>
-                                <span style="font-weight:700;color:<%# GetScoreColor(Convert.ToInt32(Eval("AvgScore"))) %>">
+                                <span style='<%# "font-weight:700;color:" + GetScoreColor(Convert.ToInt32(Eval("AvgScore"))) %>'>
                                     <%# Eval("AvgScore") %>%
                                 </span>
                             </div>
                             <div class="progress-bar" style="height:6px">
                                 <div class="progress-fill"
-                                     style="width:<%# Eval("AvgScore") %>%;background:<%# GetScoreColor(Convert.ToInt32(Eval("AvgScore"))) %>">
+                                     style='<%# "width:" + Eval("AvgScore") + "%;background:" + GetScoreColor(Convert.ToInt32(Eval("AvgScore"))) %>'>
                                 </div>
                             </div>
                             <div style="font-size:11px;color:var(--text3);margin-top:3px">
@@ -132,7 +132,7 @@
                             <th scope="col">Course</th>
                             <th scope="col">Type</th>
                             <th scope="col">Status</th>
-                            <th scope="col">Students Viewed</th>
+                            <th scope="col">Students Attempt</th>
                             <th scope="col">Last Updated</th>
                             <th scope="col">Actions</th>
                         </tr>

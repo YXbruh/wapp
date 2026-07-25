@@ -26,14 +26,18 @@ namespace CSA.Student
             }
         }
 
+        // Request.QueryString[...] is typed string, so Convert.ToString(string) was
+        // chosen by the compiler - and that overload returns null (not "") for a missing
+        // key. The trailing .Trim() then threw, so opening this page without a complete
+        // query string produced an unhandled NullReferenceException instead of the
+        // "invalid item" message below.
         private string FeedbackType
         {
             get
             {
-                return Convert.ToString(
-                    Request.QueryString["type"])
+                return (Request.QueryString["type"] ?? string.Empty)
                     .Trim()
-                    .ToLower();
+                    .ToLowerInvariant();
             }
         }
 
@@ -41,9 +45,7 @@ namespace CSA.Student
         {
             get
             {
-                return Convert.ToString(
-                    Request.QueryString["id"])
-                    .Trim();
+                return (Request.QueryString["id"] ?? string.Empty).Trim();
             }
         }
 
