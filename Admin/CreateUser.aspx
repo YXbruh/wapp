@@ -64,6 +64,10 @@
                 <asp:RequiredFieldValidator ID="rfvPassword" runat="server" ControlToValidate="tbPassword"
                     ValidationGroup="CreateUser" Display="Dynamic" CssClass="val-error"
                     Text="<i class='ti ti-alert-circle'></i> Required." />
+                <asp:RegularExpressionValidator ID="revPassword" runat="server" ControlToValidate="tbPassword"
+                    ValidationGroup="CreateUser" Display="Dynamic" CssClass="val-error"
+                    ValidationExpression="^(?=.*[A-Z])(?=.*\d).{8,}$"
+                    Text="<i class='ti ti-alert-circle'></i> Min 8 chars, 1 uppercase, 1 number." />
             </div>
             <div class="form-group">
                 <label class="form-label">Role</label>

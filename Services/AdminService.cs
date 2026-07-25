@@ -446,20 +446,26 @@ namespace CSA.Services
                     sevWhere = " AND al.Action NOT LIKE '%CREATE%' AND al.Action NOT LIKE '%UPDATE%' AND al.Action NOT LIKE '%DELETE%' AND al.Action NOT LIKE '%ERROR%'";
             }
 
+            // Parse the date filters here rather than handing raw text to a datetime
+            // parameter: an unparseable value (e.g. "notadate") otherwise threw a
+            // conversion SqlException and bounced the admin to the error page.
+            bool hasFrom = DateTime.TryParse(dateFrom, out DateTime fromDate);
+            bool hasTo = DateTime.TryParse(dateTo, out DateTime toDate);
+
             string where = "1=1";
             if (!string.IsNullOrEmpty(keyword))
                 where += " AND (al.Action LIKE @Keyword OR al.AfterValue LIKE @Keyword OR al.IPAddress LIKE @Keyword OR u.FullName LIKE @Keyword)";
             where += sevWhere;
-            if (!string.IsNullOrEmpty(dateFrom))
+            if (hasFrom)
                 where += " AND al.OccurredAt >= @DateFrom";
-            if (!string.IsNullOrEmpty(dateTo))
+            if (hasTo)
                 where += " AND al.OccurredAt < DATEADD(DAY, 1, @DateTo)";
 
             string countSql = "SELECT COUNT(*) FROM AuditLog al JOIN Users u ON al.PerformedByID = u.UserID WHERE " + where;
             total = Convert.ToInt32(DBHelper.ExecuteScalar(countSql,
                 new SqlParameter("@Keyword", "%" + keyword + "%"),
-                new SqlParameter("@DateFrom", (object)dateFrom ?? DBNull.Value),
-                new SqlParameter("@DateTo", (object)dateTo ?? DBNull.Value)));
+                new SqlParameter("@DateFrom", hasFrom ? (object)fromDate : DBNull.Value),
+                new SqlParameter("@DateTo", hasTo ? (object)toDate : DBNull.Value)));
 
             string severityExpr = "CASE WHEN al.Action LIKE '%DELETE%' OR al.Action LIKE '%ERROR%' THEN 'Critical' WHEN al.Action LIKE '%UPDATE%' OR al.Action LIKE '%CREATE%' THEN 'Warning' ELSE 'Info' END";
 
@@ -476,8 +482,8 @@ namespace CSA.Services
 
             return DBHelper.ExecuteQuery(sql,
                 new SqlParameter("@Keyword", "%" + keyword + "%"),
-                new SqlParameter("@DateFrom", (object)dateFrom ?? DBNull.Value),
-                new SqlParameter("@DateTo", (object)dateTo ?? DBNull.Value),
+                new SqlParameter("@DateFrom", hasFrom ? (object)fromDate : DBNull.Value),
+                new SqlParameter("@DateTo", hasTo ? (object)toDate : DBNull.Value),
                 new SqlParameter("@Offset", (page - 1) * pageSize),
                 new SqlParameter("@PageSize", pageSize));
         }

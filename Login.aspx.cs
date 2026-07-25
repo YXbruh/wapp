@@ -33,7 +33,10 @@ namespace CSA
             if (!Page.IsValid) return;
 
             string email = tbEmail.Text.Trim().ToLower();
-            string password = tbPassword.Text.Trim();
+            // Passwords are stored exactly as typed (Register/CreateUser do not trim), so
+            // login must not trim either — otherwise a password with leading/trailing
+            // spaces could be registered but never matched, locking the account out.
+            string password = tbPassword.Text;
 
             bool ok = UserService.Authenticate(email, password,
                 out string role, out string userId, out string fullName, out string errorMsg);

@@ -92,10 +92,12 @@ namespace CSA.Admin
                     tbDepartment.Text.Trim(),
                     studentId);
 
-                string pw = tbNewPassword.Text.Trim();
+                // A blank box means "don't change the password"; but when one is set,
+                // store it exactly as typed so it matches at login (which does not trim).
+                string pw = tbNewPassword.Text;
                 bool pwReset = false;
                 bool pwEmailed = false;
-                if (!string.IsNullOrEmpty(pw))
+                if (!string.IsNullOrWhiteSpace(pw))
                 {
                     UserService.UpdatePassword(_userId, pw);
                     AdminService.LogAudit(Session["UserID"].ToString(),
