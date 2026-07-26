@@ -26,7 +26,7 @@
     <main class="dash-content">
         <div class="dash-header">
             <h2>Announcements</h2>
-            <p>Broadcast messages to all students and instructors.</p>
+            <p>Broadcast messages to all students and lecturers.</p>
         </div>
 
         <asp:Panel ID="pnlSuccess" runat="server" Visible="false">
@@ -209,7 +209,7 @@
                                                 </asp:LinkButton>
                                                 <asp:LinkButton runat="server" CssClass="btn-danger"
                                                     CommandName="Delete" CommandArgument='<%# Eval("AnnouncementID") %>'
-                                                    OnClientClick="return showDeleteConfirm(this);">
+                                                    OnClientClick="return showDeleteConfirm(this, 'Delete this announcement? This cannot be undone.');">
                                                     <i class="ti ti-trash"></i>
                                                 </asp:LinkButton>
                                             </div>

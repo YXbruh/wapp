@@ -41,11 +41,11 @@ namespace CSA.Admin
             if (row["CategoryID"] != DBNull.Value)
                 ddlCategory.SelectedValue = row["CategoryID"].ToString();
 
-            ddlInstructor.DataSource = CourseService.GetInstructors();
-            ddlInstructor.DataTextField = "FullName";
-            ddlInstructor.DataValueField = "UserID";
-            ddlInstructor.DataBind();
-            ddlInstructor.SelectedValue = row["InstructorID"].ToString();
+            ddlLecturer.DataSource = CourseService.GetLecturers();
+            ddlLecturer.DataTextField = "FullName";
+            ddlLecturer.DataValueField = "UserID";
+            ddlLecturer.DataBind();
+            ddlLecturer.SelectedValue = row["LecturerID"].ToString();
         }
 
         protected void btnSave_Click(object sender, EventArgs e)
@@ -66,7 +66,7 @@ namespace CSA.Admin
                     name,
                     tbDescription.Text.Trim(),
                     ddlCategory.SelectedValue,
-                    ddlInstructor.SelectedValue,
+                    ddlLecturer.SelectedValue,
                     ddlLevel.SelectedValue,
                     duration);
 

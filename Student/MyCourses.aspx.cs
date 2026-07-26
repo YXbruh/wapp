@@ -83,7 +83,7 @@ namespace CSA.Student
                         c.Description,
                         c.Level,
                         c.DurationHours,
-                        u.FullName AS InstructorName,
+                        u.FullName AS LecturerName,
                         e.Progress,
                         e.Status,
                         (
@@ -102,7 +102,7 @@ namespace CSA.Student
                     INNER JOIN Courses c
                         ON c.CourseID = e.CourseID
                     INNER JOIN Users u
-                        ON u.UserID = c.InstructorID
+                        ON u.UserID = c.LecturerID
                     WHERE e.StudentID = @StudentID
                     ORDER BY e.EnrolledAt DESC"
 
@@ -112,7 +112,7 @@ namespace CSA.Student
                         c.Description,
                         c.Level,
                         c.DurationHours,
-                        u.FullName AS InstructorName,
+                        u.FullName AS LecturerName,
                         CAST(0 AS DECIMAL(5,2)) AS Progress,
                         'Not Started' AS Status,
                         (
@@ -129,7 +129,7 @@ namespace CSA.Student
                         ) AS LabCount
                     FROM Courses c
                     INNER JOIN Users u
-                        ON u.UserID = c.InstructorID
+                        ON u.UserID = c.LecturerID
                     WHERE c.IsPublished = 1
                       AND NOT EXISTS
                       (

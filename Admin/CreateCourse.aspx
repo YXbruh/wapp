@@ -57,8 +57,8 @@
             </div>
             <div class="form-group">
                 <label class="form-label">Lecturer</label>
-                <asp:DropDownList ID="ddlInstructor" runat="server" CssClass="form-select" />
-                <asp:RequiredFieldValidator ID="rfvInstructor" runat="server" ControlToValidate="ddlInstructor"
+                <asp:DropDownList ID="ddlLecturer" runat="server" CssClass="form-select" />
+                <asp:RequiredFieldValidator ID="rfvLecturer" runat="server" ControlToValidate="ddlLecturer"
                     ValidationGroup="CreateCourse" Display="Dynamic" CssClass="val-error"
                     Text="<i class='ti ti-alert-circle'></i> Required." InitialValue="" />
             </div>

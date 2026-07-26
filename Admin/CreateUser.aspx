@@ -26,7 +26,7 @@
     <main class="dash-content">
         <div class="dash-header">
             <h2>Create New User</h2>
-            <p>Add a new student, instructor, or administrator account.</p>
+            <p>Add a new student, lecturer, or administrator account.</p>
         </div>
 
         <asp:Panel ID="pnlError" runat="server" Visible="false">

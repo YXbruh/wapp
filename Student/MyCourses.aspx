@@ -278,7 +278,7 @@
                             <div class="course-footer">
 
                                 <span class="text-muted text-small">
-                                    <%# Eval("InstructorName") %>
+                                    <%# Eval("LecturerName") %>
                                 </span>
 
                                 <div style="display:flex;gap:7px">
@@ -387,7 +387,7 @@
                             <div class="course-footer">
 
                                 <span class="text-muted text-small">
-                                    <%# Eval("InstructorName") %>
+                                    <%# Eval("LecturerName") %>
                                 </span>
 
                                 <asp:LinkButton

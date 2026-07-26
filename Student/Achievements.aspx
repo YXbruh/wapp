@@ -238,6 +238,7 @@
             runat="server"
             CssClass="sidebar-link"
             CausesValidation="false"
+            OnClientClick="return showLogoutConfirm(this);"
             OnClick="lbLogout_Click">
 
             <i class="ti ti-logout"></i>

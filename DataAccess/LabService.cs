@@ -12,11 +12,11 @@ namespace CSA.DataAccess
     public static class LabService
     {
         /// <summary>
-        /// Returns all labs created by a given instructor, joined to their course,
+        /// Returns all labs created by a given lecturer, joined to their course,
         /// shaped for the rptLabs Repeater (LabTitle, ShortDesc, CourseName,
         /// Difficulty, ValidationType, IsActive).
         /// </summary>
-        public static DataTable GetByInstructor(string instructorId)
+        public static DataTable GetByLecturer(string lecturerId)
         {
             string sql = @"
                 SELECT  vl.LabID,
@@ -28,11 +28,11 @@ namespace CSA.DataAccess
                         vl.IsPublished AS IsActive
                 FROM    VirtualLabs vl
                 INNER JOIN Courses c ON vl.CourseID = c.CourseID
-                WHERE   vl.CreatedByID = @InstructorID
+                WHERE   vl.CreatedByID = @LecturerID
                 ORDER BY vl.CreatedAt DESC;";
 
             return DBHelper.ExecuteQuery(sql,
-                new SqlParameter("@InstructorID", instructorId));
+                new SqlParameter("@LecturerID", lecturerId));
         }
 
         /// <summary>
@@ -72,11 +72,11 @@ namespace CSA.DataAccess
         /// Returns the LabID.
         /// </summary>
         public static string Save(
-            string labId, string instructorId, string courseId,
+            string labId, string lecturerId, string courseId,
             string title, string instructions, string hint,
             string validationKey, string validationType,
             string difficulty, int? timeLimitMinutes, bool isActive)
-            => Save(labId, instructorId, courseId, title, instructions, hint,
+            => Save(labId, lecturerId, courseId, title, instructions, hint,
                     validationKey, validationType, difficulty, timeLimitMinutes,
                     isActive, null);
 
@@ -85,7 +85,7 @@ namespace CSA.DataAccess
         /// <paramref name="skillTag"/> stores NULL (untagged). Returns the LabID.
         /// </summary>
         public static string Save(
-            string labId, string instructorId, string courseId,
+            string labId, string lecturerId, string courseId,
             string title, string instructions, string hint,
             string validationKey, string validationType,
             string difficulty, int? timeLimitMinutes, bool isActive,
@@ -105,7 +105,7 @@ namespace CSA.DataAccess
                 new SqlParameter("@TimeLimitMinutes", (object)timeLimitMinutes ?? DBNull.Value),
                 new SqlParameter("@SkillTag",         string.IsNullOrWhiteSpace(skillTag) ? (object)DBNull.Value : skillTag.Trim()),
                 new SqlParameter("@IsPublished",      isActive),
-                new SqlParameter("@CreatedByID",      instructorId)
+                new SqlParameter("@CreatedByID",      lecturerId)
             };
 
             if (isNew)
@@ -153,34 +153,34 @@ namespace CSA.DataAccess
         }
 
         /// <summary>
-        /// Deletes a lab, but only if it belongs to the given instructor.
+        /// Deletes a lab, but only if it belongs to the given lecturer.
         /// Returns rows affected (0 = not found / not owned).
         /// </summary>
-        public static int Delete(string labId, string instructorId)
+        public static int Delete(string labId, string lecturerId)
         {
             string sql = @"
                 DELETE FROM VirtualLabs
-                WHERE LabID = @LabID AND CreatedByID = @InstructorID;";
+                WHERE LabID = @LabID AND CreatedByID = @LecturerID;";
 
             return DBHelper.ExecuteNonQuery(sql,
                 new SqlParameter("@LabID", labId),
-                new SqlParameter("@InstructorID", instructorId));
+                new SqlParameter("@LecturerID", lecturerId));
         }
 
         /// <summary>
-        /// Returns courses owned by an instructor, for the ddlCourse dropdown.
+        /// Returns courses owned by an lecturer, for the ddlCourse dropdown.
         /// Columns: CourseID, CourseName.
         /// </summary>
-        public static DataTable GetCoursesForInstructor(string instructorId)
+        public static DataTable GetCoursesForLecturer(string lecturerId)
         {
             string sql = @"
                 SELECT CourseID, CourseName
                 FROM   Courses
-                WHERE  InstructorID = @InstructorID
+                WHERE  LecturerID = @LecturerID
                 ORDER BY CourseName;";
 
             return DBHelper.ExecuteQuery(sql,
-                new SqlParameter("@InstructorID", instructorId));
+                new SqlParameter("@LecturerID", lecturerId));
         }
     }
 }

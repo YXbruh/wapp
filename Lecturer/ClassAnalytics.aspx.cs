@@ -16,11 +16,11 @@ namespace CSA.Lecturer
 
             if (!IsPostBack)
             {
-                string instructorId = Session["UserID"] != null ? Session["UserID"].ToString().Trim() : "";
-                if (!string.IsNullOrEmpty(instructorId))
+                string lecturerId = Session["UserID"] != null ? Session["UserID"].ToString().Trim() : "";
+                if (!string.IsNullOrEmpty(lecturerId))
                 {
-                    LoadCourseDropdown(instructorId);
-                    LoadData(instructorId, null, null);
+                    LoadCourseDropdown(lecturerId);
+                    LoadData(lecturerId, null, null);
                 }
             }
         }
@@ -30,16 +30,16 @@ namespace CSA.Lecturer
             return ConfigurationManager.ConnectionStrings["CSAConnection"].ConnectionString;
         }
 
-        private void LoadCourseDropdown(string instructorId)
+        private void LoadCourseDropdown(string lecturerId)
         {
             ddlCourse.Items.Clear();
             ddlCourse.Items.Add(new System.Web.UI.WebControls.ListItem("All Courses", ""));
 
-            string query = "SELECT CourseID, CourseName FROM Courses WHERE InstructorID = @InstructorID AND IsPublished = 1 ORDER BY CourseName";
+            string query = "SELECT CourseID, CourseName FROM Courses WHERE LecturerID = @LecturerID AND IsPublished = 1 ORDER BY CourseName";
             using (SqlConnection conn = new SqlConnection(GetConnectionString()))
             using (SqlCommand cmd = new SqlCommand(query, conn))
             {
-                cmd.Parameters.AddWithValue("@InstructorID", instructorId);
+                cmd.Parameters.AddWithValue("@LecturerID", lecturerId);
                 conn.Open();
                 SqlDataReader reader = cmd.ExecuteReader();
                 while (reader.Read())
@@ -52,9 +52,9 @@ namespace CSA.Lecturer
             }
         }
 
-        private void LoadData(string instructorId, string courseId, string searchTerm)
+        private void LoadData(string lecturerId, string courseId, string searchTerm)
         {
-            if (string.IsNullOrEmpty(instructorId)) courseId = null;
+            if (string.IsNullOrEmpty(lecturerId)) courseId = null;
             if (string.IsNullOrEmpty(searchTerm)) searchTerm = "";
 
             string connString = ConfigurationManager.ConnectionStrings["CSAConnection"].ConnectionString;
@@ -64,7 +64,7 @@ namespace CSA.Lecturer
                 SELECT COUNT(DISTINCT e.StudentID) 
                 FROM Enrollments e
                 INNER JOIN Courses c ON e.CourseID = c.CourseID
-                WHERE c.InstructorID = @InstructorID 
+                WHERE c.LecturerID = @LecturerID 
                   AND c.IsPublished = 1";
 
             // Query 4
@@ -73,7 +73,7 @@ namespace CSA.Lecturer
                 FROM QuizAttempts qa
                 INNER JOIN Enrollments e ON qa.StudentID = e.StudentID
                 INNER JOIN Courses c ON e.CourseID = c.CourseID
-                WHERE c.InstructorID = @InstructorID 
+                WHERE c.LecturerID = @LecturerID 
                   AND c.IsPublished = 1";
 
             // Query 3
@@ -81,7 +81,7 @@ namespace CSA.Lecturer
                 SELECT ISNULL(AVG(e.Progress), 0) AS AvgProgress
                 FROM Enrollments e
                 INNER JOIN Courses c ON e.CourseID = c.CourseID
-                WHERE c.InstructorID = @InstructorID 
+                WHERE c.LecturerID = @LecturerID 
                   AND c.IsPublished = 1";
 
             // Sandbox cleared
@@ -93,7 +93,7 @@ namespace CSA.Lecturer
                   SELECT DISTINCT e.StudentID
                   FROM Enrollments e
                   INNER JOIN Courses c ON e.CourseID = c.CourseID
-                  WHERE c.InstructorID = @InstructorID
+                  WHERE c.LecturerID = @LecturerID
                     AND c.IsPublished = 1" +
                     (string.IsNullOrEmpty(courseId) ? "" : " AND c.CourseID = @CourseID") + ")";
 
@@ -115,7 +115,7 @@ namespace CSA.Lecturer
             FROM Quizzes q
             INNER JOIN Courses c ON q.CourseID = c.CourseID
             LEFT JOIN QuizAttempts qa ON q.QuizID = qa.QuizID
-            WHERE c.InstructorID = @InstructorID
+            WHERE c.LecturerID = @LecturerID
               AND c.IsPublished = 1
               AND q.IsPublished = 1" +
                         (string.IsNullOrEmpty(courseId) ? "" : " AND c.CourseID = @CourseID") + @"
@@ -127,7 +127,7 @@ namespace CSA.Lecturer
                 conn.Open();
                 using (SqlCommand cmd = new SqlCommand(studentsQuery, conn))
                 {
-                    cmd.Parameters.AddWithValue("@InstructorID", instructorId);
+                    cmd.Parameters.AddWithValue("@LecturerID", lecturerId);
                     try
                     {
                         int total = (int)cmd.ExecuteScalar();
@@ -142,7 +142,7 @@ namespace CSA.Lecturer
                 // average score
                 using (SqlCommand cmd = new SqlCommand(quizAvgQuery, conn))
                 {
-                    cmd.Parameters.AddWithValue("@InstructorID", instructorId);
+                    cmd.Parameters.AddWithValue("@LecturerID", lecturerId);
                     try
                     {
                         object result = cmd.ExecuteScalar();
@@ -158,7 +158,7 @@ namespace CSA.Lecturer
                 // average progress
                 using (SqlCommand cmd = new SqlCommand(labRateQuery, conn))
                 {
-                    cmd.Parameters.AddWithValue("@InstructorID", instructorId);
+                    cmd.Parameters.AddWithValue("@LecturerID", lecturerId);
                     try
                     {
                         object result = cmd.ExecuteScalar();
@@ -174,7 +174,7 @@ namespace CSA.Lecturer
                 // sandbox cleared
                 using (SqlCommand cmd = new SqlCommand(sandboxQuery, conn))
                 {
-                    cmd.Parameters.AddWithValue("@InstructorID", instructorId);
+                    cmd.Parameters.AddWithValue("@LecturerID", lecturerId);
                     if (!string.IsNullOrEmpty(courseId))
                         cmd.Parameters.AddWithValue("@CourseID", courseId);
                     litSandboxCleared.Text = cmd.ExecuteScalar()?.ToString() ?? "0";
@@ -183,7 +183,7 @@ namespace CSA.Lecturer
                 // students table
                 using (SqlCommand cmd = new SqlCommand(studentQuery, conn))
                 {
-                    cmd.Parameters.AddWithValue("@InstructorID", instructorId);
+                    cmd.Parameters.AddWithValue("@LecturerID", lecturerId);
                     if (!string.IsNullOrEmpty(courseId))
                         cmd.Parameters.AddWithValue("@CourseID", courseId);
                     cmd.Parameters.AddWithValue("@Search", "%" + searchTerm + "%");
@@ -199,7 +199,7 @@ namespace CSA.Lecturer
 
                 using (SqlCommand cmd = new SqlCommand(quizBreakdownQuery, conn))
                 {
-                    cmd.Parameters.AddWithValue("@InstructorID", instructorId);
+                    cmd.Parameters.AddWithValue("@LecturerID", lecturerId);
                     if (!string.IsNullOrEmpty(courseId))
                         cmd.Parameters.AddWithValue("@CourseID", courseId);
 
@@ -234,7 +234,7 @@ namespace CSA.Lecturer
                         SELECT DISTINCT e.StudentID, c.CourseID
                         FROM Enrollments e
                         INNER JOIN Courses c ON e.CourseID = c.CourseID
-                        WHERE c.InstructorID = @InstructorID AND c.IsPublished = 1
+                        WHERE c.LecturerID = @LecturerID AND c.IsPublished = 1
                           " + (string.IsNullOrEmpty(courseId) ? "" : " AND c.CourseID = @CourseID") + @"
                     ),
                     LabTotals AS (
@@ -299,7 +299,7 @@ namespace CSA.Lecturer
         }
 
         private List<StudentPerformanceViewModel> GetStudentPerformance(
-            string instructorId, string courseId, string searchTerm)
+            string lecturerId, string courseId, string searchTerm)
         {
             if (string.IsNullOrEmpty(searchTerm)) searchTerm = "";
             string connString = ConfigurationManager.ConnectionStrings["CSAConnection"].ConnectionString;
@@ -308,7 +308,7 @@ namespace CSA.Lecturer
             using (SqlConnection conn = new SqlConnection(connString))
             using (SqlCommand cmd = new SqlCommand(studentQuery, conn))
             {
-                cmd.Parameters.AddWithValue("@InstructorID", instructorId);
+                cmd.Parameters.AddWithValue("@LecturerID", lecturerId);
                 if (!string.IsNullOrEmpty(courseId))
                     cmd.Parameters.AddWithValue("@CourseID", courseId);
                 cmd.Parameters.AddWithValue("@Search", "%" + searchTerm + "%");
@@ -323,26 +323,26 @@ namespace CSA.Lecturer
 
         protected void ddlCourse_Changed(object sender, EventArgs e)
         {
-            string instructorId = Session["UserID"] != null ? Session["UserID"].ToString().Trim() : "";
+            string lecturerId = Session["UserID"] != null ? Session["UserID"].ToString().Trim() : "";
             string courseId = ddlCourse.SelectedValue;
             string search = tbSearch.Text.Trim();
-            LoadData(instructorId, courseId, search);
+            LoadData(lecturerId, courseId, search);
         }
         protected void tbSearch_Changed(object sender, EventArgs e)
         {
-            string instructorId = Session["UserID"] != null ? Session["UserID"].ToString().Trim() : "";
+            string lecturerId = Session["UserID"] != null ? Session["UserID"].ToString().Trim() : "";
             string courseId = ddlCourse.SelectedValue;
             string search = tbSearch.Text.Trim();
-            LoadData(instructorId, courseId, search);
+            LoadData(lecturerId, courseId, search);
         }
 
         protected void lbExport_Click(object sender, EventArgs e)
         {
-            string instructorId = Session["UserID"] != null ? Session["UserID"].ToString().Trim() : "";
+            string lecturerId = Session["UserID"] != null ? Session["UserID"].ToString().Trim() : "";
             string courseId = ddlCourse.SelectedValue;
             string search = tbSearch.Text.Trim();
 
-            var students = GetStudentPerformance(instructorId, courseId, search);
+            var students = GetStudentPerformance(lecturerId, courseId, search);
 
             var sb = new StringBuilder();
             sb.AppendLine("Student,Email,Quiz Avg (%),Labs Done,Labs Total,Sandbox Cleared,Last Active");

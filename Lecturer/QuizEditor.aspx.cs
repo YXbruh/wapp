@@ -12,7 +12,7 @@ namespace CSA.Lecturer
 {
     public partial class QuizEditor : Page
     {
-        private string CurrentInstructorId => Session["UserID"]?.ToString() ?? "";
+        private string CurrentLecturerId => Session["UserID"]?.ToString() ?? "";
 
         protected void Page_Load(object sender, EventArgs e)
         {
@@ -44,7 +44,7 @@ namespace CSA.Lecturer
         // ---------------------------------------------------------
         private void LoadCourseDropdown()
         {
-            DataTable courses = LabService.GetCoursesForInstructor(CurrentInstructorId);
+            DataTable courses = LabService.GetCoursesForLecturer(CurrentLecturerId);
 
             ddlNewQuizCourse.Items.Clear();
             ddlNewQuizCourse.Items.Add(new ListItem("— Select Course —", ""));
@@ -114,10 +114,10 @@ namespace CSA.Lecturer
                 string.IsNullOrEmpty(courseId) ? "— Select a course first —" : "— Select Quiz —", ""));
 
             // Only list quizzes once a course is chosen, so the picker stays short
-            // instead of dumping every quiz the instructor owns.
+            // instead of dumping every quiz the lecturer owns.
             if (string.IsNullOrEmpty(courseId)) return;
 
-            DataTable quizzes = QuizService.GetQuizzesByInstructor(CurrentInstructorId, courseId);
+            DataTable quizzes = QuizService.GetQuizzesByLecturer(CurrentLecturerId, courseId);
             foreach (DataRow row in quizzes.Rows)
             {
                 ddlQuiz.Items.Add(new ListItem(
@@ -139,7 +139,7 @@ namespace CSA.Lecturer
         private void LoadQuestions()
         {
             DataTable list = QuizService.GetQuestions(
-                CurrentInstructorId,
+                CurrentLecturerId,
                 ddlQuiz.SelectedValue,
                 tbSearch.Text.Trim(),
                 ddlFilterType.SelectedValue);
@@ -237,7 +237,7 @@ namespace CSA.Lecturer
             {
                 string newCourseId = ddlNewQuizCourse.SelectedValue;
                 string newId = QuizService.CreateQuiz(
-                    CurrentInstructorId,
+                    CurrentLecturerId,
                     newCourseId,
                     ddlNewQuizChapter.SelectedValue,
                     tbNewQuizTitle.Text.Trim(),
@@ -245,7 +245,7 @@ namespace CSA.Lecturer
                     tbNewQuizDescription.Text.Trim(),
                     startDate, endDate, duration, totalMarks);
 
-                AdminService.LogActivity(CurrentInstructorId, "CREATE_QUIZ", "Quizzes",
+                AdminService.LogActivity(CurrentLecturerId, "CREATE_QUIZ", "Quizzes",
                     newId, "Created quiz: " + tbNewQuizTitle.Text.Trim());
 
                 // Point the course filter at the new quiz's course, otherwise the quiz
@@ -268,7 +268,7 @@ namespace CSA.Lecturer
                 LoadNewQuizChapters();
 
                 // Flush anything staged before the quiz existed.
-                int committed = PendingAttachmentService.Commit(AttachBucket, "Quiz", newId, CurrentInstructorId);
+                int committed = PendingAttachmentService.Commit(AttachBucket, "Quiz", newId, CurrentLecturerId);
                 ShowSuccess(committed > 0
                     ? $"Quiz created with {committed} attachment(s)."
                     : "Quiz created. You can now add questions and attachments to it.");
@@ -294,7 +294,7 @@ namespace CSA.Lecturer
             if (string.IsNullOrEmpty(quizId))
             { pnlEditQuiz.Visible = false; return; }
 
-            DataRow quiz = QuizService.GetQuizById(quizId, CurrentInstructorId);
+            DataRow quiz = QuizService.GetQuizById(quizId, CurrentLecturerId);
             if (quiz == null)
             { pnlEditQuiz.Visible = false; return; }
 
@@ -375,7 +375,7 @@ namespace CSA.Lecturer
                 return;
             }
 
-            int rows = QuizService.UpdateQuiz(quizId, CurrentInstructorId, title,
+            int rows = QuizService.UpdateQuiz(quizId, CurrentLecturerId, title,
                 passMark, maxAttempts, tbEditDescription.Text.Trim(),
                 startDate, endDate, duration, totalMarks, ddlEditChapter.SelectedValue);
 
@@ -399,7 +399,7 @@ namespace CSA.Lecturer
             if (string.IsNullOrEmpty(quizId))
             { ShowError("Please select a quiz to delete."); return; }
 
-            int result = QuizService.DeleteQuiz(quizId, CurrentInstructorId);
+            int result = QuizService.DeleteQuiz(quizId, CurrentLecturerId);
             if (result == 1)
             {
                 ShowSuccess("Quiz and its questions deleted.");
@@ -457,7 +457,7 @@ namespace CSA.Lecturer
             if (e.CommandName != "Delete") return;
 
             string questionId = e.CommandArgument.ToString();
-            int result = QuizService.DeleteQuestion(questionId, CurrentInstructorId);
+            int result = QuizService.DeleteQuestion(questionId, CurrentLecturerId);
 
             if (result == 1)
                 ShowSuccess("Question deleted.");
@@ -702,7 +702,7 @@ namespace CSA.Lecturer
                 { ShowError("That question is already open in the editor below."); BindBulkRows(); return; }
             }
 
-            DataRow q = QuizService.GetQuestionById(questionId, CurrentInstructorId);
+            DataRow q = QuizService.GetQuestionById(questionId, CurrentLecturerId);
             if (q == null) { ShowError("Question not found, or it doesn't belong to you."); BindBulkRows(); return; }
 
             string type = Convert.ToString(q["QuestionType"]);
@@ -908,7 +908,7 @@ namespace CSA.Lecturer
                     bool isMcq = row.Type == "MCQ";
                     // A row carrying a QuestionID updates that question instead of inserting.
                     string questionId = QuizService.SaveQuestion(
-                        row.QuestionID, CurrentInstructorId, quizId,
+                        row.QuestionID, CurrentLecturerId, quizId,
                         row.Type, row.Text,
                         isMcq ? row.OptA : "", isMcq ? row.OptB : "",
                         isMcq ? row.OptC : "", isMcq ? row.OptD : "",
@@ -918,7 +918,7 @@ namespace CSA.Lecturer
 
                     // Flush the files/links staged against this row onto its new question.
                     attachmentsSaved += PendingAttachmentService.Commit(
-                        RowBucket(row.RowKey), "Question", questionId, CurrentInstructorId);
+                        RowBucket(row.RowKey), "Question", questionId, CurrentLecturerId);
                 }
 
                 int updated = 0, added = 0;
@@ -992,7 +992,7 @@ namespace CSA.Lecturer
             if (staged)
                 saved = PendingAttachmentService.StageFiles(fuAttachFiles.PostedFiles, AttachBucket, out rejected);
             else
-                saved = AttachmentService.SaveFiles(fuAttachFiles.PostedFiles, "Quiz", quizId, CurrentInstructorId, out rejected);
+                saved = AttachmentService.SaveFiles(fuAttachFiles.PostedFiles, "Quiz", quizId, CurrentLecturerId, out rejected);
 
             string verb = staged ? "file(s) ready — saved when you create the quiz." : "file(s) uploaded.";
             if (saved > 0 && rejected.Count == 0)
@@ -1025,7 +1025,7 @@ namespace CSA.Lecturer
             }
             else
             {
-                AttachmentService.SaveLink("Quiz", quizId, title, url, CurrentInstructorId);
+                AttachmentService.SaveLink("Quiz", quizId, title, url, CurrentLecturerId);
                 ShowSuccess("Link added.");
             }
 
@@ -1042,7 +1042,7 @@ namespace CSA.Lecturer
 
                 bool removed = attachmentId.StartsWith("PND")
                     ? PendingAttachmentService.Remove(AttachBucket, attachmentId)
-                    : AttachmentService.Delete(attachmentId, CurrentInstructorId);
+                    : AttachmentService.Delete(attachmentId, CurrentLecturerId);
 
                 ShowSuccess(removed ? "Attachment removed." : "Attachment not found.");
                 LoadAttachments(ddlQuiz.SelectedValue);

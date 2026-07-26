@@ -11,7 +11,7 @@ namespace CSA.Lecturer
 {
     public partial class TerminalSandbox : Page
     {
-        private string CurrentInstructorId => Session["UserID"]?.ToString() ?? "";
+        private string CurrentLecturerId => Session["UserID"]?.ToString() ?? "";
 
         protected void Page_Load(object sender, EventArgs e)
         {
@@ -49,7 +49,7 @@ namespace CSA.Lecturer
             ddlCourse.Items.Clear();
             ddlCourse.Items.Add(new ListItem("� Select Course �", ""));
 
-            DataTable courses = LabService.GetCoursesForInstructor(CurrentInstructorId);
+            DataTable courses = LabService.GetCoursesForLecturer(CurrentLecturerId);
             foreach (DataRow row in courses.Rows)
             {
                 ddlCourse.Items.Add(new ListItem(
@@ -60,7 +60,7 @@ namespace CSA.Lecturer
 
         private void LoadLabs()
         {
-            DataTable labs = LabService.GetByInstructor(CurrentInstructorId);
+            DataTable labs = LabService.GetByLecturer(CurrentLecturerId);
             rptLabs.DataSource = labs;
             rptLabs.DataBind();
             pnlEmpty.Visible = labs.Rows.Count == 0;
@@ -95,7 +95,7 @@ namespace CSA.Lecturer
                 bool isNew = string.IsNullOrEmpty(labId);
                 string savedId = LabService.Save(
                     labId,
-                    CurrentInstructorId,
+                    CurrentLecturerId,
                     ddlCourse.SelectedValue,
                     tbLabTitle.Text.Trim(),
                     tbInstructions.Text.Trim(),
@@ -107,7 +107,7 @@ namespace CSA.Lecturer
                     cbActive.Checked,
                     tbSkillTag.Text.Trim());
 
-                AdminService.LogActivity(CurrentInstructorId,
+                AdminService.LogActivity(CurrentLecturerId,
                     isNew ? "CREATE_LAB" : "UPDATE_LAB", "VirtualLabs", savedId,
                     (isNew ? "Created lab: " : "Updated lab: ") + tbLabTitle.Text.Trim());
 
@@ -117,7 +117,7 @@ namespace CSA.Lecturer
                 LoadSkillTagSuggestions();
 
                 // Flush anything staged while the lab was still unsaved.
-                int committed = PendingAttachmentService.Commit(AttachBucket, "Lab", savedId, CurrentInstructorId);
+                int committed = PendingAttachmentService.Commit(AttachBucket, "Lab", savedId, CurrentLecturerId);
 
                 if (isNew)
                 {
@@ -171,8 +171,8 @@ namespace CSA.Lecturer
 
                 case "Delete":
                     // Attachments reference the lab, so they must go first.
-                    AttachmentService.DeleteByParent("Lab", id, CurrentInstructorId);
-                    LabService.Delete(id, CurrentInstructorId);
+                    AttachmentService.DeleteByParent("Lab", id, CurrentLecturerId);
+                    LabService.Delete(id, CurrentLecturerId);
                     pnlSuccess.Visible = true;
                     litSuccess.Text = "Lab deleted.";
                     LoadLabs();
@@ -273,7 +273,7 @@ namespace CSA.Lecturer
             if (staged)
                 saved = PendingAttachmentService.StageFiles(fuAttachFiles.PostedFiles, AttachBucket, out rejected);
             else
-                saved = AttachmentService.SaveFiles(fuAttachFiles.PostedFiles, "Lab", labId, CurrentInstructorId, out rejected);
+                saved = AttachmentService.SaveFiles(fuAttachFiles.PostedFiles, "Lab", labId, CurrentLecturerId, out rejected);
 
             string verb = staged ? "file(s) ready — saved when you save the lab." : "file(s) uploaded.";
             if (saved > 0 && rejected.Count == 0)
@@ -307,7 +307,7 @@ namespace CSA.Lecturer
             }
             else
             {
-                AttachmentService.SaveLink("Lab", labId, title, url, CurrentInstructorId);
+                AttachmentService.SaveLink("Lab", labId, title, url, CurrentLecturerId);
                 ShowSuccess("Link added.");
             }
 
@@ -325,7 +325,7 @@ namespace CSA.Lecturer
 
                 bool removed = attachmentId.StartsWith("PND")
                     ? PendingAttachmentService.Remove(AttachBucket, attachmentId)
-                    : AttachmentService.Delete(attachmentId, CurrentInstructorId);
+                    : AttachmentService.Delete(attachmentId, CurrentLecturerId);
 
                 ShowSuccess(removed ? "Attachment removed." : "Attachment not found.");
                 LoadAttachments(CurrentLabId);

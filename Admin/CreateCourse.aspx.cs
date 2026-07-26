@@ -21,11 +21,11 @@ namespace CSA.Admin
             ddlCategory.DataBind();
             ddlCategory.Items.Insert(0, new System.Web.UI.WebControls.ListItem("-- Select --", ""));
 
-            ddlInstructor.DataSource = CourseService.GetInstructors();
-            ddlInstructor.DataTextField = "FullName";
-            ddlInstructor.DataValueField = "UserID";
-            ddlInstructor.DataBind();
-            ddlInstructor.Items.Insert(0, new System.Web.UI.WebControls.ListItem("-- Select --", ""));
+            ddlLecturer.DataSource = CourseService.GetLecturers();
+            ddlLecturer.DataTextField = "FullName";
+            ddlLecturer.DataValueField = "UserID";
+            ddlLecturer.DataBind();
+            ddlLecturer.Items.Insert(0, new System.Web.UI.WebControls.ListItem("-- Select --", ""));
         }
 
         protected void btnCreate_Click(object sender, EventArgs e)
@@ -48,7 +48,7 @@ namespace CSA.Admin
                     name,
                     tbDescription.Text.Trim(),
                     ddlCategory.SelectedValue,
-                    ddlInstructor.SelectedValue,
+                    ddlLecturer.SelectedValue,
                     ddlLevel.SelectedValue,
                     duration);
 
@@ -61,7 +61,7 @@ namespace CSA.Admin
                 litSuccess.Text = $"Course '{Server.HtmlEncode(name)}' created successfully. <a href='Courses.aspx' style='color:var(--accent3)'>Back to Courses</a>";
                 tbName.Text = tbDescription.Text = "";
                 ddlCategory.SelectedIndex = 0;
-                ddlInstructor.SelectedIndex = 0;
+                ddlLecturer.SelectedIndex = 0;
                 ddlLevel.SelectedIndex = 0;
                 tbDuration.Text = "0";
             }

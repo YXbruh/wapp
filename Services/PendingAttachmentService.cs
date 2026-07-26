@@ -11,7 +11,7 @@ namespace CSA.Services
     /// Holds attachments chosen for a chapter/lab/quiz that has not been saved yet.
     ///
     /// The Attachments table requires exactly one parent FK (CK_Att_OneParent), so a
-    /// row cannot be inserted before the parent exists. Instructors still expect to
+    /// row cannot be inserted before the parent exists. Lecturers still expect to
     /// attach files while composing new content, so uploads are staged here and
     /// flushed by <see cref="Commit"/> when the parent is finally saved.
     ///
@@ -152,7 +152,7 @@ namespace CSA.Services
         /// Attachments row for every staged item. Clears the bucket. Returns the
         /// number of attachments committed.
         /// </summary>
-        public static int Commit(string bucket, string entityType, string entityId, string instructorId)
+        public static int Commit(string bucket, string entityType, string entityId, string lecturerId)
         {
             var list = GetList(bucket);
             if (list.Count == 0) return 0;
@@ -166,7 +166,7 @@ namespace CSA.Services
                 if (item.AttachmentType == "Link")
                 {
                     AttachmentService.InsertRow(entityType, entityId, "Link", item.Title,
-                        null, item.LinkUrl, null, instructorId);
+                        null, item.LinkUrl, null, lecturerId);
                     committed++;
                     continue;
                 }
@@ -178,7 +178,7 @@ namespace CSA.Services
 
                 AttachmentService.InsertRow(entityType, entityId, item.AttachmentType, item.Title,
                     $"~/Content/Uploads/{entityType}/{item.StagedFileName}", null,
-                    item.FileSizeBytes, instructorId);
+                    item.FileSizeBytes, lecturerId);
                 committed++;
             }
 

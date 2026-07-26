@@ -58,7 +58,7 @@
                             </div>
                         </div>
                         <div class="course-footer">
-                            <span class="text-muted text-small"><%#: Eval("InstructorName") %></span>
+                            <span class="text-muted text-small"><%#: Eval("LecturerName") %></span>
                             <asp:LinkButton runat="server"
                                 CssClass='<%# GetActionCss((bool)Eval("IsEnrolled")) %>'
                                 CommandArgument='<%# Eval("CourseID") %>'

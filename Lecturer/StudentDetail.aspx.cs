@@ -8,7 +8,7 @@ namespace CSA.Lecturer
 {
     public partial class StudentDetail : Page
     {
-        private string CurrentInstructorId => Session["UserID"]?.ToString() ?? "";
+        private string CurrentLecturerId => Session["UserID"]?.ToString() ?? "";
 
         protected void Page_Load(object sender, EventArgs e)
         {
@@ -20,7 +20,7 @@ namespace CSA.Lecturer
             { Response.Redirect("~/Lecturer/ClassAnalytics.aspx"); return; }
 
             // A lecturer may only view students enrolled in their own courses.
-            if (!StudentDetailService.Owns(CurrentInstructorId, studentId))
+            if (!StudentDetailService.Owns(CurrentLecturerId, studentId))
             { Response.Redirect("~/Lecturer/ClassAnalytics.aspx?err=access"); return; }
 
             if (!IsPostBack) LoadStudentData(studentId);
@@ -29,7 +29,7 @@ namespace CSA.Lecturer
         private void LoadStudentData(string studentId)
         {
             // ---- Profile header ----
-            DataRow profile = StudentDetailService.GetProfile(studentId, CurrentInstructorId);
+            DataRow profile = StudentDetailService.GetProfile(studentId, CurrentLecturerId);
             if (profile == null)
             { Response.Redirect("~/Lecturer/ClassAnalytics.aspx"); return; }
 
@@ -44,7 +44,7 @@ namespace CSA.Lecturer
                 : Convert.ToDateTime(profile["LastLoginDate"]).ToString("dd MMM yyyy");
 
             // ---- Metric cards ----
-            DataRow m = StudentDetailService.GetMetrics(studentId, CurrentInstructorId);
+            DataRow m = StudentDetailService.GetMetrics(studentId, CurrentLecturerId);
             if (m != null)
             {
                 litQuizAvg.Text = Math.Round(Convert.ToDecimal(m["QuizAvg"])) + "%";
@@ -56,13 +56,13 @@ namespace CSA.Lecturer
             }
 
             // ---- Quiz attempts table ----
-            DataTable quizzes = StudentDetailService.GetQuizAttempts(studentId, CurrentInstructorId);
+            DataTable quizzes = StudentDetailService.GetQuizAttempts(studentId, CurrentLecturerId);
             rptQuizAttempts.DataSource = quizzes;
             rptQuizAttempts.DataBind();
             pnlNoQuiz.Visible = quizzes.Rows.Count == 0;
 
             // ---- Lab completion list ----
-            DataTable labs = StudentDetailService.GetLabStatus(studentId, CurrentInstructorId);
+            DataTable labs = StudentDetailService.GetLabStatus(studentId, CurrentLecturerId);
             rptLabs.DataSource = labs;
             rptLabs.DataBind();
             pnlNoLabs.Visible = labs.Rows.Count == 0;
@@ -81,7 +81,7 @@ namespace CSA.Lecturer
             }
             else
             {
-                StudentDetailService.SendFeedback(CurrentInstructorId, studentId, message);
+                StudentDetailService.SendFeedback(CurrentLecturerId, studentId, message);
                 pnlFeedbackSuccess.Visible = true;
                 litFeedbackSuccess.Text = "Feedback sent to the student.";
                 pnlFeedbackError.Visible = false;

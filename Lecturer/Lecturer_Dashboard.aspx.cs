@@ -18,10 +18,10 @@ namespace CSA.Lecturer
 
             if (!IsPostBack)
             {
-                string instructorId = Session["UserID"] != null ? Session["UserID"].ToString().Trim() : "";
-                if (!string.IsNullOrEmpty(instructorId))
+                string lecturerId = Session["UserID"] != null ? Session["UserID"].ToString().Trim() : "";
+                if (!string.IsNullOrEmpty(lecturerId))
                 {
-                    LoadDashboard(instructorId);
+                    LoadDashboard(lecturerId);
                 }
                 else
                 {
@@ -36,7 +36,7 @@ namespace CSA.Lecturer
             }
         }
 
-        private void LoadDashboard(string instructorId)
+        private void LoadDashboard(string lecturerId)
         {
             // Set user info
             litName.Text = Session["FullName"] as string ?? "Lecturer";
@@ -45,14 +45,14 @@ namespace CSA.Lecturer
             string connString = ConfigurationManager.ConnectionStrings["CSAConnection"].ConnectionString;
 
             // Query 1: Count active modules (published courses)
-            string modulesQuery = "SELECT COUNT(*) FROM Courses WHERE InstructorID = @InstructorID AND IsPublished = 1";
+            string modulesQuery = "SELECT COUNT(*) FROM Courses WHERE LecturerID = @LecturerID AND IsPublished = 1";
 
             // Query 2: Count distinct students enrolled
             string studentsQuery = @"
                 SELECT COUNT(DISTINCT e.StudentID) 
                 FROM Enrollments e
                 INNER JOIN Courses c ON e.CourseID = c.CourseID
-                WHERE c.InstructorID = @InstructorID 
+                WHERE c.LecturerID = @LecturerID 
                   AND c.IsPublished = 1";
 
             // Query 3: Average progress from enrollments
@@ -60,7 +60,7 @@ namespace CSA.Lecturer
                 SELECT ISNULL(AVG(e.Progress), 0) AS AvgProgress
                 FROM Enrollments e
                 INNER JOIN Courses c ON e.CourseID = c.CourseID
-                WHERE c.InstructorID = @InstructorID 
+                WHERE c.LecturerID = @LecturerID 
                   AND c.IsPublished = 1";
 
             // Query 4: Average quiz score for all students enrolled in lecturer's courses
@@ -69,7 +69,7 @@ namespace CSA.Lecturer
                 FROM QuizAttempts qa
                 INNER JOIN Enrollments e ON qa.StudentID = e.StudentID
                 INNER JOIN Courses c ON e.CourseID = c.CourseID
-                WHERE c.InstructorID = @InstructorID 
+                WHERE c.LecturerID = @LecturerID 
                   AND c.IsPublished = 1";
 
             // Query 5: Lab completion rates per course based on Enrollment Status
@@ -92,7 +92,7 @@ namespace CSA.Lecturer
                     END AS CompletionPct
                 FROM Courses c
                 INNER JOIN Enrollments e ON c.CourseID = e.CourseID
-                WHERE c.InstructorID = @InstructorID 
+                WHERE c.LecturerID = @LecturerID 
                   AND c.IsPublished = 1
                 GROUP BY c.CourseID, c.CourseName
                 ORDER BY CompletionPct DESC";
@@ -108,7 +108,7 @@ namespace CSA.Lecturer
                 FROM Quizzes q
                 INNER JOIN Courses c ON q.CourseID = c.CourseID
                 LEFT JOIN QuizAttempts qa ON q.QuizID = qa.QuizID
-                WHERE c.InstructorID = @InstructorID 
+                WHERE c.LecturerID = @LecturerID 
                   AND c.IsPublished = 1
                   AND q.IsPublished = 1
                 GROUP BY q.QuizID, q.Title, c.CourseName
@@ -130,7 +130,7 @@ namespace CSA.Lecturer
                     ch.ChapterID AS ContentID
                 FROM Chapters ch
                 INNER JOIN Courses c ON ch.CourseID = c.CourseID
-                WHERE c.InstructorID = @InstructorID 
+                WHERE c.LecturerID = @LecturerID 
                   AND c.IsPublished = 1
                 
                 UNION ALL
@@ -149,7 +149,7 @@ namespace CSA.Lecturer
                     vl.LabID AS ContentID
                 FROM VirtualLabs vl
                 INNER JOIN Courses c ON vl.CourseID = c.CourseID
-                WHERE c.InstructorID = @InstructorID 
+                WHERE c.LecturerID = @LecturerID 
                   AND c.IsPublished = 1
                 
                 UNION ALL
@@ -168,7 +168,7 @@ namespace CSA.Lecturer
                     q.QuizID AS ContentID
                 FROM Quizzes q
                 INNER JOIN Courses c ON q.CourseID = c.CourseID
-                WHERE c.InstructorID = @InstructorID 
+                WHERE c.LecturerID = @LecturerID 
                   AND c.IsPublished = 1
                 
                 ORDER BY UpdatedAt DESC";
@@ -180,7 +180,7 @@ namespace CSA.Lecturer
                 // Get active modules count
                 using (SqlCommand cmd = new SqlCommand(modulesQuery, conn))
                 {
-                    cmd.Parameters.AddWithValue("@InstructorID", instructorId);
+                    cmd.Parameters.AddWithValue("@LecturerID", lecturerId);
                     try
                     {
                         int activeModulesCount = (int)cmd.ExecuteScalar();
@@ -195,7 +195,7 @@ namespace CSA.Lecturer
                 // Get enrolled students count
                 using (SqlCommand cmd = new SqlCommand(studentsQuery, conn))
                 {
-                    cmd.Parameters.AddWithValue("@InstructorID", instructorId);
+                    cmd.Parameters.AddWithValue("@LecturerID", lecturerId);
                     try
                     {
                         int studentsCount = (int)cmd.ExecuteScalar();
@@ -210,7 +210,7 @@ namespace CSA.Lecturer
                 // Get average progress
                 using (SqlCommand cmd = new SqlCommand(labRateQuery, conn))
                 {
-                    cmd.Parameters.AddWithValue("@InstructorID", instructorId);
+                    cmd.Parameters.AddWithValue("@LecturerID", lecturerId);
                     try
                     {
                         object result = cmd.ExecuteScalar();
@@ -226,7 +226,7 @@ namespace CSA.Lecturer
                 // Get average quiz score
                 using (SqlCommand cmd = new SqlCommand(quizAvgQuery, conn))
                 {
-                    cmd.Parameters.AddWithValue("@InstructorID", instructorId);
+                    cmd.Parameters.AddWithValue("@LecturerID", lecturerId);
                     try
                     {
                         object result = cmd.ExecuteScalar();
@@ -242,7 +242,7 @@ namespace CSA.Lecturer
                 // Get lab completion rates per course
                 using (SqlCommand cmd = new SqlCommand(labRatesQuery, conn))
                 {
-                    cmd.Parameters.AddWithValue("@InstructorID", instructorId);
+                    cmd.Parameters.AddWithValue("@LecturerID", lecturerId);
                     try
                     {
                         SqlDataReader reader = cmd.ExecuteReader();
@@ -277,7 +277,7 @@ namespace CSA.Lecturer
                 // Get quiz scores per quiz
                 using (SqlCommand cmd = new SqlCommand(quizScoresQuery, conn))
                 {
-                    cmd.Parameters.AddWithValue("@InstructorID", instructorId);
+                    cmd.Parameters.AddWithValue("@LecturerID", lecturerId);
                     try
                     {
                         SqlDataReader reader = cmd.ExecuteReader();
@@ -312,7 +312,7 @@ namespace CSA.Lecturer
                 // Get unified modules list
                 using (SqlCommand cmd = new SqlCommand(modulesListQuery, conn))
                 {
-                    cmd.Parameters.AddWithValue("@InstructorID", instructorId);
+                    cmd.Parameters.AddWithValue("@LecturerID", lecturerId);
                     try
                     {
                         SqlDataReader reader = cmd.ExecuteReader();

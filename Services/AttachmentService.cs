@@ -55,9 +55,9 @@ namespace CSA.Services
 
         /// <summary>Inserts an attachment row that already has its file in place.</summary>
         public static void InsertRow(string entityType, string entityId, string attachmentType,
-            string title, string filePath, string linkUrl, int? fileSizeBytes, string instructorId)
+            string title, string filePath, string linkUrl, int? fileSizeBytes, string lecturerId)
         {
-            Insert(entityType, entityId, attachmentType, title, filePath, linkUrl, fileSizeBytes, instructorId);
+            Insert(entityType, entityId, attachmentType, title, filePath, linkUrl, fileSizeBytes, lecturerId);
         }
 
         public static DataTable GetByChapter(string chapterId) => GetByParent("ChapterID", chapterId);
@@ -102,7 +102,7 @@ namespace CSA.Services
         /// Returns the number of files actually saved.
         /// </summary>
         public static int SaveFiles(IList<HttpPostedFile> files, string entityType, string entityId,
-            string instructorId, out List<string> rejected)
+            string lecturerId, out List<string> rejected)
         {
             rejected = new List<string>();
             int saved = 0;
@@ -125,7 +125,7 @@ namespace CSA.Services
                 string title = Path.GetFileName(file.FileName);
 
                 Insert(entityType, entityId, attachmentType, title,
-                    relativePath, null, file.ContentLength, instructorId);
+                    relativePath, null, file.ContentLength, lecturerId);
                 saved++;
             }
 
@@ -133,13 +133,13 @@ namespace CSA.Services
         }
 
         /// <summary>Adds an external link attachment.</summary>
-        public static void SaveLink(string entityType, string entityId, string title, string url, string instructorId)
+        public static void SaveLink(string entityType, string entityId, string title, string url, string lecturerId)
         {
-            Insert(entityType, entityId, "Link", title, null, url, null, instructorId);
+            Insert(entityType, entityId, "Link", title, null, url, null, lecturerId);
         }
 
         private static void Insert(string entityType, string entityId, string attachmentType,
-            string title, string filePath, string linkUrl, int? fileSizeBytes, string instructorId)
+            string title, string filePath, string linkUrl, int? fileSizeBytes, string lecturerId)
         {
             string column = ParentColumn(entityType);
             string newId = IdGenerator.NewId("ATT");
@@ -158,16 +158,16 @@ namespace CSA.Services
                 new SqlParameter("@FilePath", (object)filePath ?? DBNull.Value),
                 new SqlParameter("@LinkUrl", (object)linkUrl ?? DBNull.Value),
                 new SqlParameter("@FileSizeBytes", (object)fileSizeBytes ?? DBNull.Value),
-                new SqlParameter("@UploadedByID", instructorId));
+                new SqlParameter("@UploadedByID", lecturerId));
         }
 
         /// <summary>
         /// Removes every attachment belonging to a chapter/lab/quiz, together with the
         /// physical files. Must be called before deleting the parent row, otherwise the
         /// Attachments foreign keys (FK_Att_Chapter / FK_Att_Lab / FK_Att_Quiz) block it.
-        /// No-op unless the instructor owns the parent. Returns rows deleted.
+        /// No-op unless the lecturer owns the parent. Returns rows deleted.
         /// </summary>
-        public static int DeleteByParent(string entityType, string entityId, string instructorId)
+        public static int DeleteByParent(string entityType, string entityId, string lecturerId)
         {
             string column = ParentColumn(entityType);
             string ownerSql;
@@ -192,7 +192,7 @@ namespace CSA.Services
 
             object owned = DBHelper.ExecuteScalar(ownerSql,
                 new SqlParameter("@ID", entityId),
-                new SqlParameter("@Owner", instructorId));
+                new SqlParameter("@Owner", lecturerId));
             if (Convert.ToInt32(owned) == 0) return 0;
 
             DataTable files = DBHelper.ExecuteQuery(
@@ -219,9 +219,9 @@ namespace CSA.Services
 
         /// <summary>
         /// Deletes an attachment (and its physical file, if any), but only if the
-        /// given instructor owns the parent chapter/lab/quiz. Returns true if deleted.
+        /// given lecturer owns the parent chapter/lab/quiz. Returns true if deleted.
         /// </summary>
-        public static bool Delete(string attachmentId, string instructorId)
+        public static bool Delete(string attachmentId, string lecturerId)
         {
             DataTable dt = DBHelper.ExecuteQuery(@"
                 SELECT a.FilePath,
@@ -244,7 +244,7 @@ namespace CSA.Services
             if (dt.Rows.Count == 0) return false;
 
             string ownerId = dt.Rows[0]["OwnerID"] == DBNull.Value ? null : dt.Rows[0]["OwnerID"].ToString();
-            if (ownerId != instructorId) return false;
+            if (ownerId != lecturerId) return false;
 
             int rows = DBHelper.ExecuteNonQuery(
                 "DELETE FROM Attachments WHERE AttachmentID = @AttachmentID;",

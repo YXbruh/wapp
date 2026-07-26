@@ -61,7 +61,7 @@ CREATE TABLE Courses (
     CourseName    NVARCHAR(200) NOT NULL,
     Description   NVARCHAR(2000) NULL,
     CategoryID    NVARCHAR(10)  NULL,
-    InstructorID  NVARCHAR(10)  NOT NULL,
+    LecturerID    NVARCHAR(10)  NOT NULL,
     Level         NVARCHAR(50)  NOT NULL DEFAULT 'Beginner',
     DurationHours INT           NOT NULL DEFAULT 0,
     ThumbnailPath NVARCHAR(500) NULL,
@@ -69,7 +69,7 @@ CREATE TABLE Courses (
     CreatedAt     DATETIME      NOT NULL DEFAULT GETDATE(),
     UpdatedAt     DATETIME      NOT NULL DEFAULT GETDATE(),
     CONSTRAINT FK_Courses_Category   FOREIGN KEY (CategoryID)   REFERENCES CourseCategories(CategoryID),
-    CONSTRAINT FK_Courses_Instructor FOREIGN KEY (InstructorID) REFERENCES Users(UserID),
+    CONSTRAINT FK_Courses_Lecturer   FOREIGN KEY (LecturerID)   REFERENCES Users(UserID),
     -- A course cannot run for a negative number of hours. Previously unchecked, so a
     -- typo such as -5 was accepted straight into the table.
     CONSTRAINT CK_Courses_Duration CHECK (DurationHours >= 0 AND DurationHours <= 1000)
@@ -445,9 +445,9 @@ IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_Users_Email')
     CREATE NONCLUSTERED INDEX IX_Users_Email ON Users(Email) INCLUDE (FullName, IsActive, PasswordHash);
 GO
 
--- Courses: instructor/category joins and the published-course catalogue.
-IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_Courses_InstructorID')
-    CREATE NONCLUSTERED INDEX IX_Courses_InstructorID ON Courses(InstructorID);
+-- Courses: lecturer/category joins and the published-course catalogue.
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_Courses_LecturerID')
+    CREATE NONCLUSTERED INDEX IX_Courses_LecturerID ON Courses(LecturerID);
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_Courses_CategoryID')
     CREATE NONCLUSTERED INDEX IX_Courses_CategoryID ON Courses(CategoryID);
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_Courses_IsPublished')

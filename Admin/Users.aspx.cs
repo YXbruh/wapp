@@ -55,7 +55,7 @@ namespace CSA.Admin
             litTotal.Text = total.ToString();
             UserService.GetCountsByRole(out int totalStudents, out int totalLecturers);
             litStudents.Text = totalStudents.ToString();
-            litInstructors.Text = totalLecturers.ToString();
+            litLecturers.Text = totalLecturers.ToString();
             litActiveToday.Text = UserService.GetActiveTodayCount().ToString();
 
             rptUsers.DataSource = users;

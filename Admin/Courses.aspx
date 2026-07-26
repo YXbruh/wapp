@@ -98,7 +98,7 @@
                     <thead>
                         <tr>
                             <th scope="col">Course</th>
-                            <th scope="col">Instructor</th>
+                            <th scope="col">Lecturer</th>
                             <th scope="col">Level</th>
                             <th scope="col">Status</th>
                             <th scope="col">Enrolled</th>
@@ -116,7 +116,7 @@
                                         <div class="fw-bold" style="color:var(--text)"><%#: Eval("CourseName") %></div>
                                         <div class="text-small text-muted"><%#: Eval("Category") %></div>
                                     </td>
-                                    <td class="text-muted"><%#: Eval("InstructorName") %></td>
+                                    <td class="text-muted"><%#: Eval("LecturerName") %></td>
                                     <td><span class="badge <%# GetLevelBadge(Eval("Level").ToString()) %>"><%#: Eval("Level") %></span></td>
                                     <td><span class="badge <%# GetStatusBadge(Eval("Status").ToString()) %>"><%#: Eval("Status") %></span></td>
                                     <td class="text-muted"><%#: Eval("EnrolledCount") %></td>
@@ -136,7 +136,7 @@
                                             </asp:LinkButton>
                                             <asp:LinkButton runat="server" CssClass="btn-danger"
                                                 CommandName="Delete" CommandArgument='<%# Eval("CourseID") %>'
-                                                OnClientClick="return showDeleteConfirm(this);">
+                                                OnClientClick="return showDeleteConfirm(this, 'Delete this course? This cannot be undone.');">
                                                 <i class="ti ti-trash"></i>
                                             </asp:LinkButton>
                                         </div>

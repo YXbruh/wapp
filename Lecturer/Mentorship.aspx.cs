@@ -11,7 +11,7 @@ namespace CSA.Lecturer
 {
     public partial class Mentorship : Page
     {
-        private string CurrentInstructorId => Session["UserID"]?.ToString().Trim() ?? "";
+        private string CurrentLecturerId => Session["UserID"]?.ToString().Trim() ?? "";
 
         // ====================================================================
         // Page Load
@@ -28,7 +28,7 @@ namespace CSA.Lecturer
                 LoadFeedbackList();
 
                 string studentId = Request.QueryString["studentId"];
-                if (!string.IsNullOrEmpty(studentId) && StudentDetailService.Owns(CurrentInstructorId, studentId))
+                if (!string.IsNullOrEmpty(studentId) && StudentDetailService.Owns(CurrentLecturerId, studentId))
                 {
                     LoadComposeMode(studentId);
                 }
@@ -53,15 +53,15 @@ namespace CSA.Lecturer
         // ====================================================================
         private void LoadCourseDropdown()
         {
-            string instructorId = Session["UserID"].ToString().Trim();
+            string lecturerId = Session["UserID"].ToString().Trim();
             ddlCourse.Items.Clear();
             ddlCourse.Items.Add(new ListItem("All Courses", ""));
 
-            string query = "SELECT CourseID, CourseName FROM Courses WHERE InstructorID = @InstructorID AND IsPublished = 1 ORDER BY CourseName";
+            string query = "SELECT CourseID, CourseName FROM Courses WHERE LecturerID = @LecturerID AND IsPublished = 1 ORDER BY CourseName";
             using (SqlConnection conn = new SqlConnection(GetConnectionString()))
             using (SqlCommand cmd = new SqlCommand(query, conn))
             {
-                cmd.Parameters.AddWithValue("@InstructorID", instructorId);
+                cmd.Parameters.AddWithValue("@LecturerID", lecturerId);
                 conn.Open();
                 SqlDataReader reader = cmd.ExecuteReader();
                 while (reader.Read())
@@ -76,14 +76,14 @@ namespace CSA.Lecturer
         // ====================================================================
         private void LoadMetrics()
         {
-            string instructorId = CurrentInstructorId;
+            string lecturerId = CurrentLecturerId;
 
             // Feedback the lecturer hasn't opened yet
             string unreadQuery = @"
                 SELECT COUNT(DISTINCT f.FeedbackID)
                 FROM Feedback f
                 LEFT JOIN Courses c ON f.CourseID = c.CourseID
-                WHERE (c.InstructorID = @InstructorID OR f.LecturerID = @InstructorID)
+                WHERE (c.LecturerID = @LecturerID OR f.LecturerID = @LecturerID)
                   AND f.InstReadAt IS NULL";
 
             // Feedback this lecturer has replied to / messages they sent
@@ -91,7 +91,7 @@ namespace CSA.Lecturer
                 SELECT COUNT(DISTINCT f.FeedbackID)
                 FROM Feedback f
                 LEFT JOIN Courses c ON f.CourseID = c.CourseID
-                WHERE (c.InstructorID = @InstructorID OR f.LecturerID = @InstructorID)
+                WHERE (c.LecturerID = @LecturerID OR f.LecturerID = @LecturerID)
                   AND f.RepText IS NOT NULL";
 
             // Average rating (of actual student reviews only)
@@ -99,24 +99,24 @@ namespace CSA.Lecturer
                 SELECT ISNULL(AVG(CAST(StarRating AS FLOAT)), 0)
                 FROM Feedback f
                 INNER JOIN Courses c ON f.CourseID = c.CourseID
-                WHERE c.InstructorID = @InstructorID AND f.StarRating IS NOT NULL";
+                WHERE c.LecturerID = @LecturerID AND f.StarRating IS NOT NULL";
 
             using (SqlConnection conn = new SqlConnection(GetConnectionString()))
             {
                 conn.Open();
                 using (SqlCommand cmd = new SqlCommand(unreadQuery, conn))
                 {
-                    cmd.Parameters.AddWithValue("@InstructorID", instructorId);
+                    cmd.Parameters.AddWithValue("@LecturerID", lecturerId);
                     litUnread.Text = cmd.ExecuteScalar()?.ToString() ?? "0";
                 }
                 using (SqlCommand cmd = new SqlCommand(repliedQuery, conn))
                 {
-                    cmd.Parameters.AddWithValue("@InstructorID", instructorId);
+                    cmd.Parameters.AddWithValue("@LecturerID", lecturerId);
                     litReplied.Text = cmd.ExecuteScalar()?.ToString() ?? "0";
                 }
                 using (SqlCommand cmd = new SqlCommand(avgRatingQuery, conn))
                 {
-                    cmd.Parameters.AddWithValue("@InstructorID", instructorId);
+                    cmd.Parameters.AddWithValue("@LecturerID", lecturerId);
                     object result = cmd.ExecuteScalar();
                     if (result != DBNull.Value && result != null)
                     {
@@ -134,12 +134,12 @@ namespace CSA.Lecturer
         // ====================================================================
         private void LoadFeedbackList()
         {
-            string instructorId = CurrentInstructorId;
+            string lecturerId = CurrentLecturerId;
             string search = tbSearch.Text.Trim();
             string filter = ddlFilter.SelectedValue;
             string courseId = ddlCourse.SelectedValue;
 
-            // Base query: feedback tied to the instructor's courses, plus any
+            // Base query: feedback tied to the lecturer's courses, plus any
             // message this lecturer sent directly (which may have no CourseID).
             string query = @"
                 SELECT
@@ -157,7 +157,7 @@ namespace CSA.Lecturer
                 INNER JOIN Users u ON f.StudentID = u.UserID
                 LEFT JOIN Courses c ON f.CourseID = c.CourseID
                 LEFT JOIN Quizzes q ON f.QuizID = q.QuizID
-                WHERE (c.InstructorID = @InstructorID OR f.LecturerID = @InstructorID)
+                WHERE (c.LecturerID = @LecturerID OR f.LecturerID = @LecturerID)
                   AND (u.FullName LIKE @Search OR f.Comment LIKE @Search OR f.RepText LIKE @Search)";
 
             if (!string.IsNullOrEmpty(courseId))
@@ -174,7 +174,7 @@ namespace CSA.Lecturer
             using (SqlConnection conn = new SqlConnection(GetConnectionString()))
             using (SqlCommand cmd = new SqlCommand(query, conn))
             {
-                cmd.Parameters.AddWithValue("@InstructorID", instructorId);
+                cmd.Parameters.AddWithValue("@LecturerID", lecturerId);
                 cmd.Parameters.AddWithValue("@Search", "%" + search + "%");
                 if (!string.IsNullOrEmpty(courseId))
                     cmd.Parameters.AddWithValue("@CourseID", courseId);
@@ -339,7 +339,7 @@ namespace CSA.Lecturer
         // ====================================================================
         private void LoadComposeMode(string studentId)
         {
-            DataRow profile = StudentDetailService.GetProfile(studentId, CurrentInstructorId);
+            DataRow profile = StudentDetailService.GetProfile(studentId, CurrentLecturerId);
             if (profile == null)
             {
                 pnlNoSelection.Visible = true;
@@ -389,7 +389,7 @@ namespace CSA.Lecturer
                 return;
             }
 
-            string instructorId = CurrentInstructorId;
+            string lecturerId = CurrentLecturerId;
             string feedbackIdRaw = hfFeedbackID.Value;
             string composeStudentId = hfComposeStudentID.Value;
 
@@ -401,12 +401,12 @@ namespace CSA.Lecturer
                 using (SqlConnection conn = new SqlConnection(GetConnectionString()))
                 using (SqlCommand cmd = new SqlCommand(@"
                     UPDATE Feedback
-                    SET RepText = @RepText, RepAt = GETDATE(), LecturerID = @InstructorID,
+                    SET RepText = @RepText, RepAt = GETDATE(), LecturerID = @LecturerID,
                         InstReadAt = ISNULL(InstReadAt, GETDATE())
                     WHERE FeedbackID = @FeedbackID;", conn))
                 {
                     cmd.Parameters.AddWithValue("@RepText", replyText);
-                    cmd.Parameters.AddWithValue("@InstructorID", instructorId);
+                    cmd.Parameters.AddWithValue("@LecturerID", lecturerId);
                     cmd.Parameters.AddWithValue("@FeedbackID", feedbackId);
                     conn.Open();
                     cmd.ExecuteNonQuery();
@@ -421,13 +421,13 @@ namespace CSA.Lecturer
             else if (!string.IsNullOrEmpty(composeStudentId))
             {
                 // New lecturer-initiated message to a specific student.
-                if (!StudentDetailService.Owns(instructorId, composeStudentId))
+                if (!StudentDetailService.Owns(lecturerId, composeStudentId))
                 {
                     ShowError("You can only message students enrolled in your own courses.");
                     return;
                 }
 
-                StudentDetailService.SendFeedback(instructorId, composeStudentId, replyText);
+                StudentDetailService.SendFeedback(lecturerId, composeStudentId, replyText);
 
                 ShowSuccess("Feedback sent to the student.");
                 LoadMetrics();

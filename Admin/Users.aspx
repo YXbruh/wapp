@@ -56,7 +56,7 @@
             </div>
                 <div class="metric">
                     <div class="metric-label">Lecturers</div>
-                <div class="metric-val"><asp:Literal ID="litInstructors" runat="server" Text="0"/></div>
+                <div class="metric-val"><asp:Literal ID="litLecturers" runat="server" Text="0"/></div>
                 <div class="metric-sub">accounts</div>
             </div>
             <div class="metric">

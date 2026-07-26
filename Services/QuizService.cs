@@ -12,17 +12,17 @@ namespace CSA.Services
     public static class QuizService
     {
         /// <summary>
-        /// Returns quizzes owned by an instructor, shaped for the ddlQuiz / ddlNewQuizCourse
+        /// Returns quizzes owned by an lecturer, shaped for the ddlQuiz / ddlNewQuizCourse
         /// dropdowns. Columns: QuizID, DisplayName ("Quiz Title — Course Name").
         /// </summary>
-        public static DataTable GetQuizzesByInstructor(string instructorId)
-            => GetQuizzesByInstructor(instructorId, null);
+        public static DataTable GetQuizzesByLecturer(string lecturerId)
+            => GetQuizzesByLecturer(lecturerId, null);
 
         /// <summary>
-        /// Quizzes owned by the instructor, optionally narrowed to one course so the
+        /// Quizzes owned by the lecturer, optionally narrowed to one course so the
         /// quiz picker only lists quizzes belonging to the course chosen above it.
         /// </summary>
-        public static DataTable GetQuizzesByInstructor(string instructorId, string courseId)
+        public static DataTable GetQuizzesByLecturer(string lecturerId, string courseId)
         {
             string sql = @"
                 SELECT  q.QuizID,
@@ -30,12 +30,12 @@ namespace CSA.Services
                         q.Title + ' — ' + c.CourseName AS DisplayName
                 FROM    Quizzes q
                 INNER JOIN Courses c ON q.CourseID = c.CourseID
-                WHERE   q.CreatedByID = @InstructorID
+                WHERE   q.CreatedByID = @LecturerID
                   AND   (@CourseID = '' OR q.CourseID = @CourseID)
                 ORDER BY q.CreatedAt DESC;";
 
             return DBHelper.ExecuteQuery(sql,
-                new SqlParameter("@InstructorID", instructorId),
+                new SqlParameter("@LecturerID", lecturerId),
                 new SqlParameter("@CourseID", (object)courseId ?? ""));
         }
 
@@ -100,15 +100,15 @@ namespace CSA.Services
         }
 
         /// <summary>Full details of one quiz, for the edit form. Null if not owned.</summary>
-        public static DataRow GetQuizById(string quizId, string instructorId)
+        public static DataRow GetQuizById(string quizId, string lecturerId)
         {
             DataTable dt = DBHelper.ExecuteQuery(@"
                 SELECT QuizID, CourseID, ChapterID, Title, Description, StartDate, EndDate,
                        DurationMinutes, TotalMarks, MaxAttempts, PassMark, IsPublished
                 FROM   Quizzes
-                WHERE  QuizID = @QuizID AND CreatedByID = @InstructorID;",
+                WHERE  QuizID = @QuizID AND CreatedByID = @LecturerID;",
                 new SqlParameter("@QuizID", quizId),
-                new SqlParameter("@InstructorID", instructorId));
+                new SqlParameter("@LecturerID", lecturerId));
 
             return dt.Rows.Count > 0 ? dt.Rows[0] : null;
         }
@@ -118,11 +118,11 @@ namespace CSA.Services
         /// and attachments are left alone. Returns rows affected (0 = not owned).
         /// </summary>
         public static int UpdateQuiz(
-            string quizId, string instructorId, string title,
+            string quizId, string lecturerId, string title,
             decimal passMark, int maxAttempts,
             string description, DateTime? startDate, DateTime? endDate,
             int? durationMinutes, int? totalMarks)
-            => UpdateQuiz(quizId, instructorId, title, passMark, maxAttempts,
+            => UpdateQuiz(quizId, lecturerId, title, passMark, maxAttempts,
                           description, startDate, endDate, durationMinutes, totalMarks, null);
 
         /// <summary>
@@ -130,7 +130,7 @@ namespace CSA.Services
         /// <paramref name="chapterId"/> stores NULL, i.e. a course-wide quiz.
         /// </summary>
         public static int UpdateQuiz(
-            string quizId, string instructorId, string title,
+            string quizId, string lecturerId, string title,
             decimal passMark, int maxAttempts,
             string description, DateTime? startDate, DateTime? endDate,
             int? durationMinutes, int? totalMarks, string chapterId)
@@ -147,11 +147,11 @@ namespace CSA.Services
                        MaxAttempts     = @MaxAttempts,
                        PassMark        = @PassMark,
                        UpdatedAt       = GETDATE()
-                WHERE  QuizID = @QuizID AND CreatedByID = @InstructorID;";
+                WHERE  QuizID = @QuizID AND CreatedByID = @LecturerID;";
 
             return DBHelper.ExecuteNonQuery(sql,
                 new SqlParameter("@QuizID", quizId),
-                new SqlParameter("@InstructorID", instructorId),
+                new SqlParameter("@LecturerID", lecturerId),
                 new SqlParameter("@ChapterID", string.IsNullOrWhiteSpace(chapterId) ? (object)DBNull.Value : chapterId),
                 new SqlParameter("@Title", title),
                 new SqlParameter("@Description", string.IsNullOrWhiteSpace(description) ? (object)DBNull.Value : description),
@@ -167,9 +167,9 @@ namespace CSA.Services
         /// Creates a new quiz and returns the generated QuizID.
         /// </summary>
         public static string CreateQuiz(
-            string instructorId, string courseId, string title,
+            string lecturerId, string courseId, string title,
             decimal passMark, int maxAttempts)
-            => CreateQuiz(instructorId, courseId, title, passMark, maxAttempts, null, null, null, null);
+            => CreateQuiz(lecturerId, courseId, title, passMark, maxAttempts, null, null, null, null);
 
         /// <summary>
         /// Creates a quiz with its full details. Description, schedule and duration are
@@ -177,10 +177,10 @@ namespace CSA.Services
         /// an uploaded worksheet as its content.
         /// </summary>
         public static string CreateQuiz(
-            string instructorId, string courseId, string title,
+            string lecturerId, string courseId, string title,
             decimal passMark, int maxAttempts,
             string description, DateTime? startDate, DateTime? endDate, int? durationMinutes)
-            => CreateQuiz(instructorId, courseId, title, passMark, maxAttempts,
+            => CreateQuiz(lecturerId, courseId, title, passMark, maxAttempts,
                           description, startDate, endDate, durationMinutes, null);
 
         /// <summary>
@@ -188,11 +188,11 @@ namespace CSA.Services
         /// questions are expected to add up to <paramref name="totalMarks"/>.
         /// </summary>
         public static string CreateQuiz(
-            string instructorId, string courseId, string title,
+            string lecturerId, string courseId, string title,
             decimal passMark, int maxAttempts,
             string description, DateTime? startDate, DateTime? endDate, int? durationMinutes,
             int? totalMarks)
-            => CreateQuiz(instructorId, courseId, null, title, passMark, maxAttempts,
+            => CreateQuiz(lecturerId, courseId, null, title, passMark, maxAttempts,
                           description, startDate, endDate, durationMinutes, totalMarks);
 
         /// <summary>
@@ -200,7 +200,7 @@ namespace CSA.Services
         /// <paramref name="chapterId"/> stores NULL, i.e. a course-wide quiz.
         /// </summary>
         public static string CreateQuiz(
-            string instructorId, string courseId, string chapterId, string title,
+            string lecturerId, string courseId, string chapterId, string title,
             decimal passMark, int maxAttempts,
             string description, DateTime? startDate, DateTime? endDate, int? durationMinutes,
             int? totalMarks)
@@ -227,18 +227,18 @@ namespace CSA.Services
                 new SqlParameter("@TotalMarks", totalMarks.HasValue ? (object)totalMarks.Value : DBNull.Value),
                 new SqlParameter("@MaxAttempts", maxAttempts),
                 new SqlParameter("@PassMark", passMark),
-                new SqlParameter("@CreatedByID", instructorId));
+                new SqlParameter("@CreatedByID", lecturerId));
 
             return quizId;
         }
 
         /// <summary>
-        /// Returns questions belonging to an instructor's quizzes, shaped for the
+        /// Returns questions belonging to an lecturer's quizzes, shaped for the
         /// rptQuestions Repeater. Columns: QuestionID, QuestionType, TypeLabel, Points,
         /// QuizName, QuestionText. Optionally filtered by quiz, search text and type.
         /// </summary>
         public static DataTable GetQuestions(
-            string instructorId, string quizId, string search, string filterType)
+            string lecturerId, string quizId, string search, string filterType)
         {
             string sql = @"
                 SELECT  qq.QuestionID,
@@ -254,14 +254,14 @@ namespace CSA.Services
                         qq.QuestionText
                 FROM    QuizQuestions qq
                 INNER JOIN Quizzes q ON qq.QuizID = q.QuizID
-                WHERE   q.CreatedByID = @InstructorID
+                WHERE   q.CreatedByID = @LecturerID
                         AND (@QuizID = '' OR qq.QuizID = @QuizID)
                         AND (@FilterType = '' OR qq.QuestionType = @FilterType)
                         AND (@Search = '' OR qq.QuestionText LIKE '%' + @Search + '%')
                 ORDER BY q.Title, qq.SortOrder, qq.QuestionID;";
 
             return DBHelper.ExecuteQuery(sql,
-                new SqlParameter("@InstructorID", instructorId),
+                new SqlParameter("@LecturerID", lecturerId),
                 new SqlParameter("@QuizID", quizId ?? ""),
                 new SqlParameter("@FilterType", filterType ?? ""),
                 new SqlParameter("@Search", search ?? ""));
@@ -269,9 +269,9 @@ namespace CSA.Services
 
         /// <summary>
         /// Returns a single question by ID (used to populate the editor form on Edit).
-        /// Returns null if not found or not owned by the instructor.
+        /// Returns null if not found or not owned by the lecturer.
         /// </summary>
-        public static DataRow GetQuestionById(string questionId, string instructorId)
+        public static DataRow GetQuestionById(string questionId, string lecturerId)
         {
             string sql = @"
                 SELECT  qq.QuestionID, qq.QuizID, qq.QuestionText, qq.QuestionType,
@@ -279,21 +279,21 @@ namespace CSA.Services
                         qq.CorrectAnswer, qq.MatchStrategy, qq.Explanation, qq.Points
                 FROM    QuizQuestions qq
                 INNER JOIN Quizzes q ON qq.QuizID = q.QuizID
-                WHERE   qq.QuestionID = @QuestionID AND q.CreatedByID = @InstructorID;";
+                WHERE   qq.QuestionID = @QuestionID AND q.CreatedByID = @LecturerID;";
 
             DataTable dt = DBHelper.ExecuteQuery(sql,
                 new SqlParameter("@QuestionID", questionId),
-                new SqlParameter("@InstructorID", instructorId));
+                new SqlParameter("@LecturerID", lecturerId));
 
             return dt.Rows.Count > 0 ? dt.Rows[0] : null;
         }
 
         /// <summary>
         /// Inserts a new question or updates an existing one. The quiz must belong to
-        /// the given instructor. Returns the QuestionID.
+        /// the given lecturer. Returns the QuestionID.
         /// </summary>
         public static string SaveQuestion(
-            string questionId, string instructorId, string quizId,
+            string questionId, string lecturerId, string quizId,
             string questionType, string questionText,
             string optionA, string optionB, string optionC, string optionD,
             string correctAnswer, string matchStrategy, string explanation, int points)
@@ -313,7 +313,7 @@ namespace CSA.Services
                 new SqlParameter("@MatchStrategy", string.IsNullOrEmpty(matchStrategy) ? (object)DBNull.Value : matchStrategy),
                 new SqlParameter("@Explanation",   string.IsNullOrEmpty(explanation) ? (object)DBNull.Value : explanation),
                 new SqlParameter("@Points",        points),
-                new SqlParameter("@InstructorID",  instructorId)
+                new SqlParameter("@LecturerID",  lecturerId)
             };
 
             if (isNew)
@@ -331,7 +331,7 @@ namespace CSA.Services
                     SELECT @QuestionID, @QuizID, @QuestionText, @QuestionType,
                            @OptionA, @OptionB, @OptionC, @OptionD,
                            @CorrectAnswer, @MatchStrategy, @Explanation, @Points
-                    WHERE EXISTS (SELECT 1 FROM Quizzes WHERE QuizID = @QuizID AND CreatedByID = @InstructorID);";
+                    WHERE EXISTS (SELECT 1 FROM Quizzes WHERE QuizID = @QuizID AND CreatedByID = @LecturerID);";
 
                 DBHelper.ExecuteNonQuery(insert, pInsert);
                 return questionId;
@@ -357,7 +357,7 @@ namespace CSA.Services
                         Points        = @Points
                     FROM QuizQuestions qq
                     INNER JOIN Quizzes q ON qq.QuizID = q.QuizID
-                    WHERE qq.QuestionID = @QuestionID AND q.CreatedByID = @InstructorID;";
+                    WHERE qq.QuestionID = @QuestionID AND q.CreatedByID = @LecturerID;";
 
                 DBHelper.ExecuteNonQuery(update, pUpdate);
                 return questionId;
@@ -365,19 +365,19 @@ namespace CSA.Services
         }
 
         /// <summary>
-        /// Deletes a quiz and its questions, but only if it belongs to the instructor
+        /// Deletes a quiz and its questions, but only if it belongs to the lecturer
         /// and no student has attempted it yet. Returns 1 = deleted, -1 = blocked by
         /// existing attempts, 0 = not found / not owned.
         /// </summary>
-        public static int DeleteQuiz(string quizId, string instructorId)
+        public static int DeleteQuiz(string quizId, string lecturerId)
         {
             string ownerCheck = @"
                 SELECT COUNT(*) FROM Quizzes
-                WHERE QuizID = @QuizID AND CreatedByID = @InstructorID;";
+                WHERE QuizID = @QuizID AND CreatedByID = @LecturerID;";
 
             object owned = DBHelper.ExecuteScalar(ownerCheck,
                 new SqlParameter("@QuizID", quizId),
-                new SqlParameter("@InstructorID", instructorId));
+                new SqlParameter("@LecturerID", lecturerId));
 
             if (Convert.ToInt32(owned) == 0) return 0;
 
@@ -388,13 +388,13 @@ namespace CSA.Services
             if (Convert.ToInt32(attempted) > 0) return -1;
 
             // Attachments reference the quiz and each of its questions, so they go first.
-            AttachmentService.DeleteByParent("Quiz", quizId, instructorId);
+            AttachmentService.DeleteByParent("Quiz", quizId, lecturerId);
 
             DataTable questions = DBHelper.ExecuteQuery(
                 "SELECT QuestionID FROM QuizQuestions WHERE QuizID = @QuizID;",
                 new SqlParameter("@QuizID", quizId));
             foreach (DataRow q in questions.Rows)
-                AttachmentService.DeleteByParent("Question", q["QuestionID"].ToString(), instructorId);
+                AttachmentService.DeleteByParent("Question", q["QuestionID"].ToString(), lecturerId);
 
             string delete = @"
                 UPDATE Feedback SET QuizID = NULL WHERE QuizID = @QuizID;
@@ -406,21 +406,21 @@ namespace CSA.Services
         }
 
         /// <summary>
-        /// Deletes a question, but only if it belongs to the instructor and no student
+        /// Deletes a question, but only if it belongs to the lecturer and no student
         /// has answered it yet. Returns 1 = deleted, -1 = blocked by existing answers,
         /// 0 = not found / not owned.
         /// </summary>
-        public static int DeleteQuestion(string questionId, string instructorId)
+        public static int DeleteQuestion(string questionId, string lecturerId)
         {
             string ownerCheck = @"
                 SELECT COUNT(*)
                 FROM QuizQuestions qq
                 INNER JOIN Quizzes q ON qq.QuizID = q.QuizID
-                WHERE qq.QuestionID = @QuestionID AND q.CreatedByID = @InstructorID;";
+                WHERE qq.QuestionID = @QuestionID AND q.CreatedByID = @LecturerID;";
 
             object owned = DBHelper.ExecuteScalar(ownerCheck,
                 new SqlParameter("@QuestionID", questionId),
-                new SqlParameter("@InstructorID", instructorId));
+                new SqlParameter("@LecturerID", lecturerId));
 
             if (Convert.ToInt32(owned) == 0) return 0;
 
@@ -431,7 +431,7 @@ namespace CSA.Services
             if (Convert.ToInt32(answered) > 0) return -1;
 
             // Attachments reference the question, so they must go first.
-            AttachmentService.DeleteByParent("Question", questionId, instructorId);
+            AttachmentService.DeleteByParent("Question", questionId, lecturerId);
 
             string delete = "DELETE FROM QuizQuestions WHERE QuestionID = @QuestionID;";
             DBHelper.ExecuteNonQuery(delete, new SqlParameter("@QuestionID", questionId));

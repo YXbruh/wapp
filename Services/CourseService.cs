@@ -32,12 +32,12 @@ namespace CSA.Services
 
             string sql = $@"
                 SELECT c.CourseID, c.CourseName, c.Level, c.IsPublished, c.CreatedAt,
-                       u.FullName AS InstructorName, cat.CategoryName AS Category,
+                       u.FullName AS LecturerName, cat.CategoryName AS Category,
                        (SELECT COUNT(*) FROM Enrollments WHERE CourseID = c.CourseID) AS EnrolledCount,
                        (SELECT COUNT(*) FROM VirtualLabs WHERE CourseID = c.CourseID) AS LabCount,
                        CASE WHEN c.IsPublished = 1 THEN 'Published' ELSE 'Draft' END AS Status
                 FROM Courses c
-                JOIN Users u ON c.InstructorID = u.UserID
+                JOIN Users u ON c.LecturerID = u.UserID
                 LEFT JOIN CourseCategories cat ON c.CategoryID = cat.CategoryID
                 {where}
                 {order}";
@@ -63,9 +63,9 @@ namespace CSA.Services
         public static DataTable GetById(string courseId)
         {
             return DBHelper.ExecuteQuery(
-                @"SELECT c.*, u.FullName AS InstructorName, cat.CategoryName
+                @"SELECT c.*, u.FullName AS LecturerName, cat.CategoryName
                   FROM Courses c
-                  JOIN Users u ON c.InstructorID = u.UserID
+                  JOIN Users u ON c.LecturerID = u.UserID
                   LEFT JOIN CourseCategories cat ON c.CategoryID = cat.CategoryID
                   WHERE c.CourseID = @ID",
                 new SqlParameter("@ID", courseId));
@@ -80,35 +80,35 @@ namespace CSA.Services
                 new SqlParameter("@ID", courseId));
         }
 
-        public static string Create(string name, string description, string categoryId, string instructorId,
+        public static string Create(string name, string description, string categoryId, string lecturerId,
             string level, int durationHours)
         {
             string courseId = IdGenerator.NewId("CRS");
             DBHelper.ExecuteNonQuery(@"
-                INSERT INTO Courses (CourseID, CourseName, Description, CategoryID, InstructorID, Level, DurationHours, CreatedAt, UpdatedAt)
-                VALUES (@CourseID, @Name, @Desc, @CatID, @InstructorID, @Level, @Hours, GETDATE(), GETDATE())",
+                INSERT INTO Courses (CourseID, CourseName, Description, CategoryID, LecturerID, Level, DurationHours, CreatedAt, UpdatedAt)
+                VALUES (@CourseID, @Name, @Desc, @CatID, @LecturerID, @Level, @Hours, GETDATE(), GETDATE())",
                 new SqlParameter("@CourseID", courseId),
                 new SqlParameter("@Name", name),
                 new SqlParameter("@Desc", (object)description ?? DBNull.Value),
                 new SqlParameter("@CatID", string.IsNullOrEmpty(categoryId) ? DBNull.Value : (object)categoryId),
-                new SqlParameter("@InstructorID", instructorId),
+                new SqlParameter("@LecturerID", lecturerId),
                 new SqlParameter("@Level", level),
                 new SqlParameter("@Hours", durationHours));
             return courseId;
         }
 
         public static void Update(string courseId, string name, string description, string categoryId,
-            string instructorId, string level, int durationHours)
+            string lecturerId, string level, int durationHours)
         {
             DBHelper.ExecuteNonQuery(@"
                 UPDATE Courses SET CourseName = @Name, Description = @Desc, CategoryID = @CatID,
-                    InstructorID = @InstructorID, Level = @Level, DurationHours = @Hours, UpdatedAt = GETDATE()
+                    LecturerID = @LecturerID, Level = @Level, DurationHours = @Hours, UpdatedAt = GETDATE()
                 WHERE CourseID = @ID",
                 new SqlParameter("@ID", courseId),
                 new SqlParameter("@Name", name),
                 new SqlParameter("@Desc", (object)description ?? DBNull.Value),
                 new SqlParameter("@CatID", string.IsNullOrEmpty(categoryId) ? DBNull.Value : (object)categoryId),
-                new SqlParameter("@InstructorID", instructorId),
+                new SqlParameter("@LecturerID", lecturerId),
                 new SqlParameter("@Level", level),
                 new SqlParameter("@Hours", durationHours));
         }
@@ -123,12 +123,12 @@ namespace CSA.Services
 
             string sql = $@"
                 SELECT c.CourseID, c.CourseName, c.Description, c.Level, c.DurationHours,
-                       u.FullName AS InstructorName, cat.CategoryName,
+                       u.FullName AS LecturerName, cat.CategoryName,
                        (SELECT COUNT(*) FROM Enrollments WHERE CourseID = c.CourseID) AS EnrolledCount,
                        (SELECT COUNT(*) FROM VirtualLabs WHERE CourseID = c.CourseID) AS LabCount,
                        CAST(CASE WHEN EXISTS (SELECT 1 FROM Enrollments WHERE StudentID = @UserID AND CourseID = c.CourseID) THEN 1 ELSE 0 END AS BIT) AS IsEnrolled
                 FROM Courses c
-                JOIN Users u ON c.InstructorID = u.UserID
+                JOIN Users u ON c.LecturerID = u.UserID
                 LEFT JOIN CourseCategories cat ON c.CategoryID = cat.CategoryID
                 {where}
                 ORDER BY c.CreatedAt DESC";
@@ -247,7 +247,7 @@ namespace CSA.Services
                 new SqlParameter("@ID", id));
         }
 
-        public static DataTable GetInstructors()
+        public static DataTable GetLecturers()
         {
             return DBHelper.ExecuteQuery(
                 @"SELECT UserID, FullName FROM Users WHERE RoleID = (SELECT RoleID FROM Roles WHERE RoleName = 'Lecturer')
@@ -265,13 +265,13 @@ namespace CSA.Services
         {
             DataTable dt = AdminSearch(keyword, status, level);
             var sb = new System.Text.StringBuilder();
-            sb.AppendLine("CourseID,CourseName,Level,Instructor,Category,EnrolledCount,Status,CreatedAt");
+            sb.AppendLine("CourseID,CourseName,Level,Lecturer,Category,EnrolledCount,Status,CreatedAt");
             foreach (DataRow row in dt.Rows)
             {
                 sb.AppendLine(string.Join(",", new[]
                 {
                     UserService.CsvField(row["CourseID"]),   UserService.CsvField(row["CourseName"]),
-                    UserService.CsvField(row["Level"]),      UserService.CsvField(row["InstructorName"]),
+                    UserService.CsvField(row["Level"]),      UserService.CsvField(row["LecturerName"]),
                     UserService.CsvField(row["Category"]),   UserService.CsvField(row["EnrolledCount"]),
                     UserService.CsvField(row["Status"]),     UserService.CsvField(row["CreatedAt"])
                 }));

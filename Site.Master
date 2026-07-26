@@ -503,6 +503,18 @@
                 return false;
             }
 
+            // Shorthand for the common "delete this row" case. Pages may pass
+            // their own wording; otherwise a generic warning is shown.
+            function showDeleteConfirm(button, message) {
+                return showConfirmAction(
+                    button,
+                    message ||
+                        "Delete this item? This cannot be undone.",
+                    "Delete",
+                    "var(--danger)"
+                );
+            }
+
             function cancelConfirmAction() {
                 document.getElementById(
                     "confirmActionModal"

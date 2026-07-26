@@ -12,7 +12,7 @@ namespace CSA.Lecturer
 {
     public partial class ManageContent : Page
     {
-        private string CurrentInstructorId => Session["UserID"]?.ToString() ?? "";
+        private string CurrentLecturerId => Session["UserID"]?.ToString() ?? "";
 
         // ========================================================================
         // Page Load
@@ -48,15 +48,15 @@ namespace CSA.Lecturer
         // ========================================================================
         private void LoadCourseDropdown()
         {
-            string userId = CurrentInstructorId;
+            string userId = CurrentLecturerId;
             ddlCourse.Items.Clear();
             ddlCourse.Items.Add(new ListItem("— Select Course —", ""));
 
-            string query = "SELECT CourseID, CourseName FROM Courses WHERE InstructorID = @InstructorID AND IsPublished = 1 ORDER BY CourseName";
+            string query = "SELECT CourseID, CourseName FROM Courses WHERE LecturerID = @LecturerID AND IsPublished = 1 ORDER BY CourseName";
             using (SqlConnection conn = new SqlConnection(GetConnectionString()))
             using (SqlCommand cmd = new SqlCommand(query, conn))
             {
-                cmd.Parameters.AddWithValue("@InstructorID", userId);
+                cmd.Parameters.AddWithValue("@LecturerID", userId);
                 conn.Open();
                 SqlDataReader reader = cmd.ExecuteReader();
                 while (reader.Read())
@@ -74,7 +74,7 @@ namespace CSA.Lecturer
         // ========================================================================
         private void LoadContentList()
         {
-            string userId = CurrentInstructorId;
+            string userId = CurrentLecturerId;
             string search = tbSearch.Text.Trim();
 
             string query = @"
@@ -82,20 +82,20 @@ namespace CSA.Lecturer
                        c.CourseName, ch.IsPublished, ch.UpdatedAt
                 FROM Chapters ch
                 INNER JOIN Courses c ON ch.CourseID = c.CourseID
-                WHERE c.InstructorID = @InstructorID AND c.IsPublished = 1
+                WHERE c.LecturerID = @LecturerID AND c.IsPublished = 1
                   AND (ch.ChapterTitle LIKE @Search OR ch.Content LIKE @Search)
                 ORDER BY ch.UpdatedAt DESC";
             string countQuery = @"
                 SELECT COUNT(*) FROM Chapters ch
                 INNER JOIN Courses c ON ch.CourseID = c.CourseID
-                WHERE c.InstructorID = @InstructorID AND c.IsPublished = 1
+                WHERE c.LecturerID = @LecturerID AND c.IsPublished = 1
                   AND (ch.ChapterTitle LIKE @Search OR ch.Content LIKE @Search)";
 
             using (SqlConnection conn = new SqlConnection(GetConnectionString()))
             {
                 using (SqlCommand cmd = new SqlCommand(countQuery, conn))
                 {
-                    cmd.Parameters.AddWithValue("@InstructorID", userId);
+                    cmd.Parameters.AddWithValue("@LecturerID", userId);
                     cmd.Parameters.AddWithValue("@Search", "%" + search + "%");
                     conn.Open();
                     int count = (int)cmd.ExecuteScalar();
@@ -104,7 +104,7 @@ namespace CSA.Lecturer
 
                 using (SqlCommand cmd = new SqlCommand(query, conn))
                 {
-                    cmd.Parameters.AddWithValue("@InstructorID", userId);
+                    cmd.Parameters.AddWithValue("@LecturerID", userId);
                     cmd.Parameters.AddWithValue("@Search", "%" + search + "%");
                     SqlDataReader reader = cmd.ExecuteReader();
                     var list = new List<ContentItem>();
@@ -134,7 +134,7 @@ namespace CSA.Lecturer
         protected void btnSave_Click(object sender, EventArgs e)
         {
             if (!Page.IsValid) return;
-            SaveChapter(CurrentInstructorId, hfEditID.Value);
+            SaveChapter(CurrentLecturerId, hfEditID.Value);
         }
 
         // ========================================================================
@@ -275,7 +275,7 @@ namespace CSA.Lecturer
             if (staged)
                 saved = PendingAttachmentService.StageFiles(fuAttachFiles.PostedFiles, AttachBucket, out rejected);
             else
-                saved = AttachmentService.SaveFiles(fuAttachFiles.PostedFiles, "Chapter", chapterId, CurrentInstructorId, out rejected);
+                saved = AttachmentService.SaveFiles(fuAttachFiles.PostedFiles, "Chapter", chapterId, CurrentLecturerId, out rejected);
 
             string verb = staged ? "file(s) ready — saved when you save the chapter." : "file(s) uploaded.";
             if (saved > 0 && rejected.Count == 0)
@@ -308,7 +308,7 @@ namespace CSA.Lecturer
             }
             else
             {
-                AttachmentService.SaveLink("Chapter", chapterId, title, url, CurrentInstructorId);
+                AttachmentService.SaveLink("Chapter", chapterId, title, url, CurrentLecturerId);
                 ShowSuccess("Link added.");
             }
 
@@ -325,7 +325,7 @@ namespace CSA.Lecturer
 
                 bool removed = attachmentId.StartsWith("PND")
                     ? PendingAttachmentService.Remove(AttachBucket, attachmentId)
-                    : AttachmentService.Delete(attachmentId, CurrentInstructorId);
+                    : AttachmentService.Delete(attachmentId, CurrentLecturerId);
 
                 ShowSuccess(removed ? "Attachment removed." : "Attachment not found.");
                 LoadAttachments(hfEditID.Value);
@@ -341,7 +341,7 @@ namespace CSA.Lecturer
         protected void rptContent_ItemCommand(object source, RepeaterCommandEventArgs e)
         {
             string id = e.CommandArgument.ToString();
-            string userId = CurrentInstructorId;
+            string userId = CurrentLecturerId;
 
             if (e.CommandName == "Edit")
             {

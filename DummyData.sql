@@ -61,7 +61,7 @@ INSERT INTO CourseCategories (CategoryID, CategoryName, Description) VALUES
 GO
 
 -- COURSES
-INSERT INTO Courses (CourseID, CourseName, Description, CategoryID, InstructorID, Level, DurationHours, IsPublished) VALUES
+INSERT INTO Courses (CourseID, CourseName, Description, CategoryID, LecturerID, Level, DurationHours, IsPublished) VALUES
 ('CRSOAN986', 'Introduction to Cybersecurity', 'Understand the CIA triad, threats, and basic defenses.', 'CATCJA861', 'USRDGK804', 'Beginner', 6, 1),
 ('CRSGJE757', 'Network Scanning 101', 'Discover live hosts, open ports, and services with Nmap.', 'CATGJJ189', 'USRDGK804', 'Intermediate', 8, 1),
 ('CRSIFV988', 'Linux Command Line Basics', 'Navigate the terminal, manage files, and use permissions.', 'CATCJA861', 'USROWV824', 'Beginner', 5, 1),

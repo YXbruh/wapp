@@ -8,7 +8,7 @@ namespace CSA.Lecturer
 {
     public partial class LabPreview : Page
     {
-        private string CurrentInstructorId => Session["UserID"]?.ToString() ?? "";
+        private string CurrentLecturerId => Session["UserID"]?.ToString() ?? "";
         private string LabId => Request.QueryString["id"] ?? "";
 
         // Values handed to the shared in-browser terminal (data-* attributes).
@@ -45,7 +45,7 @@ namespace CSA.Lecturer
             object owner = DBHelper.ExecuteScalar(
                 "SELECT CreatedByID FROM VirtualLabs WHERE LabID = @LabID;",
                 new System.Data.SqlClient.SqlParameter("@LabID", LabId));
-            return owner != null && owner.ToString() == CurrentInstructorId;
+            return owner != null && owner.ToString() == CurrentLecturerId;
         }
 
         private void BindLab(DataRow lab)

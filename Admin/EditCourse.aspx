@@ -51,7 +51,7 @@
             </div>
             <div class="form-group">
                 <label class="form-label">Lecturer</label>
-                <asp:DropDownList ID="ddlInstructor" runat="server" CssClass="form-select" />
+                <asp:DropDownList ID="ddlLecturer" runat="server" CssClass="form-select" />
             </div>
             <div class="form-group">
                 <label class="form-label">Level</label>
