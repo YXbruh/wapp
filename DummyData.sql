@@ -30,7 +30,7 @@ DELETE FROM QuizAttempts;     DELETE FROM QuizQuestions;
 DELETE FROM Quizzes;          DELETE FROM VirtualLabs;
 DELETE FROM Enrollments;      DELETE FROM Chapters;
 DELETE FROM Courses;          DELETE FROM CourseCategories;
-DELETE FROM Achievements;     DELETE FROM SystemConfiguration;
+DELETE FROM Achievements;
 DELETE FROM Users;            DELETE FROM Roles;
 GO
 
@@ -312,19 +312,9 @@ INSERT INTO Announcements (Title, Body, PublishedByID, IsActive, PublishedAt, Au
 GO
 
 
--- SYSTEM CONFIGURATION
-INSERT INTO SystemConfiguration (ConfigID, ConfigKey, ConfigValue, Description) VALUES
-('CFGCVH922','MinPasswordLength','8','Minimum password length'),
-('CFGNEJ988','MaxFailedLoginAttempts','5','Account lockout threshold'),
-('CFGQXY570','SessionTimeoutMinutes','30','Idle session timeout in minutes'),
-('CFGTLT620','DefaultPassMark','50','Default quiz pass percentage'),
-('CFGYDM327','MaintenanceMode','false','Show maintenance page when true');
-GO
-
 -- AUDIT LOG  (admin actions, append-only)
 INSERT INTO AuditLog (PerformedByID, Action, TableAffected, RecordID, BeforeValue, AfterValue, IPAddress, OccurredAt) VALUES
 ('USRAME107', 'PUBLISH_COURSE', 'Courses', 'CRSGJE757', '{"IsPublished":0}', '{"IsPublished":1}', '192.168.1.10', DATEADD(DAY,-7,GETDATE())),
-('USRAME107', 'UPDATE_CONFIG', 'SystemConfiguration', 'CFGQXY570', '{"ConfigValue":"20"}', '{"ConfigValue":"30"}', '192.168.1.10', DATEADD(DAY,-5,GETDATE())),
 ('USRAME107', 'RESET_PASSWORD', 'Users', 'USRRBX787', NULL, NULL, '192.168.1.10', DATEADD(DAY,-2,GETDATE())),
 ('USRAME107', 'DELETE_CHAPTER', 'Chapters', 'CHPOLD001', '{"ChapterTitle":"Deprecated Intro"}', NULL, '192.168.1.10', DATEADD(DAY,-1,GETDATE()));
 GO
@@ -359,7 +349,6 @@ UNION ALL SELECT 'UserAchievements',    COUNT(*) FROM UserAchievements
 UNION ALL SELECT 'Feedback',            COUNT(*) FROM Feedback
 UNION ALL SELECT 'ActivityLog',         COUNT(*) FROM ActivityLog
 UNION ALL SELECT 'Announcements',       COUNT(*) FROM Announcements
-UNION ALL SELECT 'SystemConfiguration', COUNT(*) FROM SystemConfiguration
 UNION ALL SELECT 'AuditLog',            COUNT(*) FROM AuditLog
 UNION ALL SELECT 'DatabaseBackups',     COUNT(*) FROM DatabaseBackups
 ORDER BY t;

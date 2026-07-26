@@ -376,19 +376,7 @@ CREATE TABLE Announcements (
 GO
 
 -- ============================================================
--- 19. SYSTEM CONFIGURATION
--- ============================================================
-CREATE TABLE SystemConfiguration (
-    ConfigID    NVARCHAR(10)  NOT NULL PRIMARY KEY,
-    ConfigKey   NVARCHAR(100) NOT NULL UNIQUE,
-    ConfigValue NVARCHAR(1000) NOT NULL,
-    Description NVARCHAR(500) NULL,
-    UpdatedAt   DATETIME      NOT NULL DEFAULT GETDATE()
-);
-GO
-
--- ============================================================
--- 20. AUDIT LOG
+-- 19. AUDIT LOG
 -- ============================================================
 CREATE TABLE AuditLog (
     AuditID       INT           NOT NULL IDENTITY(1,1) PRIMARY KEY,
@@ -405,7 +393,7 @@ CREATE TABLE AuditLog (
 GO
 
 -- ============================================================
--- 21. DATABASE BACKUPS
+-- 20. DATABASE BACKUPS
 -- ============================================================
 CREATE TABLE DatabaseBackups (
     BackupID    INT           NOT NULL IDENTITY(1,1) PRIMARY KEY,
@@ -423,7 +411,7 @@ GO
 
 
 -- ============================================================
--- 22. PERFORMANCE INDEXES
+-- 21. PERFORMANCE INDEXES
 --
 -- Primary keys are indexed automatically, but foreign-key columns are not. Without
 -- these every join and every "count the child rows" subquery on the dashboards
