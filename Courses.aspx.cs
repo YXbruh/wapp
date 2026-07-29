@@ -8,14 +8,21 @@ namespace CSA
 {
     public partial class Courses : Page
     {
-        private string _activeCategory = "All";
         private string _role = "";
+
+        private string ActiveCategory
+        {
+            get { return ViewState["ActiveCategory"]?.ToString() ?? "All"; }
+            set { ViewState["ActiveCategory"] = value; }
+        }
 
         protected void Page_Load(object sender, EventArgs e)
         {
             _role = Session["Role"]?.ToString() ?? "";
             if (!IsPostBack)
             {
+                // Set default category
+                ActiveCategory = "All";
                 BindCategories();
                 BindCourses();
             }
@@ -24,11 +31,12 @@ namespace CSA
         private void BindCategories()
         {
             DataTable dt = CourseService.GetCategories();
-            var rows = dt.NewRow();
-            rows["CategoryName"] = "All";
-            rows["Description"] = "";
-            rows["CourseCount"] = 0;
-            dt.Rows.InsertAt(rows, 0);
+            // Insert "All" at the top
+            DataRow allRow = dt.NewRow();
+            allRow["CategoryName"] = "All";
+            allRow["Description"] = "";
+            allRow["CourseCount"] = 0;
+            dt.Rows.InsertAt(allRow, 0);
 
             rptCategories.DataSource = dt;
             rptCategories.DataBind();
@@ -38,7 +46,7 @@ namespace CSA
         {
             string userId = Session["UserID"]?.ToString() ?? "";
             DataTable dt = CourseService.GetPublishedCourses(
-                tbSearch.Text.Trim(), _activeCategory, userId);
+                tbSearch.Text.Trim(), ActiveCategory, userId);
 
             rptCourses.DataSource = dt;
             rptCourses.DataBind();
@@ -51,7 +59,9 @@ namespace CSA
         {
             if (e.CommandName == "Filter")
             {
-                _activeCategory = e.CommandArgument.ToString();
+                ActiveCategory = e.CommandArgument.ToString();
+                // Re‑bind categories so the active class is updated
+                BindCategories();
                 BindCourses();
             }
         }
@@ -61,28 +71,26 @@ namespace CSA
             string courseId = e.CommandArgument.ToString();
             if (_role == "Admin")
             {
-                // Admins manage the course record itself.
                 Response.Redirect($"~/Admin/EditCourse.aspx?id={courseId}");
             }
             else if (_role == "Lecturer")
             {
-                // Lecturers manage their course content (chapters, quizzes, labs).
                 Response.Redirect("~/Lecturer/ManageContent.aspx");
             }
             else if (_role == "Student")
             {
-                // Students jump into their own course area to open or enrol in the course.
                 Response.Redirect("~/Student/MyCourses.aspx");
             }
             else
             {
-                // Guests must register before they can join a course.
                 Response.Redirect("~/Register.aspx");
             }
         }
 
+        // ----- Helper methods for UI -----
+
         public string GetChipClass(string cat) =>
-            cat == _activeCategory ? "filter-chip active" : "filter-chip";
+            cat == ActiveCategory ? "filter-chip active" : "filter-chip";
 
         public string GetIconClass(string category)
         {
@@ -122,8 +130,7 @@ namespace CSA
 
         public bool GetActionEnabled(bool isEnrolled)
         {
-            // Everyone can click: admins/lecturers manage, students jump to their
-            // course area (even when already enrolled), and guests go to register.
+            // Everyone can click – admins/lecturers manage, students jump to their course area, guests go to register.
             return true;
         }
     }

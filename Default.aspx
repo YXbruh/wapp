@@ -44,7 +44,7 @@
             <div class="stat-label">Virtual Labs</div>
         </div>
         <div class="stat-card">
-            <div class="stat-num"><asp:Literal ID="litSatisfaction" runat="server" Text="—" /></div>
+            <div class="stat-num"><asp:Literal ID="litSatisfaction" runat="server" Text="-" /></div>
             <div class="stat-label">Satisfaction Rate</div>
         </div>
     </div>
@@ -52,7 +52,7 @@
     <!-- FEATURES -->
     <section class="section" aria-labelledby="featuresHeading">
         <div class="section-title" id="featuresHeading">Why CyberShield Academy?</div>
-        <div class="section-sub">A practical way to learn security — courses, labs and quizzes in one place</div>
+        <div class="section-sub">A practical way to learn security - courses, labs and quizzes in one place</div>
         <div class="features-grid">
             <div class="feature-card">
                 <div class="feat-icon"><i class="ti ti-terminal-2" aria-hidden="true"></i></div>
@@ -72,7 +72,7 @@
             <div class="feature-card">
                 <div class="feat-icon"><i class="ti ti-school" aria-hidden="true"></i></div>
                 <h3>Learn From Lecturers</h3>
-                <p>Every chapter, quiz and lab is written and reviewed by lecturers — and you can leave feedback and get a reply.</p>
+                <p>Every chapter, quiz and lab is written and reviewed by lecturers - and you can leave feedback and get a reply.</p>
             </div>
             <div class="feature-card">
                 <div class="feat-icon"><i class="ti ti-books" aria-hidden="true"></i></div>
@@ -82,7 +82,7 @@
             <div class="feature-card">
                 <div class="feat-icon"><i class="ti ti-device-desktop" aria-hidden="true"></i></div>
                 <h3>Learn Anywhere</h3>
-                <p>A responsive platform that works on desktop, tablet or mobile — nothing to install.</p>
+                <p>A responsive platform that works on desktop, tablet or mobile - nothing to install.</p>
             </div>
         </div>
     </section>

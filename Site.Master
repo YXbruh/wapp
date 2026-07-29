@@ -15,7 +15,7 @@
             CyberShield Academy
         </asp:ContentPlaceHolder>
     </title>
-
+    <link rel="icon" type="image/png" href="~/Images/logo.png" />
     <!-- Tabler Icons CDN -->
     <link rel="stylesheet"
         href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css" />
