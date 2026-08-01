@@ -54,7 +54,7 @@
             <div class="metric">
                 <div class="metric-label">Last Backup</div>
                 <div class="metric-val" style="font-size:16px">
-                    <asp:Literal ID="litLastBackup" runat="server" Text="—" />
+                    <asp:Literal ID="litLastBackup" runat="server" Text="-" />
                 </div>
                 <div class="metric-sub">most recent</div>
             </div>

@@ -15,24 +15,6 @@ namespace CSA.Admin
     {
 
         /// <summary>
-        /// cMain control.
-        /// </summary>
-        /// <remarks>
-        /// Auto-generated field.
-        /// To modify move field declaration from designer file to code-behind file.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.Content cMain;
-
-        /// <summary>
-        /// cScripts control.
-        /// </summary>
-        /// <remarks>
-        /// Auto-generated field.
-        /// To modify move field declaration from designer file to code-behind file.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.Content cScripts;
-
-        /// <summary>
         /// lbLogout control.
         /// </summary>
         /// <remarks>
@@ -141,13 +123,13 @@ namespace CSA.Admin
         protected global::System.Web.UI.WebControls.Repeater rptBackups;
 
         /// <summary>
-        /// pnlEmpty control.
+        /// btnPrev control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.Panel pnlEmpty;
+        protected global::System.Web.UI.WebControls.LinkButton btnPrev;
 
         /// <summary>
         /// litPageInfo control.
@@ -159,15 +141,6 @@ namespace CSA.Admin
         protected global::System.Web.UI.WebControls.Literal litPageInfo;
 
         /// <summary>
-        /// btnPrev control.
-        /// </summary>
-        /// <remarks>
-        /// Auto-generated field.
-        /// To modify move field declaration from designer file to code-behind file.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.LinkButton btnPrev;
-
-        /// <summary>
         /// btnNext control.
         /// </summary>
         /// <remarks>
@@ -175,5 +148,14 @@ namespace CSA.Admin
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
         protected global::System.Web.UI.WebControls.LinkButton btnNext;
+
+        /// <summary>
+        /// pnlEmpty control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Panel pnlEmpty;
     }
 }

@@ -38,7 +38,7 @@
             </div>
             <div class="metric">
                 <div class="metric-label">Avg Quiz Score</div>
-                <div class="metric-val"><asp:Literal ID="litAvgQuiz" runat="server" Text="—" /></div>
+                <div class="metric-val"><asp:Literal ID="litAvgQuiz" runat="server" Text="-" /></div>
                 <div class="metric-sub">all attempts</div>
             </div>
             <div class="metric">

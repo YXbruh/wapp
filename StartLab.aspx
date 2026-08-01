@@ -15,7 +15,7 @@
 
     <div class="dash-header">
         <h2><asp:Literal ID="litHeading" runat="server" Text="Virtual Lab Terminal" /></h2>
-        <p>Practise Linux in a terminal that runs entirely in your browser — nothing is installed and nothing runs on the server.</p>
+        <p>Practise Linux in a terminal that runs entirely in your browser - nothing is installed and nothing runs on the server.</p>
     </div>
 
     <!-- Lab brief, shown when this page was opened from a specific lab -->
@@ -48,7 +48,7 @@
             <span>
                 <span class="text-muted text-small">runs entirely in your browser</span>
                 <button type="button" class="btn-sm secondary" style="margin-left:8px" onclick="csaTerm.reload()"
-                        title="Save, then reboot the terminal — your files are kept">
+                        title="Save, then reboot the terminal - your files are kept">
                     <i class="ti ti-refresh"></i> Reload
                 </button>
                 <button type="button" class="btn-sm secondary" style="margin-left:4px" onclick="csaTerm.clear()">
@@ -76,7 +76,7 @@
             (<span class="term-code">ls</span>, <span class="term-code">grep</span>,
             <span class="term-code">vi</span>, pipes, redirection) all work for real.
             Your session auto-saves to your account every minute, and is restored the next time you
-            sign in and open this lab — even from a different browser or after clearing browser
+            sign in and open this lab - even from a different browser or after clearing browser
             data, the files you created will still be there.
         </div>
     </div>
